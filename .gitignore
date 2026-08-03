@@ -1,0 +1,21 @@
+# Environnement virtuel
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Config sensible
+.env
+
+# Clode info
+.claude
+
+# Base de données locale
+*.db
+
+# YAML (configs, données)
+*.yml
+*.yaml
+
+# Images PNG (QR codes, photos)
+*.png

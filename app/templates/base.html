@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Mariage{% endblock %}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', serif;
+      background: #faf6f1;
+      color: #3a3a3a;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 32px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    h1, h2 { font-weight: normal; color: #7a5c45; }
+    a.button, button.button {
+      display: inline-block;
+      background: #b98b5e;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 6px;
+      text-decoration: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    a.button:hover, button.button:hover { background: #9c7247; }
+    label { display: block; margin-top: 16px; font-weight: bold; }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 15px;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
+    .badge { padding: 3px 10px; border-radius: 12px; font-size: 13px; }
+    .badge-ok { background: #d7f0d8; color: #2c6b2f; }
+    .badge-pending { background: #f0e6d7; color: #8a6b2f; }
+    .badge-no { background: #f0d7d7; color: #a13b3b; }
+    .stats { display: flex; gap: 16px; margin-bottom: 20px; }
+    .stat { flex: 1; text-align: center; background: #fff; border-radius: 10px; padding: 16px; }
+    .stat .value { font-size: 28px; color: #7a5c45; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

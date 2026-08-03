@@ -1,0 +1,4 @@
+prenom,nom,email,sexe,categorie
+Marie,Dupont,marie.dupont@example.com,femme,famille
+Jean,Martin,jean.martin@example.com,homme,amis
+Fatou,Diallo,,femme,collegues

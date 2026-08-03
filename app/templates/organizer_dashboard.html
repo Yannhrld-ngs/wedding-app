@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Dashboard organisateur{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center;">
+  <h2>Tableau de bord — {{ organizer_login }}</h2>
+  <a href="/organizer/logout">Déconnexion</a>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="value">{{ total }}</div>Invités</div>
+  <div class="stat"><div class="value">{{ presents_prevus }}</div>Présence prévue</div>
+  <div class="stat"><div class="value">{{ checked_in }}</div>Validés le jour J</div>
+</div>
+
+<p><a class="button" href="/organizer/scan">📷 Scanner un QR code</a></p>
+
+<div class="card">
+  <table>
+    <tr>
+      <th>Invité</th>
+      <th>Sexe</th>
+      <th>Catégorie</th>
+      <th>Réponse</th>
+      <th>Allergies</th>
+      <th>Transport</th>
+      <th>Check-in</th>
+    </tr>
+    {% for invite in invites %}
+    <tr>
+      <td>{{ invite.prenom }} {{ invite.nom }}</td>
+      <td>{{ invite.sexe.value | capitalize }}</td>
+      <td>{{ invite.categorie or "—" }}</td>
+      <td>
+        {% if invite.statut_presence.value == "present" %}
+          <span class="badge badge-ok">Présent</span>
+        {% elif invite.statut_presence.value == "absent" %}
+          <span class="badge badge-no">Absent</span>
+        {% else %}
+          <span class="badge badge-pending">En attente</span>
+        {% endif %}
+      </td>
+      <td>{{ invite.allergies or "—" }}</td>
+      <td>{{ invite.mode_transport.value if invite.mode_transport else "—" }}</td>
+      <td>
+        {% if invite.checked_in %}
+          <span class="badge badge-ok">✓ {{ invite.checked_in_at.strftime('%H:%M') }}</span>
+        {% else %}
+          <span class="badge badge-pending">Non validé</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

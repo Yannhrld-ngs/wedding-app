@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Scanner un invité{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Scanner un QR code</h2>
+  <p><a href="/organizer/dashboard">← Retour au tableau de bord</a></p>
+  <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
+  <p id="result" style="text-align:center; font-size: 18px; font-weight: bold; margin-top: 16px;"></p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script>
+  const resultEl = document.getElementById("result");
+  let isProcessing = false;
+
+  function onScanSuccess(decodedText) {
+    if (isProcessing) return;
+    isProcessing = true;
+
+    fetch("/organizer/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "qr_uuid=" + encodeURIComponent(decodedText),
+    })
+      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        resultEl.style.color = ok ? "#2c6b2f" : "#a13b3b";
+        resultEl.textContent = data.message;
+      })
+      .catch(() => {
+        resultEl.style.color = "#a13b3b";
+        resultEl.textContent = "Erreur réseau, réessayez.";
+      })
+      .finally(() => {
+        // Petit délai avant de pouvoir scanner à nouveau
+        setTimeout(() => { isProcessing = false; }, 2000);
+      });
+  }
+
+  const html5QrCode = new Html5Qrcode("reader");
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    onScanSuccess
+  );
+</script>
+{% endblock %}
