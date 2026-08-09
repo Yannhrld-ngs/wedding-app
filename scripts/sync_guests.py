@@ -1,5 +1,5 @@
 """
-Synchronise le CSV des invités (voir GUESTS_CSV_PATH dans app/config.py) vers
+Synchronise la liste des invités (voir GUESTS_PATH dans app/config.py) vers
 le log YAML : crée token, QR de check-in et fichier QR pour chaque nouvel
 invité, puis affiche le lien de carte de chacun.
 

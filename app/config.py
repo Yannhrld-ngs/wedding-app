@@ -2,23 +2,49 @@ import os
 import yaml
 from dotenv import load_dotenv
 
-load_dotenv()
 # If environment variable not exist, default values are provided below.
+load_dotenv()
+
+# Test 
+import urllib.parse
+from sqlalchemy import create_engine, text
 
 # --- Sécurité ---
 SECRET_KEY = os.getenv("SECRET_KEY", default=None)  # Clé secrète pour Flask (session, CSRF, etc.)
 SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", default="wedding_organizer_session")
 
-# --- Stockage  ---
-GUESTS_CSV_PATH = os.getenv("GUESTS_CSV_PATH", default="scripts/invites_exemple.csv")
-GUESTS_LOG_PATH = os.getenv("GUESTS_LOG_PATH", default="data/invites_log.yaml")
-ORGANIZERS_PATH = os.getenv("ORGANIZERS_PATH", default="data/organizers.yaml")
-QR_OUTPUT_DIR = os.getenv("QR_OUTPUT_DIR", default="app/static/qrcodes")
+# --- Connection à la base de donnée ---
+SQL_DATABASE = os.getenv("SQL_DATABASE", default=None)
+SQL_USERNAME = os.getenv("SQL_USERNAME", default=None)
+SQL_PASSWORD = os.getenv("SQL_PASSWORD", default=None)
+SQL_SERVER = os.getenv("SQL_SERVER", default=None)
+SQL_DB = False
+
+if SQL_USERNAME and SQL_PASSWORD and SQL_DATABASE and SQL_SERVER:
+    conn_str = "DRIVER={ODBC Driver 18 for SQL Server}" \
+              + f";Server=tcp:{SQL_SERVER},1433;Database={SQL_DATABASE};Uid={SQL_USERNAME};Pwd={SQL_PASSWORD};" \
+              + "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
+    try:
+        engine = create_engine("mssql+pyodbc:///?odbc_connect=" + urllib.parse.quote_plus(conn_str), echo=False)
+        
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT name FROM sys.tables ORDER BY name;"))
+            all_tables = [row[0] for row in result]
+            #required_tables = ["guests", "organizers", "invites_log"]
+            required_tables = ["test_guests"]
+            missing_tables = [table for table in required_tables if table not in all_tables]
+            if missing_tables:
+                raise FileNotFoundError(f"Les tables suivantes sont manquantes dans la base de données {SQL_DATABASE}: {', '.join(missing_tables)}")
+
+    except Exception as e:
+        print(f"Erreur lors de la connexion à la base de données {SQL_DATABASE} :", e)
+    SQL_DB = True
+
 
 # --- Infos du mariage --- 
 # save personal information in a yaml file that must be included in .gitignore 
 # to avoid sharing personal information publicly
-with open("data/config.yaml", "r") as f:
+with open("inputs/config.yaml", "r") as f:
     default_config = yaml.safe_load(f) 
 
 WEDDING_NAME1 = os.getenv("WEDDING_NAME1", default=default_config["inputs"]["WEDDING_NAME1"])
@@ -28,6 +54,14 @@ VENUE_NAME = os.getenv("VENUE_NAME", default=default_config["inputs"]["VENUE_NAM
 VENUE_CIVIL = os.getenv("VENUE_CIVIL", default=default_config["inputs"]["VENUE_CIVIL"])
 VENUE_RECEPTION = os.getenv("VENUE_RECEPTION", default=default_config["inputs"]["VENUE_RECEPTION"])
 
+# --- Local files  ---
+GUESTS_PATH = "inputs/invites_list.csv"
+QR_OUTPUT_DIR = "app/static/qrcodes"
+GUESTS_LOG_PATH = "data/invites_log.yaml" 
+ORGANIZERS_PATH = "data/organizers.yaml"
+
+
+# --- Questionary  ---
 VENUE_ACCESS_INFO = [
     {"mode": "Voiture", "detail": "Parking sur place, à compléter"},
     {"mode": "Train", "detail": "Gare de Dax, puis taxi/covoiturage, à compléter"},
@@ -45,3 +79,14 @@ COVER_IMAGE_URL = os.getenv("COVER_IMAGE_URL", default="/static/Images/couvertur
 
 # URL de base utilisée pour générer les liens dans les QR codes
 BASE_URL = os.getenv("BASE_URL", default="http://localhost:8000")
+
+# List des personnes autorisées à se connecter à l'interface organisateur (login, mot de passe)
+ORGANIZER_ROLES = ["orga", "decoration","cuisine"]
+
+# --- Envoi d'email (création / réinitialisation de mot de passe organisateur) ---
+# Si SMTP_HOST n'est pas défini, le lien est simplement affiché dans la console (mode dev).
+SMTP_HOST = os.getenv("SMTP_HOST", default=None)
+SMTP_PORT = int(os.getenv("SMTP_PORT", default="587"))
+SMTP_USER = os.getenv("SMTP_USER", default=None)
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", default=None)
+SMTP_FROM = os.getenv("SMTP_FROM", default=f"no-reply@mariage-{WEDDING_NAME1}-et-{WEDDING_NAME2}.org")

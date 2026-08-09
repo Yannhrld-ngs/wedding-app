@@ -57,12 +57,12 @@ class Sexe(str, enum.Enum):
 class Invite:
     prenom: str
     nom: str
+    categorie: str
     token: str
     qr_uuid: str
-    email: Optional[str] = None
     sexe: Sexe = Sexe.homme
-    categorie: Optional[str] = None
-
+    role: Optional[str] = None
+    mail: Optional[str] = None
     statut_presence: PresenceStatus = PresenceStatus.en_attente
     allergies: Optional[str] = None
     mode_transport: Optional[TransportMode] = None

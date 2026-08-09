@@ -31,12 +31,21 @@ Run for getting invit link for all invites.
 python scripts/sync_guests.py
 ```
 
-## Running the app
+## Running the app from CLI
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
+## Running the app from docker
+
+```bash
+docker build -t wedding-app .
+```
+```bash
+docker run -p 8000:8000 --env-file .env -v "$(pwd)/inputs:/app/inputs" -v "$(pwd)/data:/app/data" wedding-app
+```
+  
 - Invit card link : `http://localhost:8000/invite/nom-prenom-xxxx`
 - Login organizer : `http://localhost:8000/organizer/login`
 - Dashboard : `http://localhost:8000/organizer/dashboard`

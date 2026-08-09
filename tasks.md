@@ -1,11 +1,12 @@
 ## À faire
-- [ ] Modification du questionnaire
-- [ ] Orga - Creation de compte avec username et password à remplir automatiquement
-- [ ] Deploiment sur le web 
-- [ ] Sauvegarde ailleurs des variables importantes
+- [ ] Modification du questionnaire , Ajout de date dans son calendrier
+- [ ] Modification invit: Ajout couleurs
 
 ## En cours
-- [ ] Design des templates 
+- [ ] Deploiment sur Azure Web - Test
 
 ## Fait
+- [X] Passage en MSSQL 
+- [X] Orga - Creation de compte avec username et password à remplir automatiquement
 - [x] Squelette FastAPI de base
+- [x] Design templates Invitation

@@ -75,19 +75,3 @@ def questionnaire_submit(
     store.save_guest(invite)
 
     return RedirectResponse(url=f"/invite/{token}?merci=1", status_code=303)
-
-
-@router.get("/{token}/acces")
-def acces_lieu(token: str, request: Request):
-    invite = get_invite_or_404(token)  # on garde le contrôle d'accès par token même ici
-    return templates.TemplateResponse(
-        "access.html",
-        {
-            "request": request,
-            "invite": invite,
-            "venue_civil": config.VENUE_CIVIL,
-            "venue_reception": config.VENUE_RECEPTION,
-            "venue_access_info": config.VENUE_ACCESS_INFO,
-            "venue_schedule": config.VENUE_SCHEDULE,
-        },
-    )

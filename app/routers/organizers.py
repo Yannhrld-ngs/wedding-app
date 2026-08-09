@@ -4,11 +4,15 @@ from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
-from app import store
+from app import store, config
+from app.mailer import send_email
 from app.models import PresenceStatus
 from app.security import (
     verify_password,
+    hash_password,
     create_session_token,
+    create_password_reset_token,
+    read_password_reset_token,
     get_current_organizer_login,
 )
 from app.config import SESSION_COOKIE_NAME
@@ -49,6 +53,95 @@ def logout():
     response = RedirectResponse(url="/organizer/login", status_code=303)
     response.delete_cookie(SESSION_COOKIE_NAME)
     return response
+
+
+@router.get("/request-password-reset")
+def request_password_reset_form(request: Request):
+    return templates.TemplateResponse("organizer_request_password_reset.html", {"request": request})
+
+
+@router.post("/request-password-reset")
+def request_password_reset_submit(request: Request, email: str = Form(...)):
+    organizer = store.find_accepted_organizer_by_mail(email)
+
+    if organizer:
+        token = create_password_reset_token(organizer.mail)
+        reset_link = f"{config.BASE_URL}/organizer/reset-password/{token}"
+        send_email(
+            to=organizer.mail,
+            subject=f"Créer votre mot de passe organisateur — {config.WEDDING_NAME1} & {config.WEDDING_NAME2}",
+            body=(
+                f"Bonjour {organizer.prenom} {organizer.nom},\n\n"
+                "Cliquez sur ce lien pour créer (ou réinitialiser) votre mot de passe "
+                f"organisateur. Le lien est valable 1 heure :\n\n{reset_link}\n"
+                f"\n\n\n\nCeci est un mail automatique. Veuillez ne pas répondre."
+            ),
+        )
+
+        return templates.TemplateResponse(
+            "organizer_request_password_reset.html",
+            {
+                "request": request,
+                "confirmation": "Un lien vient de vous être envoyé sur l'adresse email renseignée."
+                "En cas de non réception veuillez patienter quelque secondes ou consulter vos SPAM",
+                "test":True,
+            },
+        )
+    else:
+        return templates.TemplateResponse(
+            "organizer_request_password_reset.html",
+            {
+                "request": request,
+                "confirmation": "Vous ne figurez pas parmi les organisateurs.",
+                "test":True,
+            },
+        )  
+
+@router.get("/reset-password/{token}")
+def reset_password_form(token: str, request: Request):
+    is_mail_valid = read_password_reset_token(token)
+
+    if not is_mail_valid:
+        return templates.TemplateResponse(
+            "organizer_reset_password.html",
+            {"request": request, "invalide": True},
+            status_code=400,
+        )
+
+    return templates.TemplateResponse(
+        "organizer_reset_password.html",
+        {"request": request, "token": token, "invalide": False, "inexist": False},
+    )
+
+
+@router.post("/reset-password/{token}")
+def reset_password_submit(
+    token: str,
+    request: Request,
+    password: str = Form(...),
+    password_confirmation: str = Form(...),
+):
+    email = read_password_reset_token(token)
+    if not email:
+        return templates.TemplateResponse(
+            "organizer_reset_password.html",
+            {"request": request, "invalide": True},
+            status_code=400,
+        )
+
+    if password != password_confirmation:
+        return templates.TemplateResponse(
+            "organizer_reset_password.html",
+            {
+                "request": request,
+                "token": token,
+                "invalide": False,
+                "erreur": "Les mots de passe ne correspondent pas.",
+            },
+        )
+
+    store.set_organizer_password(email, hash_password(password))
+    return RedirectResponse(url="/organizer/login?mot_de_passe_defini=1", status_code=303)
 
 
 @router.get("/dashboard")

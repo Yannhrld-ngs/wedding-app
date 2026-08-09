@@ -8,6 +8,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 serializer = URLSafeTimedSerializer(SECRET_KEY)
 
 SESSION_MAX_AGE = 60 * 60 * 12  # 12h, largement suffisant pour le jour J
+RESET_TOKEN_MAX_AGE = 60 * 60  # 1h de validité pour un lien de création/réinitialisation de mot de passe
 
 
 def hash_password(password: str) -> str:
@@ -28,6 +29,21 @@ def read_session_token(token: str) -> str | None:
         return data.get("login")
     except (BadSignature, SignatureExpired):
         return None
+
+
+def create_password_reset_token(email: str) -> str:
+    return serializer.dumps({"email": email, "purpose": "password_reset"})
+
+
+def read_password_reset_token(token: str) -> str | None:
+    """Retourne l'email si le token est valide et non expiré, sinon None."""
+    try:
+        data = serializer.loads(token, max_age=RESET_TOKEN_MAX_AGE)
+    except (BadSignature, SignatureExpired):
+        return None
+    if data.get("purpose") != "password_reset":
+        return None
+    return data.get("email")
 
 
 def get_current_organizer_login(request: Request) -> str:

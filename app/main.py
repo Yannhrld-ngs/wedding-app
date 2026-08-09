@@ -10,4 +10,4 @@ app.include_router(organizers.router)
 
 @app.get("/")
 def racine():
-    return {"message": "Wedding App en ligne. Utilisez le lien de votre carte d'invitation."}
+    return {"message": "Wedding Organizer API"} 
