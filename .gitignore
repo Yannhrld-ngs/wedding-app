@@ -15,8 +15,9 @@ __pycache__/
 
 # Folders with sensitive files
 data/
-inputs/
+input/config.yaml
 app/static/
+
 
 # Compressed files
 *.tar
