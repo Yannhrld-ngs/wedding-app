@@ -86,9 +86,5 @@ BASE_URL = os.getenv("BASE_URL", default="http://localhost:8000")
 ORGANIZER_ROLES = ["orga", "decoration","cuisine"]
 
 # --- Envoi d'email (création / réinitialisation de mot de passe organisateur) ---
-# Si SMTP_HOST n'est pas défini, le lien est simplement affiché dans la console (mode dev).
-SMTP_HOST = os.getenv("SMTP_HOST", default=None)
-SMTP_PORT = int(os.getenv("SMTP_PORT", default="587"))
-SMTP_USER = os.getenv("SMTP_USER", default=None)
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", default=None)
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", default=None)
 SMTP_FROM = os.getenv("SMTP_FROM", default=f"no-reply@mariage-{WEDDING_NAME1}-et-{WEDDING_NAME2}.org")

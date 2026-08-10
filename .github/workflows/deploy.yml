@@ -2,7 +2,6 @@ name: Deploy
 
 on:
   push:
-    branches: [main]
     tags:
       - '*deploy*'
 
@@ -26,5 +25,6 @@ jobs:
               --name wedding-app \
               --restart always \
               -p 127.0.0.1:8000:8000 \
+              -v ~/wedding-app/data:/app/data \
               --env-file .env \
               wedding-app:latest

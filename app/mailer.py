@@ -1,24 +1,30 @@
-"""Envoi d'email minimal (smtplib, stdlib). Si SMTP n'est pas configuré dans
-.env (SMTP_HOST/SMTP_USER/SMTP_PASSWORD), le message est simplement affiché
-dans la console — pratique en dev, sans dépendance externe à installer."""
-import smtplib
-from email.message import EmailMessage
+"""Envoi d'email via l'API Brevo (HTTPS, port 443) plutôt que SMTP — certains
+hébergeurs bloquent les ports SMTP sortants (25/465/587), l'API HTTPS n'a pas
+ce problème. Si BREVO_API_KEY n'est pas configuré dans .env, le message est
+simplement affiché dans la console — pratique en dev."""
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
 
 from app import config
 
 
 def send_email(to: str, subject: str, body: str) -> None:
-    if not (config.SMTP_HOST and config.SMTP_USER and config.SMTP_PASSWORD):
-        print(f"[email non envoyé — SMTP non configuré]\nÀ : {to}\nSujet : {subject}\n\n{body}")
+    if not config.BREVO_API_KEY:
+        print(f"[email non envoyé — BREVO_API_KEY non configurée]\nÀ : {to}\nSujet : {subject}\n\n{body}")
         return
 
-    msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["From"] = config.SMTP_FROM
-    msg["To"] = to
-    msg.set_content(body)
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key["api-key"] = config.BREVO_API_KEY
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
 
-    with smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT) as server:
-        server.starttls()
-        server.login(config.SMTP_USER, config.SMTP_PASSWORD)
-        server.send_message(msg)
+    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+        sender={"email": config.SMTP_FROM},
+        to=[{"email": to}],
+        subject=subject,
+        text_content=body,
+    )
+
+    try:
+        api_instance.send_transac_email(send_smtp_email)
+    except ApiException as e:
+        print(f"[échec envoi email via l'API Brevo] À : {to}\n{e}")
