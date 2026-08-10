@@ -10,7 +10,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy the app
+      - name: Deploying 
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_IP }}
