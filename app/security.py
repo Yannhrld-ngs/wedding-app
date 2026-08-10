@@ -51,5 +51,5 @@ def get_current_organizer_login(request: Request) -> str:
     token = request.cookies.get(SESSION_COOKIE_NAME)
     login = read_session_token(token) if token else None
     if not login:
-        raise HTTPException(status_code=status.HTTP_303_SEE_OTHER, headers={"Location": "/organizer/login"})
+        raise HTTPException(status_code=status.HTTP_303_SEE_OTHER, headers={"Location": "/organisateur/login"})
     return login

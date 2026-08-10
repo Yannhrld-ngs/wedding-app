@@ -47,7 +47,7 @@ docker run -p 8000:8000 --env-file .env -v "$(pwd)/inputs:/app/inputs" -v "$(pwd
 ```
   
 - Invit card link : `http://localhost:8000/invite/nom-prenom-xxxx`
-- Login organizer : `http://localhost:8000/organizer/login`
-- Dashboard : `http://localhost:8000/organizer/dashboard`
-- QR Scan : `http://localhost:8000/organizer/scan` (nécessite HTTPS ou
+- Login organizer : `http://localhost:8000/organisateur/login`
+- Dashboard : `http://localhost:8000/organisateur/dashboard`
+- QR Scan : `http://localhost:8000/organisateur/scan` (nécessite HTTPS ou
   localhost pour l'accès caméra du navigateur)

@@ -10,7 +10,7 @@ import urllib.parse
 from sqlalchemy import create_engine, text
 
 # --- Sécurité ---
-SECRET_KEY = os.getenv("SECRET_KEY", default=None)  # Clé secrète pour Flask (session, CSRF, etc.)
+SECRET_KEY = os.getenv("SECRET_KEY", default="secret")
 SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", default="wedding_organizer_session")
 
 # --- Connection à la base de donnée ---
@@ -74,8 +74,10 @@ VENUE_SCHEDULE = [
     {"heure": "22h00", "moment": "Soirée dansante"},
 ]
 
-# Photo de couverture affichée sur la carte d'invitation (chemin servi via /static)
+# Images
 COVER_IMAGE_URL = os.getenv("COVER_IMAGE_URL", default="/static/Images/couverture-invitation.png")
+WEDDING_COLORS_URL= os.getenv("WEDDING_COLORS_URL", default="/static/Images/couleur-mariage.png")
+HOME_IMAGE_URL = os.getenv("HOME_IMAGE_URL", default="/static/Images/home.png")
 
 # URL de base utilisée pour générer les liens dans les QR codes
 BASE_URL = os.getenv("BASE_URL", default="http://localhost:8000")

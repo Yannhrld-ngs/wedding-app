@@ -17,7 +17,7 @@ from app.security import (
 )
 from app.config import SESSION_COOKIE_NAME
 
-router = APIRouter(prefix="/organizer", tags=["organizers"])
+router = APIRouter(prefix="/organisateur", tags=["organizers"])
 templates = Jinja2Templates(directory="app/templates")
 
 
@@ -41,7 +41,7 @@ def login_submit(
         )
 
     token = create_session_token(login)
-    response = RedirectResponse(url="/organizer/dashboard", status_code=303)
+    response = RedirectResponse(url="/organisateur/dashboard", status_code=303)
     response.set_cookie(
         SESSION_COOKIE_NAME, token, httponly=True, samesite="lax", secure=False  # secure=True en prod (HTTPS)
     )
@@ -50,7 +50,7 @@ def login_submit(
 
 @router.get("/logout")
 def logout():
-    response = RedirectResponse(url="/organizer/login", status_code=303)
+    response = RedirectResponse(url="/organisateur/login", status_code=303)
     response.delete_cookie(SESSION_COOKIE_NAME)
     return response
 
@@ -66,7 +66,7 @@ def request_password_reset_submit(request: Request, email: str = Form(...)):
 
     if organizer:
         token = create_password_reset_token(organizer.mail)
-        reset_link = f"{config.BASE_URL}/organizer/reset-password/{token}"
+        reset_link = f"{config.BASE_URL}/organisateur/reset-password/{token}"
         send_email(
             to=organizer.mail,
             subject=f"Créer votre mot de passe organisateur — {config.WEDDING_NAME1} & {config.WEDDING_NAME2}",
@@ -141,7 +141,7 @@ def reset_password_submit(
         )
 
     store.set_organizer_password(email, hash_password(password))
-    return RedirectResponse(url="/organizer/login?mot_de_passe_defini=1", status_code=303)
+    return RedirectResponse(url="/organisateur/login?mot_de_passe_defini=1", status_code=303)
 
 
 @router.get("/dashboard")
@@ -154,6 +154,8 @@ def dashboard(
     presents_prevus = sum(1 for i in invites if i.statut_presence == PresenceStatus.present)
     checked_in = sum(1 for i in invites if i.checked_in)
 
+    organizer = store.find_accepted_organizer_by_mail(login)
+
     return templates.TemplateResponse(
         "organizer_dashboard.html",
         {
@@ -163,6 +165,8 @@ def dashboard(
             "presents_prevus": presents_prevus,
             "checked_in": checked_in,
             "organizer_login": login,
+            "organizer_name": f"{organizer.prenom} {organizer.nom}" if organizer else login,
+            "organizer_role": organizer.role if organizer else None,
         },
     )
 

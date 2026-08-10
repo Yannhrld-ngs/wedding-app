@@ -1,48 +1,30 @@
-
-name: Build and Deploy
+name: Deploy
 
 on:
   push:
     branches: [main]
+    tags:
+      - '*deploy*'
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Login Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build & push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/wedding-app:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/wedding-app:${{ github.sha }}
-
   deploy:
-    needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Déployer sur la VM
+      - name: Deploy the app
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
+          username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/wedding-app:latest
+            cd ~/wedding-app
+            git pull origin main
+            docker build -t wedding-app:latest .
             docker stop wedding-app || true
             docker rm wedding-app || true
             docker run -d \
               --name wedding-app \
               --restart always \
               -p 127.0.0.1:8000:8000 \
-              --env-file /home/azureuser/wedding-app/.env \
-              ${{ secrets.DOCKERHUB_USERNAME }}/wedding-app:latest
+              --env-file .env \
+              wedding-app:latest

@@ -9,3 +9,11 @@ __pycache__/
 
 # Git
 .git/
+
+# Config et données sensibles (montées en volume au runtime, pas dans l'image)
+.env
+data/
+inputs/
+
+# Archives (ex. exports docker save, ne doivent jamais être dans le contexte de build)
+*.tar

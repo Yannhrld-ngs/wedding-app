@@ -3,7 +3,8 @@
 - [ ] Modification invit: Ajout couleurs
 
 ## En cours
-- [ ] Deploiment sur Azure Web - Test
+- [ ] Deploiment sur le cloud
+- [ ] Add loggin file 
 
 ## Fait
 - [X] Passage en MSSQL 

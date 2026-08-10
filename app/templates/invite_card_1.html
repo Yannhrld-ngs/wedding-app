@@ -113,10 +113,10 @@
   }
   .hero h2 .amp{
     font-style:italic;
-    color:var(--sage-dark);
+    color:var(--terracotta-dark);
   }
   .hero h2 .token{
-    color:var(--sage-dark);
+    color:var(--terracotta);
     font-style:italic;
   }
 
@@ -377,15 +377,15 @@
 
   /* ---------- FOOTER ---------- */
   footer{
-    background:var(--sage);
-    color:var(--cream);
+    background:var(--cream);
+    color:var(--terracotta-dark);
     text-align:center;
     padding:64px 24px 48px;
   }
   footer .display{
     font-size:28px;
     font-style:italic;
-    color:var(--cream);
+    color:var(--terracotta-dark);
     margin-bottom:10px;
   }
   footer p{ font-size:13.5px; opacity:0.85; }
@@ -450,12 +450,11 @@
         Un court paragraphe pour raconter votre rencontre, une anecdote, ou simplement
         votre impatience de partager ce moment. Gardez-le sincère et bref.
       </p>
-      <h3>Quelques mots sur le mariage</h3>
+      <h3>Notre thème</h3>
       <p>
-      Nous avons choisis comme thème de mariage le style "bohème chic", bla bla bla
-      Nous vous attendons en couleurs terracotta, bla bla bla.
+      Nous avons choisis comme thème de mariage le style "bohème chic", car bla bla bla
       </p>
-      <p class="meta">Rendez-vous le <span class="token">{{ wedding_date }}</span>, dans le <span class="token">{{ venue_name }}</span>.</p>
+      <!-- <p class="meta">Rendez-vous le <span class="token">{{ wedding_date }}</span>, dans le <span class="token">{{ venue_name }}</span>.</p> -->
     </div>
   </section>
 
@@ -464,28 +463,63 @@
     <div class="intro">
       <span class="emoji">📖</span>
       <p class="eyebrow">Informations pratiques</p>
-      <h2>Le grand jour</h2>
+      <!-- <h2>Le grand jour</h2> -->
+      <p> <br/> </p>
+      <div style="font-family: sans-serif; text-align: center;">
+        <p style="margin-bottom: 12px; font-weight: 500;"> Le code couleur retenu met à l'honneur <strong style="color: #C36850;">les nuances de terracotta.</strong> </p>
+          <p> <br/> </p>
+          <!-- Color Palette Container -->
+          <div style="display: flex; gap: 45px; justify-content: center; align-items: center; flex-wrap: wrap;">
+            <div style="text-align: center;">
+              <div style="width: 45px; height: 45px; background-color: #B85337; border-radius: 50%; margin: 0 auto 10px;"></div>
+              <span style="font-size: 0.6em; color: #555;">Terre cuite</span>
+            </div>
+            <div style="text-align: center;">
+              <div style="width: 45px; height: 45px; background-color: #C36850; border-radius: 50%; margin: 0 auto 10px;"></div>
+              <span style="font-size: 0.6em; color: #555;">Terracotta</span>
+            </div>
+            <div style="text-align: center;">
+              <div style="width: 45px; height: 45px; background-color: #D07D63; border-radius: 50%; margin: 0 auto 10px;"></div>
+              <span style="font-size: 0.6em; color: #555;">Argile</span>
+            </div>
+            <div style="text-align: center;">
+              <div style="width: 45px; height: 45px; background-color: #DC8E75; border-radius: 50%; margin: 0 auto 10px;"></div>
+              <span style="font-size: 0.6em; color: #555;">Saumon</span>
+            </div>
+            <div style="text-align: center;">
+              <div style="width: 45px; height: 45px; background-color: #E2B2A0; border-radius: 50%; margin: 0 auto 10px;"></div>
+              <span style="font-size: 0.6em; color: #555;">Rose poudré</span>
+            </div>
+            <div style="text-align: center;">
+              <div style="width: 45px; height: 45px; background-color: #EAD0C5; border-radius: 50%; margin: 0 auto 10px;"></div>
+              <span style="font-size: 0.6em; color: #555;">Sable rosé</span>
+            </div>
+          </div>
+      </div>
+      <p> <br/> <br/> </p>
+
       <p>Tout ce qu'il faut savoir pour nous rejoindre le jour J.</p>
+        <div class="infos-grid">
+          <div class="info-card">
+            <div class="info-icon" aria-hidden="true">📅</div>
+            <h4>Date</h4>
+            <p>{{ wedding_date }}</p>
+          </div>
+        <div class="info-card">
+          <div class="info-icon" aria-hidden="true">✍️</div> <!--🏛️-->
+          <h4>Mariage civil</h4>
+          <p>{{ venue_civil }}</p>
+        </div>
+          <div class="info-card">
+            <div class="info-icon" aria-hidden="true">📍</div>
+            <h4>Lieu de réception</h4>
+            <p>{{ venue_reception }}</p>
+          </div>
+        </div>
+
     </div>
 
-    <div class="infos-grid">
-      <div class="info-card">
-        <div class="info-icon" aria-hidden="true">📅</div>
-        <h4>Date</h4>
-        <p>{{ wedding_date }}</p>
-      </div>
-    <div class="info-card">
-      <div class="info-icon" aria-hidden="true">🏛️</div>
-      <h4>Mariage civil</h4>
-      <p>{{ venue_civil }}</p>
-    </div>
-      <div class="info-card">
-        <div class="info-icon" aria-hidden="true">📍</div>
-        <h4>Lieu de réception</h4>
-        <p>{{ venue_reception }}</p>
-      </div>
-    </div>
-
+    
     <!-- ==== QR code : check-in jour J uniquement (scan à l'accueil) ==== -->
     <div class="qr-section">
       <p class="eyebrow">Le jour J</p>
@@ -517,7 +551,7 @@
         <div class="rail"><div class="dot"></div><div class="stem"></div></div>
         <div class="content">
           <h4>Mariage civil</h4>
-          <p>Célébration devant l'officier de l'état civil à la Mairie de Dax. Présence non obligatoire.</p>
+          <p>Célébration devant l'officier de l'état civil à la Mairie de Dax. <strong>Présence non obligatoire</strong></p>
         </div>
       </div>
       <div class="timeline-item">
@@ -581,7 +615,7 @@
         <div class="rail"><div class="dot"></div></div>
         <div class="content">
           <h4>After</h4>
-          <p>Soirée détente, jeux et bonne humeur jusqu'au bout de la nuit. Présence non obligatoire.</p>
+          <p>Soirée détente, jeux et bonne humeur jusqu'au bout de la nuit. <strong>Présence non obligatoire</strong></p>
         </div>
       </div>
     </div>
@@ -609,6 +643,7 @@
   <footer>
     <p class="display">Avec joie et impatience</p>
     <p>{{ wedding_name1 }} &amp; {{ wedding_name2 }} · {{ wedding_date }} · {{ venue_name }}</p>
+    <p style="margin-top:20px;"><a href="/">← Retour à l'accueil</a></p>
   </footer>
 
 </body>

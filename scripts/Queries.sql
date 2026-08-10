@@ -15,3 +15,4 @@ CREATE TABLE test_invites_list (
     PRIMARY KEY (prenom, nom)
 ); 
 */
+Select * from test_guests;

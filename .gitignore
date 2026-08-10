@@ -13,8 +13,10 @@ __pycache__/
 # Base de données locale
 *.db
 
-# data
+# Folders with sensitive files
 data/
+inputs/
+app/static/
 
-# Images PNG (QR codes, photos)
-*.png
+# Compressed files
+*.tar

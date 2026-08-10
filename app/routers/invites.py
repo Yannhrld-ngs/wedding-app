@@ -34,6 +34,7 @@ def carte_invitation(token: str, request: Request):
             "venue_reception": config.VENUE_RECEPTION,
             "venue_schedule": config.VENUE_SCHEDULE,
             "cover_image_url": config.COVER_IMAGE_URL,
+            "wedding_colors_url":config.WEDDING_COLORS_URL,
             "qr_code_url": store.qr_code_url(invite),
         },
     )

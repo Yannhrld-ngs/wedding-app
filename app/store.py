@@ -223,7 +223,7 @@ def load_guests(organizer_only: bool = False) -> list[Invite]:
 
 
 def list_guests() -> list[Invite]:
-    return sorted(load_guests(), key=lambda g: (g.nom, g.prenom))
+    return sorted(load_guests(), key=lambda g: (g.prenom, g.nom))
 
 
 def get_by_token(token: str) -> Optional[Invite]:
@@ -232,6 +232,15 @@ def get_by_token(token: str) -> Optional[Invite]:
 
 def get_by_qr_uuid(qr_uuid: str) -> Optional[Invite]:
     return next((g for g in load_guests() if g.qr_uuid == qr_uuid), None)
+
+
+def get_by_token_suffix(suffix: str) -> Optional[Invite]:
+    """Retrouve un invité à partir des derniers caractères de son token
+    (ex : le code à 4 caractères que le site d'accueil demande aux invités)."""
+    suffix = (suffix or "").strip().lower()
+    if not suffix:
+        return None
+    return next((g for g in load_guests() if g.token.lower().endswith(suffix)), None)
 
 
 def save_guest(invite: Invite) -> None:

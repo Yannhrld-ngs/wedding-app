@@ -1,9 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Dashboard organisateur{% endblock %}
 {% block content %}
+
+<style>
+  .dashboard-table th, .dashboard-table td { border-bottom: none; }
+  .dashboard-table tr:nth-child(even) { background: #faf8f5; }
+
+</style>
 <div style="display:flex; justify-content:space-between; align-items:center;">
-  <h2>Tableau de bord — {{ organizer_login }}</h2>
-  <a href="/organizer/logout">Déconnexion</a>
+  <h2>Tableau de bord — {{ organizer_name }}{% if organizer_role %} ({{ organizer_role }}){% endif %}</h2>
+  <a href="/organisateur/logout">Déconnexion</a>
 </div>
 
 <div class="stats">
@@ -12,24 +18,29 @@
   <div class="stat"><div class="value">{{ checked_in }}</div>Validés le jour J</div>
 </div>
 
-<p><a class="button" href="/organizer/scan">📷 Scanner un QR code</a></p>
+<p><a class="button" href="/organisateur/scan">📷 Scanner un QR code</a></p>
 
-<div class="card">
-  <table>
+<div>
+  <table class="dashboard-table">
     <tr>
       <th>Invité</th>
       <th>Sexe</th>
       <th>Catégorie</th>
+      <th>Rôle</th>
+      <th>Code invité</th>
       <th>Réponse</th>
       <th>Allergies</th>
       <th>Transport</th>
       <th>Check-in</th>
+      <th>Envoyer l'invitation</th>
     </tr>
     {% for invite in invites %}
     <tr>
       <td>{{ invite.prenom }} {{ invite.nom }}</td>
       <td>{{ invite.sexe.value | capitalize }}</td>
       <td>{{ invite.categorie or "—" }}</td>
+      <td>{{ invite.role or "—" }}</td>
+      <td><code>{{ invite.token[-4:] | upper }}</code></td>
       <td>
         {% if invite.statut_presence.value == "present" %}
           <span class="badge badge-ok">Présent</span>
@@ -47,6 +58,11 @@
         {% else %}
           <span class="badge badge-pending">Non validé</span>
         {% endif %}
+      </td>
+      <td>
+        <button type="button" class="button" data-token="{{ invite.token }}" onclick="alert('Fonction pas encore développée')">
+          Envoyer
+        </button>
       </td>
     </tr>
     {% endfor %}
