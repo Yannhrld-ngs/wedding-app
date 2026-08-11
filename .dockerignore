@@ -10,6 +10,9 @@ __pycache__/
 # Git
 .git/
 
+# Vscode
+.vscode
+
 # Config et données sensibles (montées en volume au runtime, pas dans l'image)
 .env
 data/

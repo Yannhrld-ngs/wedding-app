@@ -1,4 +1,4 @@
-prenom,nom,sexe,categorie, role, mail
-Marie,Dupont,femme,famille, , 
-Jean,Martin,homme,amis, , 
-Fatou,Diallo,femme,collegues, orga, 
+prenom,nom,sexe,categorie, role, mail, contact
+Marie,Dupont,femme,famille, , ,
+Jean,Martin,homme,amis, , ,
+Fatou,Diallo,femme,collegues, orga, , 

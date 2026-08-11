@@ -5,7 +5,15 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app import store, config
-from app.models import Invite, PresenceStatus, TransportMode
+from app.models import (
+    Invite,
+    Logement,
+    OuiNon,
+    OuiNonPasConcerne,
+    PresenceStatus,
+    RestrictionAlimentaire,
+    TransportMode,
+)
 
 router = APIRouter(prefix="/invite", tags=["invites"])
 templates = Jinja2Templates(directory="app/templates")
@@ -49,6 +57,7 @@ def questionnaire_form(token: str, request: Request):
             "request": request,
             "invite": invite,
             "transport_modes": list(TransportMode),
+            "venue_name": config.VENUE_NAME,
         },
     )
 
@@ -57,19 +66,43 @@ def questionnaire_form(token: str, request: Request):
 def questionnaire_submit(
     token: str,
     request: Request,
-    presence: str = Form(...),
-    allergies: str = Form(""),
-    mode_transport: str = Form(""),
+    presence_mairie: str = Form(...),
+    presence_reception: str = Form(...),
+    presence_after: str = Form(...),
+    nombre_enfants: int = Form(0),
+    mode_transport: str = Form(...),
     transport_details: str = Form(""),
+    covoiturage_possible: str = Form(...),
+    navette_souhaitee: str = Form(...),
+    logement: str = Form(...),
+    restriction_alimentaire: str = Form(...),
+    restriction_alimentaire_autre: str = Form(""),
 ):
     invite = get_invite_or_404(token)
 
-    invite.statut_presence = (
-        PresenceStatus.present if presence == "present" else PresenceStatus.absent
-    )
-    invite.allergies = allergies or None
-    invite.mode_transport = TransportMode(mode_transport) if mode_transport else None
+    invite.presence_mairie = OuiNon(presence_mairie)
+    invite.presence_reception = OuiNon(presence_reception)
+    invite.presence_after = OuiNon(presence_after)
+    invite.nombre_enfants = max(0, nombre_enfants)
+    invite.mode_transport = TransportMode(mode_transport)
     invite.transport_details = transport_details or None
+    invite.covoiturage_possible = OuiNonPasConcerne(covoiturage_possible)
+    invite.navette_souhaitee = OuiNonPasConcerne(navette_souhaitee)
+    invite.logement = Logement(logement)
+    invite.restriction_alimentaire = RestrictionAlimentaire(restriction_alimentaire)
+    invite.restriction_alimentaire_autre = (
+        restriction_alimentaire_autre or None
+        if invite.restriction_alimentaire == RestrictionAlimentaire.autre
+        else None
+    )
+
+    # Statut global dérivé des réponses détaillées : présent si présent à la
+    # mairie et/ou à la réception, pas de question générique redondante.
+    invite.statut_presence = (
+        PresenceStatus.present
+        if OuiNon.oui in (invite.presence_mairie, invite.presence_reception)
+        else PresenceStatus.absent
+    )
     invite.questionnaire_rempli = True
     invite.questionnaire_rempli_le = datetime.utcnow()
 

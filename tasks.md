@@ -1,8 +1,10 @@
 ## À faire
-- [ ] Modification du questionnaire , Ajout de date dans son calendrier. Not being able to modify questionary 1 week before the wedding day.
+
 
 ## En cours
-- [] In organisateur/dashbord, Add a link to share send the message message: "Bonjour {invite.nom} {Invite.prenom} \n, votre invivation vous a été envoyée via {DOMAIN}. Votre code d'accès est {invite.link[-4::]}. \n N'oubliez pas de confirmer votre présence. En espérant vous revoir bientôt, {WEDDING_NAME_1} & {WEDDING_NAME_2}"
+- [] Modification du questionnaire , Ajout de date dans son calendrier.
+- [ ] Implementer modif du questionnaire une semaine avant.
+- [ ] Si scan différent du jour J, retourner un message, la fonctionalité sera activée le jour J
 - [ ] Add loggin file 
 
 ## Fait
@@ -14,3 +16,4 @@
 - [X] Deploiment sur le cloud
 - [X] Home page: should contain html with two link: invite (ask invite code) / organisateur/login (organzer shal become organisateur). 
 - [X] Automatic deployment: CI/CD 
+- [X] In organisateur/dashbord, Add a link to share send the message message: "Bonjour {invite.nom} {Invite.prenom} \n, votre invivation vous a été envoyée via {DOMAIN}. Votre code d'accès est {invite.link[-4::]}. \n N'oubliez pas de confirmer votre présence. En espérant vous revoir bientôt, {WEDDING_NAME_1} & {WEDDING_NAME_2}"

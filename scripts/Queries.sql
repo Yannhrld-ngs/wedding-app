@@ -15,4 +15,5 @@ CREATE TABLE test_invites_list (
     PRIMARY KEY (prenom, nom)
 ); 
 */
-Select * from test_guests;
+ALTER TABLE test_guests
+ADD contact VARCHAR(20) NULL;

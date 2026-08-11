@@ -3,35 +3,96 @@
 {% block content %}
 <div class="card">
   <h2>Questionnaire — {{ invite.prenom }} {{ invite.nom }}</h2>
+  <p>Merci de répondre à toutes les questions ci-dessous — la réponse ne peut pas être envoyée tant qu'il en manque une.
+    Si une question ne vous concerne pas, l'option "Pas concerné(e)" est prévue pour ça.</p>
+
   <form method="post" action="/invite/{{ invite.token }}/questionnaire">
 
-    <label>Serez-vous {{ invite.accord("présent", "présente") }} ?</label>
-    <select name="presence" required>
-      <option value="present" {% if invite.statut_presence.value == "present" %}selected{% endif %}>Je serai {{ invite.accord("présent", "présente") }}</option>
-      <option value="absent" {% if invite.statut_presence.value == "absent" %}selected{% endif %}>Je ne pourrai pas venir</option>
+    <!-- ---------- Présence ---------- -->
+    <label>Serez-vous {{ invite.accord("présent", "présente") }} à la mairie ?</label>
+    <select name="presence_mairie" required>
+      <option value="" disabled {% if not invite.presence_mairie %}selected{% endif %}>-- Choisir --</option>
+      <option value="oui" {% if invite.presence_mairie and invite.presence_mairie.value == "oui" %}selected{% endif %}>Oui</option>
+      <option value="non" {% if invite.presence_mairie and invite.presence_mairie.value == "non" %}selected{% endif %}>Non</option>
     </select>
 
-    <label>Allergies / restrictions alimentaires</label>
-    <textarea name="allergies" rows="3" placeholder="Ex : allergie aux fruits à coque, végétarien...">{{ invite.allergies or "" }}</textarea>
-
-    <label>Comment prévoyez-vous de rejoindre le lieu ?</label>
-    <select name="mode_transport">
-      <option value="">-- Choisir --</option>
-      {% for mode in transport_modes %}
-        <option value="{{ mode.value }}" {% if invite.mode_transport and invite.mode_transport.value == mode.value %}selected{% endif %}>
-          {{ mode.value | capitalize }}
-        </option>
-      {% endfor %}
+    <label>Serez-vous {{ invite.accord("présent", "présente") }} à la réception ?</label>
+    <select name="presence_reception" required>
+      <option value="" disabled {% if not invite.presence_reception %}selected{% endif %}>-- Choisir --</option>
+      <option value="oui" {% if invite.presence_reception and invite.presence_reception.value == "oui" %}selected{% endif %}>Oui</option>
+      <option value="non" {% if invite.presence_reception and invite.presence_reception.value == "non" %}selected{% endif %}>Non</option>
     </select>
 
-    <label>Précisions (optionnel)</label>
-    <textarea name="transport_details" rows="2" placeholder="Ex : je peux emmener 2 personnes en voiture">{{ invite.transport_details or "" }}</textarea>
+    <!-- ---------- Accompagnement ---------- -->
+    <label>Avez-vous des enfants de moins de 10 ans qui vous accompagnent ? Si oui, combien ?</label>
+    <input type="number" name="nombre_enfants" min="0" step="1" value="{{ invite.nombre_enfants }}" required>
+
+    <!-- ---------- Logistique / déplacement ---------- -->
+    <label>Comment prévoyez-vous de rejoindre la ville de {{ venue_name }} ?</label>
+    <select name="mode_transport" required>
+      <option value="" disabled {% if not invite.mode_transport %}selected{% endif %}>-- Choisir --</option>
+      <option value="pas_concerne" {% if invite.mode_transport and invite.mode_transport.value == "pas_concerne" %}selected{% endif %}>Pas concerné(e)</option>
+      <option value="voiture" {% if invite.mode_transport and invite.mode_transport.value == "voiture" %}selected{% endif %}>Voiture personnelle</option>
+      <option value="train" {% if invite.mode_transport and invite.mode_transport.value == "train" %}selected{% endif %}>Train</option>
+      <option value="covoiturage" {% if invite.mode_transport and invite.mode_transport.value == "covoiturage" %}selected{% endif %}>Covoiturage</option>
+      <option value="en_recherche" {% if invite.mode_transport and invite.mode_transport.value == "en_recherche" %}selected{% endif %}>En réflexion / recherche</option>
+      <option value="autre" {% if invite.mode_transport and invite.mode_transport.value == "autre" %}selected{% endif %}>Autre</option>
+    </select>
+
+    <label>Si "Autre", veuillez préciser</label>
+    <textarea name="transport_details" rows="2" placeholder="Ex : Auto-stop etc.">{{ invite.transport_details or "" }}</textarea>
+
+    <label>Si vous disposez d'un véhicule personnel, pensez-vous pouvoir proposer du covoiturage à d'autres invités ?</label>
+    <select name="covoiturage_possible" required>
+      <option value="pas_concerne" {% if not invite.covoiturage_possible or invite.covoiturage_possible.value == "pas_concerne" %}selected{% endif %}>Pas concerné(e)</option>
+      <option value="oui" {% if invite.covoiturage_possible and invite.covoiturage_possible.value == "oui" %}selected{% endif %}>Oui</option>
+      <option value="non" {% if invite.covoiturage_possible and invite.covoiturage_possible.value == "non" %}selected{% endif %}>Non</option>
+    </select>
+
+    <label>Pour info, le dernier train quitte la ville autours de 20h. En tenant compte de cela, serez-vous {{ invite.accord("présent", "présente") }} à l'after ?</label>
+    <select name="presence_after" required>
+      <option value="" disabled {% if not invite.presence_after %}selected{% endif %}>-- Choisir --</option>
+      <option value="oui" {% if invite.presence_after and invite.presence_after.value == "oui" %}selected{% endif %}>Oui</option>
+      <option value="non" {% if invite.presence_after and invite.presence_after.value == "non" %}selected{% endif %}>Non</option>
+    </select>
+
+    <label>Une navette sera mise à disposition de la gare jusqu'à la mairie/au lieu de réception. Souhaitez-vous en bénéficier ?</label>
+    <select name="navette_souhaitee" required>
+      <option value="pas_concerne" {% if not invite.navette_souhaitee or invite.navette_souhaitee.value == "pas_concerne" %}selected{% endif %}>Pas concerné(e)</option>
+      <option value="oui" {% if invite.navette_souhaitee and invite.navette_souhaitee.value == "oui" %}selected{% endif %}>Oui</option>
+      <option value="non" {% if invite.navette_souhaitee and invite.navette_souhaitee.value == "non" %}selected{% endif %}>Non</option>
+    </select>
+
+    <label>Si vous venez de loin ou comptez dormir aux alentours, avez-vous déjà {{ invite.accord("trouvé", "trouvée") }} un logement ?</label>
+    <select name="logement" required>
+      <option value="pas_concerne" {% if not invite.logement or invite.logement.value == "pas_concerne" %}selected{% endif %}>Pas concerné(e)</option>
+      <option value="oui" {% if invite.logement and invite.logement.value == "oui" %}selected{% endif %}>Oui</option>
+      <option value="toujours_en_recherche" {% if invite.logement and invite.logement.value == "toujours_en_recherche" %}selected{% endif %}>Toujours en recherche</option>
+      <option value="ne_sait_pas" {% if invite.logement and invite.logement.value == "ne_sait_pas" %}selected{% endif %}>Non, je ne sais où dormir</option>
+    </select>
+
+    <!-- ---------- Repas ---------- -->
+    <label>Avez-vous des restrictions alimentaires ?</label>
+    <select name="restriction_alimentaire" required>
+      <option value="aucune" {% if not invite.restriction_alimentaire or invite.restriction_alimentaire.value == "aucune" %}selected{% endif %}>Non</option>
+      <option value="halal" {% if invite.restriction_alimentaire and invite.restriction_alimentaire.value == "halal" %}selected{% endif %}>Halal</option>
+      <option value="vegetarien" {% if invite.restriction_alimentaire and invite.restriction_alimentaire.value == "vegetarien" %}selected{% endif %}>Végétarien</option>
+      <option value="vegetalien" {% if invite.restriction_alimentaire and invite.restriction_alimentaire.value == "vegetalien" %}selected{% endif %}>Végétalien</option>
+      <option value="sans_gluten" {% if invite.restriction_alimentaire and invite.restriction_alimentaire.value == "sans_gluten" %}selected{% endif %}>Sans gluten</option>
+      <option value="sans_sel" {% if invite.restriction_alimentaire and invite.restriction_alimentaire.value == "sans_sel" %}selected{% endif %}>Sans sel</option>
+      <option value="sans_sucre" {% if invite.restriction_alimentaire and invite.restriction_alimentaire.value == "sans_sucre" %}selected{% endif %}>Régime sans sucre</option>
+      <option value="sans_alcool" {% if invite.restriction_alimentaire and invite.restriction_alimentaire.value == "sans_alcool" %}selected{% endif %}>Sans alcool</option>
+      <option value="autre" {% if invite.restriction_alimentaire and invite.restriction_alimentaire.value == "autre" %}selected{% endif %}>Autre</option>
+    </select>
+
+    <label>Si "Autre", précisez laquelle</label>
+    <input type="text" name="restriction_alimentaire_autre" placeholder="Ex : allergie aux fruits de mer etc." value="{{ invite.restriction_alimentaire_autre or '' }}">
 
     <p style="margin-top: 24px;">
       <button class="button" type="submit">Envoyer ma réponse</button>
     </p>
 
-    <p> <strong>Attention ! Il sera impossible de modifier le questionnaire une semaine avant la date de l'evenement !</strong> </p>
+    <p><strong>Attention ! Il sera impossible de modifier le questionnaire une semaine avant la date de l'événement !</strong></p>
 
   </form>
   <p><a href="/invite/{{ invite.token }}">← Retour à l'invitation</a></p>

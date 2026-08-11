@@ -4,13 +4,22 @@
 <div class="card">
   <h2>Scanner un QR code</h2>
   <p><a href="/organisateur/dashboard">← Retour au tableau de bord</a></p>
-  <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
+
+  <label for="phaseSelect">Scan pour :</label>
+  <select id="phaseSelect">
+    <option value="mairie">Mairie</option>
+    <option value="reception">Réception</option>
+    <option value="after">After</option>
+  </select>
+
+  <div id="reader" style="width: 100%; max-width: 400px; margin: 16px auto 0;"></div>
   <p id="result" style="text-align:center; font-size: 18px; font-weight: bold; margin-top: 16px;"></p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <script>
   const resultEl = document.getElementById("result");
+  const phaseSelect = document.getElementById("phaseSelect");
   let isProcessing = false;
 
   function onScanSuccess(decodedText) {
@@ -20,7 +29,7 @@
     fetch("/organisateur/scan", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: "qr_uuid=" + encodeURIComponent(decodedText),
+      body: "qr_uuid=" + encodeURIComponent(decodedText) + "&phase=" + encodeURIComponent(phaseSelect.value),
     })
       .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
       .then(({ ok, data }) => {

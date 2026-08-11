@@ -17,7 +17,11 @@ from filelock import FileLock
 from app import config
 from app.models import (
     Invite,
+    Logement,
+    OuiNon,
+    OuiNonPasConcerne,
     PresenceStatus,
+    RestrictionAlimentaire,
     Sexe,
     TransportMode,
     generate_invite_token,
@@ -75,7 +79,8 @@ def _read_guests_sql() -> list[dict]:
                     "sexe": row.sexe,
                     "categorie": row.categorie,
                     "role": row.role,
-                    "mail": row.mail
+                    "mail": row.mail,
+                    "contact": row.contact,
                 })
     except Exception as e:
         print(f"Erreur lors de la lecture des invités depuis la base de données {config.SQL_DATABASE} :", e)
@@ -89,19 +94,34 @@ def _invite_to_dict(invite: Invite) -> dict:
         "categorie": invite.categorie,
         "role": invite.role,
         "mail": invite.mail,
+        "contact": invite.contact,
         "token": invite.token,
         "qr_uuid": invite.qr_uuid,
         "statut_presence": invite.statut_presence.value,
-        "allergies": invite.allergies,
+        "presence_mairie": invite.presence_mairie.value if invite.presence_mairie else None,
+        "presence_reception": invite.presence_reception.value if invite.presence_reception else None,
+        "presence_after": invite.presence_after.value if invite.presence_after else None,
+        "nombre_enfants": invite.nombre_enfants,
         "mode_transport": invite.mode_transport.value if invite.mode_transport else None,
         "transport_details": invite.transport_details,
+        "covoiturage_possible": invite.covoiturage_possible.value if invite.covoiturage_possible else None,
+        "navette_souhaitee": invite.navette_souhaitee.value if invite.navette_souhaitee else None,
+        "logement": invite.logement.value if invite.logement else None,
+        "restriction_alimentaire": invite.restriction_alimentaire.value if invite.restriction_alimentaire else None,
+        "restriction_alimentaire_autre": invite.restriction_alimentaire_autre,
         "questionnaire_rempli": invite.questionnaire_rempli,
         "questionnaire_rempli_le": invite.questionnaire_rempli_le.isoformat()
         if invite.questionnaire_rempli_le
         else None,
-        "checked_in": invite.checked_in,
-        "checked_in_at": invite.checked_in_at.isoformat() if invite.checked_in_at else None,
-        "checked_in_by": invite.checked_in_by,
+        "checked_in_mairie": invite.checked_in_mairie,
+        "checked_in_mairie_at": invite.checked_in_mairie_at.isoformat() if invite.checked_in_mairie_at else None,
+        "checked_in_mairie_by": invite.checked_in_mairie_by,
+        "checked_in_reception": invite.checked_in_reception,
+        "checked_in_reception_at": invite.checked_in_reception_at.isoformat() if invite.checked_in_reception_at else None,
+        "checked_in_reception_by": invite.checked_in_reception_by,
+        "checked_in_after": invite.checked_in_after,
+        "checked_in_after_at": invite.checked_in_after_at.isoformat() if invite.checked_in_after_at else None,
+        "checked_in_after_by": invite.checked_in_after_by,
         "created_at": invite.created_at.isoformat(),
     }
 
@@ -114,19 +134,34 @@ def _invite_from_dict(data: dict) -> Invite:
         categorie=data.get("categorie"),
         role=data.get("role"),
         mail=data.get("mail"),
+        contact=data.get("contact"),
         token=data["token"],
         qr_uuid=data["qr_uuid"],
         statut_presence=PresenceStatus(data.get("statut_presence") or "en_attente"),
-        allergies=data.get("allergies"),
+        presence_mairie=OuiNon(data["presence_mairie"]) if data.get("presence_mairie") else None,
+        presence_reception=OuiNon(data["presence_reception"]) if data.get("presence_reception") else None,
+        presence_after=OuiNon(data["presence_after"]) if data.get("presence_after") else None,
+        nombre_enfants=int(data.get("nombre_enfants") or 0),
         mode_transport=TransportMode(data["mode_transport"]) if data.get("mode_transport") else None,
         transport_details=data.get("transport_details"),
+        covoiturage_possible=OuiNonPasConcerne(data["covoiturage_possible"]) if data.get("covoiturage_possible") else None,
+        navette_souhaitee=OuiNonPasConcerne(data["navette_souhaitee"]) if data.get("navette_souhaitee") else None,
+        logement=Logement(data["logement"]) if data.get("logement") else None,
+        restriction_alimentaire=RestrictionAlimentaire(data["restriction_alimentaire"]) if data.get("restriction_alimentaire") else None,
+        restriction_alimentaire_autre=data.get("restriction_alimentaire_autre"),
         questionnaire_rempli=bool(data.get("questionnaire_rempli", False)),
         questionnaire_rempli_le=datetime.fromisoformat(data["questionnaire_rempli_le"])
         if data.get("questionnaire_rempli_le")
         else None,
-        checked_in=bool(data.get("checked_in", False)),
-        checked_in_at=datetime.fromisoformat(data["checked_in_at"]) if data.get("checked_in_at") else None,
-        checked_in_by=data.get("checked_in_by"),
+        checked_in_mairie=bool(data.get("checked_in_mairie", False)),
+        checked_in_mairie_at=datetime.fromisoformat(data["checked_in_mairie_at"]) if data.get("checked_in_mairie_at") else None,
+        checked_in_mairie_by=data.get("checked_in_mairie_by"),
+        checked_in_reception=bool(data.get("checked_in_reception", False)),
+        checked_in_reception_at=datetime.fromisoformat(data["checked_in_reception_at"]) if data.get("checked_in_reception_at") else None,
+        checked_in_reception_by=data.get("checked_in_reception_by"),
+        checked_in_after=bool(data.get("checked_in_after", False)),
+        checked_in_after_at=datetime.fromisoformat(data["checked_in_after_at"]) if data.get("checked_in_after_at") else None,
+        checked_in_after_by=data.get("checked_in_after_by"),
         created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else datetime.utcnow(),
     )
 
@@ -183,9 +218,10 @@ def load_guests(organizer_only: bool = False) -> list[Invite]:
             categorie = row.get("categorie").lower()
             role = row.get("role").lower()if row.get("role") else None
             mail = row.get("mail").lower() if row.get("mail") else None
+            contact = (row.get("contact") or "").strip() or None
 
             #Add new guests infos
-            if key not in log: 
+            if key not in log:
                 invite = Invite(
                     prenom=row["prenom"],
                     nom=row["nom"],
@@ -193,24 +229,27 @@ def load_guests(organizer_only: bool = False) -> list[Invite]:
                     categorie=categorie,
                     role=role,
                     mail=mail,
-                    token=generate_invite_token(row["prenom"], row["nom"]),
+                    contact=contact,
+                    token=generate_invite_token(row["prenom"], row["nom"], categorie),
                     qr_uuid=generate_qr_uuid(),
                 )
                 _write_qr_file(invite)
                 log[key] = _invite_to_dict(invite)
                 changed = True
 
-            #Update existing guests infos 
-            else: 
+            #Update existing guests infos
+            else:
                 entry = log[key]
-                if (  entry.get("sexe") != sexe.value 
-                or entry.get("categorie") != categorie 
-                or entry.get("role") != role 
-                or entry.get("mail") != mail):
+                if (  entry.get("sexe") != sexe.value
+                or entry.get("categorie") != categorie
+                or entry.get("role") != role
+                or entry.get("mail") != mail
+                or entry.get("contact") != contact):
                     entry["sexe"] = sexe.value
                     entry["categorie"] = categorie
                     entry["role"] = role
                     entry["mail"] = mail
+                    entry["contact"] = contact
                     changed = True
 
         if changed:

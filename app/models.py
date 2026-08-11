@@ -1,5 +1,5 @@
+import hashlib
 import re
-import secrets
 import unicodedata
 import uuid
 import enum
@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
-SLUG_SUFFIX_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789"
 SLUG_SUFFIX_LENGTH = 4
 
 
@@ -22,11 +21,13 @@ def natural_key(prenom: str, nom: str) -> str:
     return f"{slugify(nom)}-{slugify(prenom)}"
 
 
-def generate_invite_token(prenom: str, nom: str) -> str:
-    """Endpoint lisible (nom-prenom) suivi d'un court suffixe aléatoire, pour que
-    l'URL de la carte d'invitation reste difficile à deviner à partir du seul nom."""
+def generate_invite_token(prenom: str, nom: str, categorie: str) -> str:
+    """Endpoint lisible (nom-prenom) suivi d'un suffixe déterministe calculé à
+    partir de nom/prénom/catégorie : le token reste toujours le même pour un
+    invité donné, même si le log YAML est vidé et régénéré."""
     base = f"{slugify(nom)}-{slugify(prenom)}"
-    suffix = "".join(secrets.choice(SLUG_SUFFIX_ALPHABET) for _ in range(SLUG_SUFFIX_LENGTH))
+    seed = f"{slugify(nom)}|{slugify(prenom)}|{slugify(categorie)}"
+    suffix = hashlib.sha256(seed.encode()).hexdigest()[:SLUG_SUFFIX_LENGTH]
     return f"{base}-{suffix}"
 
 
@@ -42,15 +43,47 @@ class PresenceStatus(str, enum.Enum):
 
 
 class TransportMode(str, enum.Enum):
+    pas_concerne = "pas_concerne"
     voiture = "voiture"
     train = "train"
     covoiturage = "covoiturage"
+    en_recherche = "en_recherche"
     autre = "autre"
 
 
 class Sexe(str, enum.Enum):
     homme = "homme"
     femme = "femme"
+
+
+class OuiNon(str, enum.Enum):
+    oui = "oui"
+    non = "non"
+
+
+class OuiNonPasConcerne(str, enum.Enum):
+    pas_concerne = "pas_concerne"
+    oui = "oui"
+    non = "non"
+
+
+class RestrictionAlimentaire(str, enum.Enum):
+    aucune = "aucune"
+    halal = "halal"
+    vegetarien = "vegetarien"
+    vegetalien = "vegetalien"
+    sans_gluten = "sans_gluten"
+    sans_sel = "sans_sel"
+    sans_sucre = "sans_sucre"
+    sans_alcool = "sans_alcool"
+    autre = "autre"
+
+
+class Logement(str, enum.Enum):
+    pas_concerne = "pas_concerne"
+    oui = "oui"
+    toujours_en_recherche = "toujours_en_recherche"
+    ne_sait_pas = "ne_sait_pas"
 
 
 @dataclass
@@ -63,16 +96,35 @@ class Invite:
     sexe: Sexe = Sexe.homme
     role: Optional[str] = None
     mail: Optional[str] = None
+    contact: Optional[str] = None
     statut_presence: PresenceStatus = PresenceStatus.en_attente
-    allergies: Optional[str] = None
+
+    # Questionnaire
+    presence_mairie: Optional[OuiNon] = None
+    presence_reception: Optional[OuiNon] = None
+    presence_after: Optional[OuiNon] = None
+    nombre_enfants: int = 0
     mode_transport: Optional[TransportMode] = None
     transport_details: Optional[str] = None
+    covoiturage_possible: Optional[OuiNonPasConcerne] = None
+    navette_souhaitee: Optional[OuiNonPasConcerne] = None
+    logement: Optional[Logement] = None
+    restriction_alimentaire: Optional[RestrictionAlimentaire] = None
+    restriction_alimentaire_autre: Optional[str] = None
+
     questionnaire_rempli: bool = False
     questionnaire_rempli_le: Optional[datetime] = None
 
-    checked_in: bool = False
-    checked_in_at: Optional[datetime] = None
-    checked_in_by: Optional[str] = None
+    # Check-in jour J, un par phase (le même QR peut être scanné 3 fois)
+    checked_in_mairie: bool = False
+    checked_in_mairie_at: Optional[datetime] = None
+    checked_in_mairie_by: Optional[str] = None
+    checked_in_reception: bool = False
+    checked_in_reception_at: Optional[datetime] = None
+    checked_in_reception_by: Optional[str] = None
+    checked_in_after: bool = False
+    checked_in_after_at: Optional[datetime] = None
+    checked_in_after_by: Optional[str] = None
 
     created_at: datetime = field(default_factory=datetime.utcnow)
 

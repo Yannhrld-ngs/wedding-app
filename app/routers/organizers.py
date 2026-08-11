@@ -6,7 +6,7 @@ from fastapi.templating import Jinja2Templates
 
 from app import store, config
 from app.mailer import send_email
-from app.models import PresenceStatus
+from app.models import OuiNon
 from app.security import (
     verify_password,
     hash_password,
@@ -151,20 +151,40 @@ def dashboard(
 ):
     invites = store.list_guests()
     total = len(invites)
-    presents_prevus = sum(1 for i in invites if i.statut_presence == PresenceStatus.present)
-    checked_in = sum(1 for i in invites if i.checked_in)
+    presents_mairie = sum(1 for i in invites if i.presence_mairie == OuiNon.oui)
+    presents_reception = sum(1 for i in invites if i.presence_reception == OuiNon.oui)
+    presents_after = sum(1 for i in invites if i.presence_after == OuiNon.oui)
+    confirmed_mairie = sum(1 for i in invites if i.checked_in_mairie)
+    confirmed_reception = sum(1 for i in invites if i.checked_in_reception)
+    confirmed_after = sum(1 for i in invites if i.checked_in_after)
 
     organizer = store.find_accepted_organizer_by_mail(login)
+
+    user_agent = request.headers.get("user-agent", "").lower()
+    if any(kw in user_agent for kw in ["iphone", "ipad", "ipod"]):
+        device = "ios"
+    elif "android" in user_agent:
+        device = "android"
+    else:
+        device = "other"
 
     return templates.TemplateResponse(
         "organizer_dashboard.html",
         {
             "request": request,
             "invites": invites,
+            "wedding_name1": config.WEDDING_NAME1,
+            "wedding_name2": config.WEDDING_NAME2,
+            "domain": config.BASE_URL,
             "total": total,
-            "presents_prevus": presents_prevus,
-            "checked_in": checked_in,
+            "presents_mairie": presents_mairie,
+            "presents_reception": presents_reception,
+            "presents_after": presents_after,
+            "confirmed_mairie": confirmed_mairie,
+            "confirmed_reception": confirmed_reception,
+            "confirmed_after": confirmed_after,
             "organizer_login": login,
+            "device":device,
             "organizer_name": f"{organizer.prenom} {organizer.nom}" if organizer else login,
             "organizer_role": organizer.role if organizer else None,
         },
@@ -176,30 +196,42 @@ def scan_page(request: Request, login: str = Depends(get_current_organizer_login
     return templates.TemplateResponse("organizer_scan.html", {"request": request})
 
 
+PHASE_LABELS = {"mairie": "la mairie", "reception": "la réception", "after": "l'after"}
+
+
 @router.post("/scan")
 def scan_checkin(
     request: Request,
     login: str = Depends(get_current_organizer_login),
     qr_uuid: str = Form(...),
+    phase: str = Form(...),
 ):
+    if phase not in PHASE_LABELS:
+        return JSONResponse({"success": False, "message": "Phase inconnue"}, status_code=400)
+
     invite = store.get_by_qr_uuid(qr_uuid)
     if not invite:
         return JSONResponse({"success": False, "message": "QR code inconnu"}, status_code=404)
 
-    if invite.checked_in:
+    already_at = getattr(invite, f"checked_in_{phase}_at")
+    if already_at:
         return JSONResponse(
             {
                 "success": False,
-                "message": f"{invite.prenom} {invite.nom} a déjà été {invite.accord('validé', 'validée')} à {invite.checked_in_at.strftime('%H:%M')}",
+                "message": f"{invite.prenom} {invite.nom} a déjà été {invite.accord('validé', 'validée')} "
+                f"pour {PHASE_LABELS[phase]} à {already_at.strftime('%H:%M')}",
             },
             status_code=409,
         )
 
-    invite.checked_in = True
-    invite.checked_in_at = datetime.utcnow()
-    invite.checked_in_by = login
+    setattr(invite, f"checked_in_{phase}", True)
+    setattr(invite, f"checked_in_{phase}_at", datetime.utcnow())
+    setattr(invite, f"checked_in_{phase}_by", login)
     store.save_guest(invite)
 
     return JSONResponse(
-        {"success": True, "message": f"{invite.prenom} {invite.nom} {invite.accord('validé', 'validée')} ✓"}
+        {
+            "success": True,
+            "message": f"{invite.prenom} {invite.nom} {invite.accord('validé', 'validée')} pour {PHASE_LABELS[phase]} ✓",
+        }
     )

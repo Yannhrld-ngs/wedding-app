@@ -3,69 +3,458 @@
 {% block content %}
 
 <style>
-  .dashboard-table th, .dashboard-table td { border-bottom: none; }
-  .dashboard-table tr:nth-child(even) { background: #faf8f5; }
+    :root{
+    --terracotta: #C1694A;
+    --terracotta-dark: #96492F;
+    --sand: #E8C4A0;
+    --cream: #FBF3E7;
+    --umber: #3D2B1F;
+    --sage: #7C8B6F;
+    --sage-dark: #5E6B54;
+    --paper: #FFFDFA;
+  }
+  .dashboard-table th, 
+  .dashboard-table td { border-bottom: none; font-size: 13px;padding: 7px 15px; }
+  .dashboard-table tr:nth-child(even) { background: #faf8f5; font-size: 10px;}
+  .dashboard-table tr.search-hidden,
+  .dashboard-table tr.page-hidden {
+    display: none;
+  }
 
+  .button-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .search-box {
+    width: 35%;
+    max-width: 200px;
+    padding: 10px 10px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+
+  .send-btn,
+  .page-btn {
+    background: var(--sand);
+    color: var(--umber);
+    border: none;
+    padding: 4px 8px;
+    font-size: 13px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+
+  .send-btn:hover,
+  .page-btn:hover {
+    background: var(--terracotta-dark);
+  }
+ 
+  /* Fond sombre */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+ 
+  .overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+ 
+  .modal {
+    background: var(--paper);
+    width: min(420px, 90vw);
+    height: 65vh;
+    max-height: 500px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.95);
+    opacity: 0;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  }
+ 
+  .overlay.open .modal {
+    transform: scale(1);
+    opacity: 1;
+  }
+ 
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 30px;
+    border-bottom: 1px solid var(--paper);
+  }
+ 
+  .modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    color: var(--umber);
+  }
+ 
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--umber);
+    padding: 4px 8px;
+  }
+ 
+  .modal-options {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    padding: 15px;
+  }
+ 
+  .modal-options a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    text-decoration: none;
+    color: var(--umber);
+    font-size: 13px;
+    background: var(--cream);
+    border-radius: 12px;
+    transition: background 0.15s ease;
+  }
+ 
+  .modal-options a:hover,
+  .modal-options a:active {
+    background: var(--cream);
+  }
+ 
+  .modal-options a .icon {
+    font-size: 22px;
+  }
 </style>
+
 <div style="display:flex; justify-content:space-between; align-items:center;">
-  <h2>Tableau de bord — {{ organizer_name }}{% if organizer_role %} ({{ organizer_role }}){% endif %}</h2>
+  <h2>Tableau de bord — {{ organizer_name }}{% if organizer_role %} ({{ organizer_role.upper() }}){% endif %}</h2>
   <a href="/organisateur/logout">Déconnexion</a>
 </div>
 
+<div class="button-row">
+  <a class="button" href="/organisateur/scan">📷 Scanner un QR code</a></p>
+  <a class="button" href="#" onclick="alert('Pas encore implémenté. Idées seraient appréciées ...')">📊 Statistiques détaillées</a></p>
+</div>
+
+<p><br></p>
+
 <div class="stats">
   <div class="stat"><div class="value">{{ total }}</div>Invités</div>
-  <div class="stat"><div class="value">{{ presents_prevus }}</div>Présence prévue</div>
-  <div class="stat"><div class="value">{{ checked_in }}</div>Validés le jour J</div>
+  <div class="stat"><div class="value">{{ presents_mairie }}</div>Présence attendue - Mairie</div>
+  <div class="stat"><div class="value">{{ confirmed_mairie }}</div>Présence confirmée - Mairie</div>
+  <div class="stat"><div class="value">{{ presents_reception }}</div>Présence attendue - Réception</div>
+  <div class="stat"><div class="value">{{ confirmed_reception }}</div>Présence confirmée - Réception</div>
+  <div class="stat"><div class="value">{{ presents_after }}</div>Présence attendue - After</div>
+  <div class="stat"><div class="value">{{ confirmed_after }}</div>Présence confirmée - After</div>
 </div>
 
-<p><a class="button" href="/organisateur/scan">📷 Scanner un QR code</a></p>
-
+<input type="text" id="search" class="search-box" placeholder="Rechercher un invité...">
 <div>
-  <table class="dashboard-table">
-    <tr>
-      <th>Invité</th>
-      <th>Sexe</th>
-      <th>Catégorie</th>
-      <th>Rôle</th>
-      <th>Code invité</th>
-      <th>Réponse</th>
-      <th>Allergies</th>
-      <th>Transport</th>
-      <th>Check-in</th>
-      <th>Envoyer l'invitation</th>
-    </tr>
+  <table class="dashboard-table" id="inviteTable">
+    <thead>
+      <tr>
+        <th></th> <!--Pour déplier-->
+        <th>Invité</th>
+        <th>Sexe</th>
+        <th>Catégorie</th>
+        <th>Rôle</th>
+        <th>Code invité</th>
+        <th>Présence</th>
+        <th>Restriction alimentaire</th>
+        <th>Transport</th>
+        <th>Envoyer une invitation</th>
+      </tr>
+    </thead>
+    <tbody>
     {% for invite in invites %}
-    <tr>
-      <td>{{ invite.prenom }} {{ invite.nom }}</td>
-      <td>{{ invite.sexe.value | capitalize }}</td>
-      <td>{{ invite.categorie or "—" }}</td>
-      <td>{{ invite.role or "—" }}</td>
-      <td><code>{{ invite.token[-4:] | upper }}</code></td>
-      <td>
-        {% if invite.statut_presence.value == "present" %}
-          <span class="badge badge-ok">Présent</span>
-        {% elif invite.statut_presence.value == "absent" %}
-          <span class="badge badge-no">Absent</span>
-        {% else %}
-          <span class="badge badge-pending">En attente</span>
-        {% endif %}
-      </td>
-      <td>{{ invite.allergies or "—" }}</td>
-      <td>{{ invite.mode_transport.value if invite.mode_transport else "—" }}</td>
-      <td>
-        {% if invite.checked_in %}
-          <span class="badge badge-ok">✓ {{ invite.checked_in_at.strftime('%H:%M') }}</span>
-        {% else %}
-          <span class="badge badge-pending">Non validé</span>
-        {% endif %}
-      </td>
-      <td>
-        <button type="button" class="button" data-token="{{ invite.token }}" onclick="alert('Fonction pas encore développée')">
-          Envoyer
-        </button>
-      </td>
-    </tr>
+
+      {% set invit_msg = "Bonjour " ~ invite.nom ~ " " ~ invite.prenom ~ ",\n\n"
+          ~ "Veuillez trouver votre invitation en consultant la page " ~ domain ~ "\n"
+          ~ "Votre code invité est : " ~ invite.token[-4:].upper() ~ "\n\n"
+          ~ "N'oubliez pas de confirmer votre présence en répondant au sondage.\n\n"
+          ~ "En espérant vous revoir bientôt, \n" 
+          ~ wedding_name1 ~ " & " ~ wedding_name2 ~ "\n"
+          ~ "Dieu vous garde."
+      %}
+    
+      {% set presence_tags = [] %}
+      {% if invite.presence_mairie and invite.presence_mairie.value == "oui" %}{% set _ = presence_tags.append("Mairie") %}{% endif %}
+      {% if invite.presence_reception and invite.presence_reception.value == "oui" %}{% set _ = presence_tags.append("Réception") %}{% endif %}
+      {% if invite.presence_after and invite.presence_after.value == "oui" %}{% set _ = presence_tags.append("After") %}{% endif %}
+      
+      <!--Main information-->
+      <tr class="main-row">
+        <td>
+          <button class="toggle-btn" type="button" data-target="detail-{{ loop.index }}">▸</button>
+        </td>
+
+        <td>{{ invite.prenom }} {{ invite.nom }}</td>
+        <td>{{ invite.sexe.value | capitalize }}</td>
+        <td>{{ invite.categorie or "—" }}</td>
+        <td>{{ invite.role or "—" }}</td>
+        <td><code>{{ invite.token[-4:] | upper }}</code></td>
+        <td>{{ presence_tags | join(", ") if presence_tags else "Non" }}</td>
+        <td>
+          {% if not invite.restriction_alimentaire or invite.restriction_alimentaire.value == "aucune" %}
+            —
+          {% elif invite.restriction_alimentaire.value == "autre" %}
+            {{ invite.restriction_alimentaire_autre or "Autre" }}
+          {% else %}
+            {{ invite.restriction_alimentaire.value | replace("_", " ") | capitalize }}
+          {% endif %}
+        </td>
+        <td>{{ invite.mode_transport.value if invite.mode_transport else "—" }}</td>
+        <td>
+          {% set sms_sep = "?" if device == "android" else "&" %}
+          {% set sms_link = "sms:" ~ (invite.contact if invite.contact else '') ~ sms_sep ~ "body=" ~ (invit_msg | urlencode) %}
+          <button
+            class="send-btn"
+            type="button"
+            data-wa="https://wa.me/{{ invite.contact if invite.contact else '' }}?text={{ invit_msg | urlencode }}"
+            data-mail="mailto:{{ invite.mail if invite.mail else '' }}?body={{ invit_msg | urlencode }}"
+            data-sms="{{ sms_link }}"
+          >Envoyer ▾</button>
+        </td>
+      </tr>
+      
+      <!--Seoncdary information-->
+      <tr class="detail-row" id="detail-{{ loop.index }}" style="display: none;">
+        <td></td>
+        <td colspan="5">
+          <div style="display: grid; grid-template-columns: max-content 1fr; row-gap: 6px; column-gap: 16px; padding: 8px 0;"> 
+          {% if not invite.presence_mairie %}
+            <strong>Présence Mairie:</strong> <span class="badge badge-pending">En attente</span>
+          {% elif invite.presence_mairie.value == "oui" %}
+            <strong>Présence Mairie:</strong> <span class="badge badge-ok">Oui</span>
+          {% else %}
+            <strong>Présence Mairie:</strong> <span class="badge badge-no">Non</span>
+          {% endif %}
+   
+          {% if invite.checked_in_mairie %}
+            <strong>Validation Mairie:</strong> <span class="badge badge-ok">✓ {{ invite.checked_in_mairie_at.strftime('%H:%M') }}</span>
+          {% else %}
+            <strong>Validation Mairie:</strong> <span class="badge badge-pending">Non validé</span>
+          {% endif %}
+
+          {% if not invite.presence_reception %}
+            <strong>Présence Reception:</strong> <span class="badge badge-pending">En attente</span>
+          {% elif invite.presence_reception.value == "oui" %}
+            <strong>Présence Reception:</strong> <span class="badge badge-ok">Oui</span>
+          {% else %}
+            <strong>Présence Reception:</strong> <span class="badge badge-no">Non</span>
+          {% endif %}
+
+          {% if invite.checked_in_reception %}
+            <strong>Validation Reception:</strong> <span class="badge badge-ok">✓ {{ invite.checked_in_reception_at.strftime('%H:%M') }}</span>
+          {% else %}
+            <strong>Validation Reception:</strong> <span class="badge badge-pending">Non validé</span>
+          {% endif %}
+
+          {% if not invite.presence_after %}
+            <strong>Présence After:</strong> <span class="badge badge-pending">En attente</span>
+          {% elif invite.presence_after.value == "oui" %}
+            <strong>Présence After:</strong> <span class="badge badge-ok">Oui</span>
+          {% else %}
+            <strong>Présence After:</strong> <span class="badge badge-no">Non</span>
+          {% endif %}
+
+          {% if invite.checked_in_after %}
+            <strong>Validation After:</strong> <span class="badge badge-ok">✓ {{ invite.checked_in_after_at.strftime('%H:%M') }}</span>
+          {% else %}
+            <strong>Validation After:</strong> <span class="badge badge-pending">Non validé</span>
+          {% endif %}
+          </div>
+        </td>
+      </tr>
     {% endfor %}
+    </tbody>
   </table>
+
+  <!--Pagination-->
+  <div style="display: flex; gap: 12px; align-items: center; margin-top: 16px;">
+    <button id="prevBtn" class="page-btn">← Précédent</button>
+    <span id="pageInfo"></span>
+    <button id="nextBtn" class="page-btn">Suivant →</button>
+  </div>
+
 </div>
+
+<div class="overlay" id="sendOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Envoyer l'invitation</h2>
+      <button class="close-btn" id="closeBtn" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="modal-options">
+      <a id="sendWa" href="#" target="_blank" rel="noopener noreferrer">
+        <span class="icon">📱</span> WhatsApp
+      </a>
+      <a id="sendMail" href="#" target="_blank" rel="noopener noreferrer">
+        <span class="icon">✉️</span> Email
+      </a>
+      <a id="sendSms" href="#" target="_blank" rel="noopener noreferrer">
+        <span class="icon">💬</span> SMS
+      </a>
+    </div>
+  </div>
+</div>
+
+<!--Secondary info unfold-->
+<script>
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      const isOpen = target.style.display !== 'none';
+      target.style.display = isOpen ? 'none' : 'table-row';
+      btn.textContent = isOpen ? '▸' : '▾';
+    });
+  });
+</script>
+
+<!--Search-->
+<script>
+  const searchInput = document.getElementById('search');
+  const table = document.getElementById('inviteTable');
+  const rows = table.querySelectorAll('tbody tr');
+ 
+  searchInput.addEventListener('input', () => {
+    const query = searchInput.value.trim().toLowerCase();
+ 
+    rows.forEach(row => {
+      const rowText = row.textContent.toLowerCase();
+      row.classList.toggle('search-hidden', !rowText.includes(query));
+    });
+  });
+</script>
+
+<!-- Pagination -->
+<script>
+  (function () {
+    const rowsPerPage = 10;
+    const table = document.getElementById('inviteTable');
+    // Seules les lignes principales comptent pour la pagination : les lignes de
+    // détail (repliées) ne doivent pas consommer une place sur la page.
+    const mainRows = Array.from(table.querySelectorAll('tbody tr.main-row'));
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const pageInfo = document.getElementById('pageInfo');
+
+    let currentPage = 1;
+
+    function detailRowFor(mainRow) {
+      const btn = mainRow.querySelector('.toggle-btn');
+      return btn ? document.getElementById(btn.dataset.target) : null;
+    }
+
+    function getVisibleRows() {
+      // Ne prend en compte que les lignes non cachées par la recherche
+      return mainRows.filter(row => !row.classList.contains('search-hidden'));
+    }
+
+    function renderPage() {
+      const visibleRows = getVisibleRows();
+      const totalPages = Math.max(1, Math.ceil(visibleRows.length / rowsPerPage));
+
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      mainRows.forEach(row => {
+        row.classList.add('page-hidden');
+        const detail = detailRowFor(row);
+        if (detail) {
+          detail.classList.add('page-hidden');
+          // Replie le détail pour éviter qu'il ne reste affiché (style inline)
+          // sous une ligne principale masquée par la pagination.
+          detail.style.display = 'none';
+          const btn = row.querySelector('.toggle-btn');
+          if (btn) btn.textContent = '▸';
+        }
+      });
+
+      const start = (currentPage - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      visibleRows.slice(start, end).forEach(row => {
+        row.classList.remove('page-hidden');
+        const detail = detailRowFor(row);
+        if (detail) detail.classList.remove('page-hidden');
+      });
+
+      pageInfo.textContent = `Page ${currentPage} / ${totalPages}`;
+      prevBtn.disabled = currentPage === 1;
+      nextBtn.disabled = currentPage === totalPages;
+    }
+
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) { currentPage--; renderPage(); }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      currentPage++; renderPage();
+    });
+
+    // Réinitialise à la page 1 à chaque recherche
+    document.getElementById('search').addEventListener('input', () => {
+      currentPage = 1;
+      renderPage();
+    });
+
+    renderPage();
+  })();
+</script>
+
+<!--Send-->
+<script>
+  (function () {
+    const overlay = document.getElementById('sendOverlay');
+    const closeBtn = document.getElementById('closeBtn');
+    const waLink = document.getElementById('sendWa');
+    const mailLink = document.getElementById('sendMail');
+    const smsLink = document.getElementById('sendSms');
+
+    function openMenu() {
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMenu() {
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.send-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        waLink.href = btn.dataset.wa;
+        mailLink.href = btn.dataset.mail;
+        smsLink.href = btn.dataset.sms;
+        openMenu();
+      });
+    });
+
+    closeBtn.addEventListener('click', closeMenu);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeMenu();
+    });
+  })();
+</script>
+
 {% endblock %}

@@ -24,13 +24,6 @@ Edit info in  `app/config.py` and `data/config.yml` or use environment variable
 python scripts/create_organizer.py admin password
 ```
 
-## Invite Link
-
-Run for getting invit link for all invites.
-```bash
-python scripts/sync_guests.py
-```
-
 ## Running the app from CLI
 
 ```bash
