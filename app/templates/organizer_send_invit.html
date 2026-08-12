@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Envoyer l'invitation{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Envoyer l'invitation à {{ invite.prenom }} {{ invite.nom }}</h2>
+
+  <p>Choisissez le moyen d'envoi de l'invitation.</p>
+
+  <div style="display:flex; flex-direction:column; gap:12px; margin-top:24px; max-width:320px;">
+    <form method="post" action="/organisateur/envoyer/{{ invite.token }}">
+      <input type="hidden" name="canal" value="whatsapp">
+      <button class="button" type="submit" style="width:100%;">📱 WhatsApp</button>
+    </form>
+    <form method="post" action="/organisateur/envoyer/{{ invite.token }}">
+      <input type="hidden" name="canal" value="mail">
+      <button class="button" type="submit" style="width:100%;">✉️ Email</button>
+    </form>
+    <form method="post" action="/organisateur/envoyer/{{ invite.token }}">
+      <input type="hidden" name="canal" value="sms">
+      <button class="button" type="submit" style="width:100%;">💬 SMS</button>
+    </form>
+  </div>
+
+  <p style="margin-top:24px;"><a href="/organisateur/dashboard">← Retour au tableau de bord</a></p>
+</div>
+{% endblock %}

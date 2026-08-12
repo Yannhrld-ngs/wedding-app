@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block content %}
+
+<style>
+  .viz-root {
+    --surface-1:      #FFFDFA;
+    --text-primary:   #3D2B1F;
+    --text-secondary: #6b5c4f;
+    --text-muted:     #948a7f;
+    --gridline:       #e7e1d6;
+    --series-arrive:  #0B8A7A;
+    --series-attente: #C1694A;
+    --series-retard:  #96492F;
+    --series-alim:    #96492F;
+    --accent:         #C1694A;
+  }
+
+  .analytics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .analytics-updated {
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .refresh-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 3px 10px;
+    font-size: 11px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .refresh-btn:hover { opacity: 0.85; }
+
+  .tab-bar {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0;
+    border-bottom: 1px solid var(--gridline);
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 16px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: bold;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    margin-top: 16px;
+  }
+  .chart-card {
+    background: var(--surface-1);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  }
+  .chart-card h3 {
+    margin: 0 0 8px 0;
+    font-size: 15px;
+    color: var(--text-primary);
+  }
+  .chart-legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .chart-legend .swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+  .chart-card svg text {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    fill: var(--text-secondary);
+  }
+  .chart-card svg .value-label {
+    font-size: 12px;
+    fill: var(--text-primary);
+    text-anchor: middle;
+  }
+  .chart-card svg .cat-label {
+    font-size: 12px;
+    text-anchor: middle;
+  }
+  .chart-card svg .baseline {
+    stroke: var(--gridline);
+    stroke-width: 1;
+  }
+
+  .kpi-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .kpi-row .stat { flex: 1; }
+
+  .analytics-table-wrap {
+    margin-top: 24px;
+    overflow-x: auto;
+  }
+  .analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .analytics-table th, .analytics-table td {
+    text-align: right;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--gridline);
+  }
+  .analytics-table th:first-child, .analytics-table td:first-child { text-align: left; }
+
+  .autres-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 13px;
+  }
+  .autres-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--gridline);
+  }
+  .autres-list li:last-child { border-bottom: none; }
+  .autres-list .nom { color: var(--text-primary); font-weight: bold; }
+  .autres-list .detail { color: var(--text-secondary); }
+  .autres-empty { font-size: 13px; color: var(--text-muted); }
+</style>
+
+<div class="viz-root">
+  <div class="analytics-header">
+    <h2>Statistiques détaillées</h2>
+    <a href="/organisateur/dashboard">← Retour au tableau de bord</a>
+  </div>
+  <p class="analytics-updated">
+    <button id="refreshBtn" class="refresh-btn" type="button">↻ Actualiser</button>
+    <span id="lastUpdated">Chargement…</span>
+  </p>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="tab-presence">Présence</button>
+    <button class="tab-btn" data-tab="tab-alimentaire">Alimentaire</button>
+    <button class="tab-btn" data-tab="tab-transport">Transport et logement</button>
+  </div>
+
+  <!-- ---------- Catégorie 1 : Présence ---------- -->
+  <div class="tab-panel active" id="tab-presence">
+    <div class="analytics-grid">
+      <div class="chart-card">
+        <h3>Arrivés vs. attendus non arrivés</h3>
+        <div class="chart-legend">
+          <span><span class="swatch" style="background: var(--series-arrive)"></span>Arrivés</span>
+          <span><span class="swatch" style="background: var(--series-attente)"></span>Attendus non arrivés</span>
+        </div>
+        <div id="chartPresence"></div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Arrivées imprévues</h3>
+        <div id="chartNonPrevus"></div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:24px;">Questionnaire non rempli</h3>
+    <div class="analytics-grid">
+      <div class="chart-card">
+        <div class="kpi-row" id="questionnaireRateTile" style="margin-top:0;"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Invités n'ayant pas répondu</h3>
+        <div id="questionnaireList"></div>
+      </div>
+    </div>
+
+    <div class="analytics-table-wrap">
+      <table class="analytics-table" id="presenceTable">
+        <thead>
+          <tr>
+            <th>Phase</th>
+            <th>Arrivés</th>
+            <th>Attendus non arrivés</th>
+            <th>Scans non prévus</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ---------- Catégorie 2 : Alimentaire ---------- -->
+  <div class="tab-panel" id="tab-alimentaire">
+    <div class="analytics-grid">
+      <div class="chart-card">
+        <h3>Restrictions alimentaires</h3>
+        <div id="chartRestrictions"></div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Précisions libres ("Autre")</h3>
+        <div id="autresList"></div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:24px;">Restriction × présence réception</h3>
+    <div class="analytics-table-wrap">
+      <table class="analytics-table" id="crosstabTable">
+        <thead>
+          <tr>
+            <th>Restriction</th>
+            <th>Présents réception</th>
+            <th>Absents réception</th>
+            <th>Réponse en attente</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ---------- Catégorie 3 : Transport et logement ---------- -->
+  <div class="tab-panel" id="tab-transport">
+    <div class="analytics-grid">
+      <div class="chart-card">
+        <h3>Répartition des modes de transport</h3>
+        <div id="chartTransport"></div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Logement : trouvé vs. besoin d'aide</h3>
+        <div id="chartLogement"></div>
+      </div>
+    </div>
+
+    <div class="analytics-grid" style="margin-top:24px;">
+      <div class="chart-card">
+        <h3>Souhaitent la navette</h3>
+        <div id="navetteList"></div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Proposent du covoiturage</h3>
+        <div id="covoiturageList"></div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Ne savent pas comment venir</h3>
+        <div id="sansSolutionList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    // URL du endpoint JSON qui renvoie { presence: ..., alimentaire: ... }
+    // (voir app/analytics.py et la route /statistiques-detaillees/data).
+    const DATA_URL = "{{ data_url | default('/organisateur/analytics/data') }}";
+
+    const W = 400, H = 220;
+    const PAD_TOP = 34, PAD_BOTTOM = 28, PAD_SIDE = 20;
+    const BAR_W = 24, GAP = 2, RADIUS = 4;
+
+    function esc(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    }
+
+    // ---------- Tabs ----------
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    // ---------- Primitives SVG ----------
+    // Rectangle carré (extrémité contre la ligne de base) — barres verticales.
+    function squareRect(x, y, w, h, fill, title) {
+      if (h <= 0) return "";
+      return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"><title>${esc(title)}</title></rect>`;
+    }
+
+    // Coins arrondis en haut (extrémité "donnée") — barres verticales.
+    function roundedTopRect(x, y, w, h, r, fill, title) {
+      if (h <= 0) return "";
+      r = Math.min(r, w / 2, h);
+      const d = `M ${x} ${y + h} L ${x} ${y + r} Q ${x} ${y} ${x + r} ${y} `
+        + `L ${x + w - r} ${y} Q ${x + w} ${y} ${x + w} ${y + r} L ${x + w} ${y + h} Z`;
+      return `<path d="${d}" fill="${fill}"><title>${esc(title)}</title></path>`;
+    }
+
+    // Coins arrondis à droite (extrémité "donnée") — barres horizontales.
+    function roundedRightRect(x, y, w, h, r, fill, title) {
+      if (w <= 0) return "";
+      r = Math.min(r, h / 2, w);
+      const d = `M ${x} ${y} L ${x + w - r} ${y} Q ${x + w} ${y} ${x + w} ${y + r} `
+        + `L ${x + w} ${y + h - r} Q ${x + w} ${y + h} ${x + w - r} ${y + h} L ${x} ${y + h} Z`;
+      return `<path d="${d}" fill="${fill}"><title>${esc(title)}</title></path>`;
+    }
+
+    function baselineAndLabels(categories, centers) {
+      let svg = `<line class="baseline" x1="${PAD_SIDE}" y1="${H - PAD_BOTTOM}" x2="${W - PAD_SIDE}" y2="${H - PAD_BOTTOM}"/>`;
+      categories.forEach((cat, i) => {
+        svg += `<text class="cat-label" x="${centers[i]}" y="${H - PAD_BOTTOM + 18}">${esc(cat)}</text>`;
+      });
+      return svg;
+    }
+
+    // ---------- Catégorie 1 : Présence ----------
+    function renderStacked(containerId, categories, bottomSeries, topSeries, colors, labels) {
+      const total = categories.map((_, i) => bottomSeries[i] + topSeries[i]);
+      const max = Math.max(1, ...total);
+      const plotH = H - PAD_TOP - PAD_BOTTOM;
+      const scale = plotH / max;
+      const step = (W - 2 * PAD_SIDE) / categories.length;
+
+      let bars = "";
+      const centers = [];
+      categories.forEach((cat, i) => {
+        const cx = PAD_SIDE + step * i + step / 2;
+        centers.push(cx);
+        const x = cx - BAR_W / 2;
+        const baseline = H - PAD_BOTTOM;
+
+        const bottomH = bottomSeries[i] * scale;
+        const topH = topSeries[i] * scale;
+        const gapH = (bottomH > 0 && topH > 0) ? GAP : 0;
+
+        bars += squareRect(x, baseline - bottomH, BAR_W, bottomH, colors[0], `${cat} — ${labels[0]} : ${bottomSeries[i]}`);
+        if (bottomH > 0) {
+          bars += `<text class="value-label" x="${cx}" y="${baseline - bottomH - 6}">${bottomSeries[i]}</text>`;
+        }
+
+        const topY = baseline - bottomH - gapH - topH;
+        if (topH > 0) {
+          bars += roundedTopRect(x, topY, BAR_W, topH, RADIUS, colors[1], `${cat} — ${labels[1]} : ${topSeries[i]}`);
+          bars += `<text class="value-label" x="${cx}" y="${topY - 6}">${topSeries[i]}</text>`;
+        }
+      });
+
+      const svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Arrivés vs attendus non arrivés par phase">`
+        + bars + baselineAndLabels(categories, centers) + `</svg>`;
+      document.getElementById(containerId).innerHTML = svg;
+    }
+
+    function renderSingle(containerId, categories, values, color, seriesLabel) {
+      const max = Math.max(1, ...values);
+      const plotH = H - PAD_TOP - PAD_BOTTOM;
+      const scale = plotH / max;
+      const step = (W - 2 * PAD_SIDE) / categories.length;
+
+      let bars = "";
+      const centers = [];
+      categories.forEach((cat, i) => {
+        const cx = PAD_SIDE + step * i + step / 2;
+        centers.push(cx);
+        const x = cx - BAR_W / 2;
+        const baseline = H - PAD_BOTTOM;
+        const h = values[i] * scale;
+        bars += roundedTopRect(x, baseline - h, BAR_W, h, RADIUS, color, `${cat} — ${seriesLabel} : ${values[i]}`);
+        bars += `<text class="value-label" x="${cx}" y="${baseline - h - 6}">${values[i]}</text>`;
+      });
+
+      const svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="${esc(seriesLabel)} par phase">`
+        + bars + baselineAndLabels(categories, centers) + `</svg>`;
+      document.getElementById(containerId).innerHTML = svg;
+    }
+
+    function renderPresenceTable(data) {
+      const rows = data.phases.map((cat, i) => `
+        <tr>
+          <td>${esc(cat)}</td>
+          <td>${data.arrives[i]}</td>
+          <td>${data.attendus_non_arrives[i]}</td>
+          <td>${data.scans_non_prevus[i]}</td>
+        </tr>
+      `).join("");
+      document.querySelector("#presenceTable tbody").innerHTML = rows;
+    }
+
+    // ---------- Catégorie 2 : Alimentaire ----------
+    function renderHorizontalBar(containerId, rows, color) {
+      const rowH = 28, leftMargin = 150, rightPad = 34, topPad = 10, bottomPad = 10;
+      const plotW = W - leftMargin - rightPad;
+      const height = Math.max(1, rows.length) * rowH + topPad + bottomPad;
+      const max = Math.max(1, ...rows.map((r) => r.count));
+      const scale = plotW / max;
+
+      let bars = `<line class="baseline" x1="${leftMargin}" y1="${topPad}" x2="${leftMargin}" y2="${height - bottomPad}"/>`;
+      rows.forEach((row, i) => {
+        const y = topPad + i * rowH + 4;
+        const barH = rowH - 10;
+        const w = row.count * scale;
+        bars += `<text class="cat-label" style="text-anchor:end" x="${leftMargin - 8}" y="${y + barH / 2 + 4}">${esc(row.label)}</text>`;
+        bars += roundedRightRect(leftMargin, y, w, barH, RADIUS, color, `${row.label} : ${row.count}`);
+        bars += `<text class="value-label" style="text-anchor:start" x="${leftMargin + w + 6}" y="${y + barH / 2 + 4}">${row.count}</text>`;
+      });
+
+      const svg = `<svg viewBox="0 0 ${W} ${height}" width="100%" height="${height}" role="img" aria-label="Répartition des restrictions alimentaires">`
+        + bars + `</svg>`;
+      document.getElementById(containerId).innerHTML = svg;
+    }
+
+    // Liste générique "nom [— info secondaire]" (allergies libres, contacts
+    // navette/covoiturage, ou simple liste de noms si secondaryKey est null).
+    function renderSimpleList(containerId, rows, secondaryKey, emptyMessage) {
+      if (!rows.length) {
+        document.getElementById(containerId).innerHTML = `<p class="autres-empty">${esc(emptyMessage)}</p>`;
+        return;
+      }
+      const items = rows.map((r) => {
+        const secondary = secondaryKey ? ` — <span class="detail">${esc(r[secondaryKey])}</span>` : "";
+        return `<li><span class="nom">${esc(r.nom)}</span>${secondary}</li>`;
+      }).join("");
+      document.getElementById(containerId).innerHTML = `<ul class="autres-list">${items}</ul>`;
+    }
+
+    function renderRateTile(containerId, rate, label) {
+      document.getElementById(containerId).innerHTML = `
+        <div class="stat">
+          <div class="value">${rate}%</div>
+          ${esc(label)}
+        </div>
+      `;
+    }
+
+    function renderCrosstab(crosstab) {
+      const rows = crosstab.map((row) => `
+        <tr>
+          <td>${esc(row.label)}</td>
+          <td>${row.oui}</td>
+          <td>${row.non}</td>
+          <td>${row.en_attente}</td>
+        </tr>
+      `).join("");
+      document.querySelector("#crosstabTable tbody").innerHTML = rows
+        || `<tr><td colspan="4">Aucune donnée.</td></tr>`;
+    }
+
+    // ---------- Orchestration ----------
+    function getComputedColor(varName) {
+      return getComputedStyle(document.querySelector(".viz-root")).getPropertyValue(varName).trim();
+    }
+
+    function draw(data) {
+      const presence = data.presence;
+      const alimentaire = data.alimentaire;
+      const transport = data.transport;
+
+      renderStacked(
+        "chartPresence", presence.phases, presence.arrives, presence.attendus_non_arrives,
+        [getComputedColor("--series-arrive"), getComputedColor("--series-attente")],
+        ["Arrivés", "Attendus non arrivés"]
+      );
+      renderSingle("chartNonPrevus", presence.phases, presence.scans_non_prevus, getComputedColor("--series-retard"), "Arrivées imprévues");
+      renderRateTile("questionnaireRateTile", presence.taux_questionnaire_non_rempli, "Questionnaire non rempli");
+      renderSimpleList("questionnaireList", presence.noms_questionnaire_non_rempli, null, "Tout le monde a rempli le questionnaire.");
+      renderPresenceTable(presence);
+
+      renderHorizontalBar("chartRestrictions", alimentaire.histogram, getComputedColor("--series-alim"));
+      renderSimpleList("autresList", alimentaire.autres, "detail", 'Aucune précision "Autre" renseignée pour le moment.');
+      renderCrosstab(alimentaire.crosstab);
+
+      renderSingle("chartTransport", transport.transport_histogram.map((r) => r.label), transport.transport_histogram.map((r) => r.count), getComputedColor("--series-alim"), "Mode de transport");
+      renderSingle("chartLogement", transport.logement_histogram.map((r) => r.label), transport.logement_histogram.map((r) => r.count), getComputedColor("--series-retard"), "Logement");
+      renderSimpleList("navetteList", transport.navette, "contact", "Personne n'a demandé la navette.");
+      renderSimpleList("covoiturageList", transport.covoiturage, "contact", "Personne n'a proposé de covoiturage.");
+      renderSimpleList("sansSolutionList", transport.sans_solution, "contact", "Tout le monde a un moyen de transport prévu.");
+
+      document.getElementById("lastUpdated").textContent =
+        "Dernière mise à jour : " + new Date().toLocaleTimeString("fr-FR");
+    }
+
+    function fetchAndDraw() {
+      fetch(DATA_URL)
+        .then((r) => r.json())
+        .then(draw)
+        .catch(() => {
+          document.getElementById("lastUpdated").textContent =
+            "Échec de la mise à jour — réessayez avec le bouton Actualiser.";
+        });
+    }
+
+    document.getElementById("refreshBtn").addEventListener("click", fetchAndDraw);
+
+    fetchAndDraw();
+  })();
+</script>
+
+{% endblock %}

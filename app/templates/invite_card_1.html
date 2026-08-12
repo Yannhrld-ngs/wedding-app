@@ -611,7 +611,7 @@
   </section>
 
   <!-- ============ CONFIRMER VOTRE PRESENCE ============ -->
-  <section class="rsvp" style="max-width:none;">
+  <section class="rsvp" style="max-width:none;", id="rsvp-id">
     <div class="intro">
       <span class="emoji" style="filter:none;">✉️</span>
       <p class="eyebrow">RSVP</p>
@@ -619,12 +619,30 @@
       {% if request.query_params.get('merci') %}
         <p style="color:var(--sand); font-weight:600;">Merci, votre réponse a bien été enregistrée !</p>
       {% endif %}
+
+      {% if invite.questionnaire_rempli %}
+        <p> Merci d'avoir répondu 🙂</p>
+      {% else %}
       <p>
         Merci de répondre au questionnaire en ligne. Celà nous aidera à mieux organiser le mariage et à préparer votre accueil.
       </p>
-      <a class="rsvp-button" href="/invite/{{ invite.token }}/questionnaire">
-        {% if invite.questionnaire_rempli %}Modifier ma réponse{% else %}Répondre au questionnaire{% endif %}
-      </a>
+      {% endif %}
+
+      {% if invite.presence_mairie or invite.presence_reception or invite.presence_after %} <!--Check first if exist-->
+        {% if invite.presence_mairie.value.lower() == "oui" or invite.presence_reception.value.lower() == "oui" or invite.presence_after.value.lower() == "oui" %}
+            <a class="rsvp-button" href="/invite/{{ invite.token }}/calendrier.ics">
+              📅 Ajouter au calendrier
+            </a>
+        {% endif %}
+      {% endif %}
+      
+      {% if current_date > last_valid_date %}
+        <span class="rsvp-button"> QUESTIONNAIRE FERME ❌ </span>
+      {% else %}
+        <a class="rsvp-button" href="/invite/{{ invite.token }}/questionnaire">
+          {% if invite.questionnaire_rempli %}Modifier ma réponse{% else %}Répondre au questionnaire{% endif %}
+        </a>
+      {% endif %}
     </div>
   </section>
 
@@ -632,6 +650,8 @@
   <footer>
     <p class="display">Avec joie et impatience</p>
     <p>{{ wedding_name1 }} &amp; {{ wedding_name2 }} · {{ wedding_date }} · {{ venue_name }}</p>
+    
+    <p><a href="/">Page d'Acceuil</a></p>
   </footer>
 
 </body>

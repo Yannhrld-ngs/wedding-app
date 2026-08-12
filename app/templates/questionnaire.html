@@ -6,7 +6,7 @@
   <p>Merci de répondre à toutes les questions ci-dessous — la réponse ne peut pas être envoyée tant qu'il en manque une.
     Si une question ne vous concerne pas, l'option "Pas concerné(e)" est prévue pour ça.</p>
 
-  <form method="post" action="/invite/{{ invite.token }}/questionnaire">
+  <form method="post" action="/invite/{{ invite.token }}/questionnaire#rsvp-id">
 
     <!-- ---------- Présence ---------- -->
     <label>Serez-vous {{ invite.accord("présent", "présente") }} à la mairie ?</label>
@@ -22,10 +22,6 @@
       <option value="oui" {% if invite.presence_reception and invite.presence_reception.value == "oui" %}selected{% endif %}>Oui</option>
       <option value="non" {% if invite.presence_reception and invite.presence_reception.value == "non" %}selected{% endif %}>Non</option>
     </select>
-
-    <!-- ---------- Accompagnement ---------- -->
-    <label>Avez-vous des enfants de moins de 10 ans qui vous accompagnent ? Si oui, combien ?</label>
-    <input type="number" name="nombre_enfants" min="0" step="1" value="{{ invite.nombre_enfants }}" required>
 
     <!-- ---------- Logistique / déplacement ---------- -->
     <label>Comment prévoyez-vous de rejoindre la ville de {{ venue_name }} ?</label>
@@ -88,12 +84,16 @@
     <label>Si "Autre", précisez laquelle</label>
     <input type="text" name="restriction_alimentaire_autre" placeholder="Ex : allergie aux fruits de mer etc." value="{{ invite.restriction_alimentaire_autre or '' }}">
 
-    <p style="margin-top: 24px;">
-      <button class="button" type="submit">Envoyer ma réponse</button>
-    </p>
-
-    <p><strong>Attention ! Il sera impossible de modifier le questionnaire une semaine avant la date de l'événement !</strong></p>
-
+    {% if current_date > last_valid_date %}
+      <p style="margin-top: 24px;">
+        <span> QUESTIONNAIRE FERME ❌ </span>
+      </p>
+    {% else %}
+      <p style="margin-top: 24px;">
+        <button class="button" type="submit">Envoyer ma réponse</button>
+      </p>
+      <p><strong>Attention ! Le sondage se cloturera dans {{(current_date-last_valid_date).days | abs}} jours </strong></p>
+    {% endif %}
   </form>
   <p><a href="/invite/{{ invite.token }}">← Retour à l'invitation</a></p>
 </div>

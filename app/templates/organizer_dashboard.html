@@ -38,8 +38,10 @@
 
   .send-btn,
   .page-btn {
+    display: inline-block;
     background: var(--sand);
     color: var(--umber);
+    text-decoration: none;
     border: none;
     padding: 4px 8px;
     font-size: 13px;
@@ -51,110 +53,18 @@
   .page-btn:hover {
     background: var(--terracotta-dark);
   }
- 
-  /* Fond sombre */
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
- 
-  .overlay.open {
-    opacity: 1;
-    pointer-events: auto;
-  }
- 
-  .modal {
-    background: var(--paper);
-    width: min(420px, 90vw);
-    height: 65vh;
-    max-height: 500px;
-    border-radius: 16px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    transform: scale(0.95);
-    opacity: 0;
-    transition: transform 0.2s ease, opacity 0.2s ease;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
-  }
- 
-  .overlay.open .modal {
-    transform: scale(1);
-    opacity: 1;
-  }
- 
-  .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 30px;
-    border-bottom: 1px solid var(--paper);
-  }
- 
-  .modal-header h2 {
-    margin: 0;
-    font-size: 18px;
-    color: var(--umber);
-  }
- 
-  .close-btn {
-    background: none;
-    border: none;
-    font-size: 26px;
-    line-height: 1;
-    cursor: pointer;
-    color: var(--umber);
-    padding: 4px 8px;
-  }
- 
-  .modal-options {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 8px;
-    padding: 15px;
-  }
- 
-  .modal-options a {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    text-decoration: none;
-    color: var(--umber);
-    font-size: 13px;
-    background: var(--cream);
-    border-radius: 12px;
-    transition: background 0.15s ease;
-  }
- 
-  .modal-options a:hover,
-  .modal-options a:active {
-    background: var(--cream);
-  }
- 
-  .modal-options a .icon {
-    font-size: 22px;
-  }
 </style>
 
 <div style="display:flex; justify-content:space-between; align-items:center;">
   <h2>Tableau de bord — {{ organizer_name }}{% if organizer_role %} ({{ organizer_role.upper() }}){% endif %}</h2>
-  <a href="/organisateur/logout">Déconnexion</a>
+  <a href="/organisateur/logout">Déconnexion</a> 
+  <a href="/organisateur/reinitialiser" class="reset-action" id="resetAction" style="margin-left: 10px">Réinitialiser</a>
+  </div>      
 </div>
 
 <div class="button-row">
   <a class="button" href="/organisateur/scan">📷 Scanner un QR code</a></p>
-  <a class="button" href="#" onclick="alert('Pas encore implémenté. Idées seraient appréciées ...')">📊 Statistiques détaillées</a></p>
+  <a class="button" href="/organisateur/statistiques-detaillees">📊 Statistiques détaillées</a></p>
 </div>
 
 <p><br></p>
@@ -189,15 +99,6 @@
     <tbody>
     {% for invite in invites %}
 
-      {% set invit_msg = "Bonjour " ~ invite.nom ~ " " ~ invite.prenom ~ ",\n\n"
-          ~ "Veuillez trouver votre invitation en consultant la page " ~ domain ~ "\n"
-          ~ "Votre code invité est : " ~ invite.token[-4:].upper() ~ "\n\n"
-          ~ "N'oubliez pas de confirmer votre présence en répondant au sondage.\n\n"
-          ~ "En espérant vous revoir bientôt, \n" 
-          ~ wedding_name1 ~ " & " ~ wedding_name2 ~ "\n"
-          ~ "Dieu vous garde."
-      %}
-    
       {% set presence_tags = [] %}
       {% if invite.presence_mairie and invite.presence_mairie.value == "oui" %}{% set _ = presence_tags.append("Mairie") %}{% endif %}
       {% if invite.presence_reception and invite.presence_reception.value == "oui" %}{% set _ = presence_tags.append("Réception") %}{% endif %}
@@ -226,15 +127,7 @@
         </td>
         <td>{{ invite.mode_transport.value if invite.mode_transport else "—" }}</td>
         <td>
-          {% set sms_sep = "?" if device == "android" else "&" %}
-          {% set sms_link = "sms:" ~ (invite.contact if invite.contact else '') ~ sms_sep ~ "body=" ~ (invit_msg | urlencode) %}
-          <button
-            class="send-btn"
-            type="button"
-            data-wa="https://wa.me/{{ invite.contact if invite.contact else '' }}?text={{ invit_msg | urlencode }}"
-            data-mail="mailto:{{ invite.mail if invite.mail else '' }}?body={{ invit_msg | urlencode }}"
-            data-sms="{{ sms_link }}"
-          >Envoyer ▾</button>
+          <a class="send-btn" href="/organisateur/envoyer/{{ invite.token }}">Envoyer ▾</a>
         </td>
       </tr>
       
@@ -298,26 +191,6 @@
     <button id="nextBtn" class="page-btn">Suivant →</button>
   </div>
 
-</div>
-
-<div class="overlay" id="sendOverlay">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>Envoyer l'invitation</h2>
-      <button class="close-btn" id="closeBtn" aria-label="Fermer">&times;</button>
-    </div>
-    <div class="modal-options">
-      <a id="sendWa" href="#" target="_blank" rel="noopener noreferrer">
-        <span class="icon">📱</span> WhatsApp
-      </a>
-      <a id="sendMail" href="#" target="_blank" rel="noopener noreferrer">
-        <span class="icon">✉️</span> Email
-      </a>
-      <a id="sendSms" href="#" target="_blank" rel="noopener noreferrer">
-        <span class="icon">💬</span> SMS
-      </a>
-    </div>
-  </div>
 </div>
 
 <!--Secondary info unfold-->
@@ -419,41 +292,6 @@
     });
 
     renderPage();
-  })();
-</script>
-
-<!--Send-->
-<script>
-  (function () {
-    const overlay = document.getElementById('sendOverlay');
-    const closeBtn = document.getElementById('closeBtn');
-    const waLink = document.getElementById('sendWa');
-    const mailLink = document.getElementById('sendMail');
-    const smsLink = document.getElementById('sendSms');
-
-    function openMenu() {
-      overlay.classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeMenu() {
-      overlay.classList.remove('open');
-      document.body.style.overflow = '';
-    }
-
-    document.querySelectorAll('.send-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        waLink.href = btn.dataset.wa;
-        mailLink.href = btn.dataset.mail;
-        smsLink.href = btn.dataset.sms;
-        openMenu();
-      });
-    });
-
-    closeBtn.addEventListener('click', closeMenu);
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) closeMenu();
-    });
   })();
 </script>
 

@@ -20,7 +20,3 @@ __pycache__/
 data/
 input/config.yaml
 app/static/
-
-
-# Compressed files
-*.tar

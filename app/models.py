@@ -21,12 +21,25 @@ def natural_key(prenom: str, nom: str) -> str:
     return f"{slugify(nom)}-{slugify(prenom)}"
 
 
-def generate_invite_token(prenom: str, nom: str, categorie: str) -> str:
-    """Endpoint lisible (nom-prenom) suivi d'un suffixe déterministe calculé à
-    partir de nom/prénom/catégorie : le token reste toujours le même pour un
-    invité donné, même si le log YAML est vidé et régénéré."""
+def generate_invite_token(
+    prenom: str, nom: str, categorie: str, wedding_name1: str, wedding_date: str
+) -> str:
+    """Endpoint lisible (nom-prenom) suivi d'un suffixe déterministe : le token
+    reste toujours le même pour un invité donné, même si le log YAML est vidé
+    et régénéré. Le sel n'utilise que des fragments de nom/prénom (pas les
+    valeurs complètes, déjà visibles dans l'URL) combinés à des infos propres
+    au mariage (nom1, date), pour rendre le suffixe plus difficile à deviner
+    qu'un simple hash de nom/prénom/catégorie en clair."""
     base = f"{slugify(nom)}-{slugify(prenom)}"
-    seed = f"{slugify(nom)}|{slugify(prenom)}|{slugify(categorie)}"
+    seed = "|".join(
+        [
+            slugify(nom)[:3],
+            slugify(prenom)[-5:],
+            slugify(categorie),
+            slugify(wedding_name1)[-5:],
+            str(wedding_date),
+        ]
+    )
     suffix = hashlib.sha256(seed.encode()).hexdigest()[:SLUG_SUFFIX_LENGTH]
     return f"{base}-{suffix}"
 
@@ -103,7 +116,6 @@ class Invite:
     presence_mairie: Optional[OuiNon] = None
     presence_reception: Optional[OuiNon] = None
     presence_after: Optional[OuiNon] = None
-    nombre_enfants: int = 0
     mode_transport: Optional[TransportMode] = None
     transport_details: Optional[str] = None
     covoiturage_possible: Optional[OuiNonPasConcerne] = None

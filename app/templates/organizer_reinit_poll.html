@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Réinitialisation du sondage{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Souhaitez-vous réinitialiser les données du questionnaire ?</h2>
+
+  <p>
+    Cela entraînera la perte de toutes les données déjà enregistrées ainsi que la
+    réinitialisation des QR codes.
+  </p>
+  <p>Souhaitez-vous poursuivre ?</p>
+
+  <form method="post" action="/organisateur/reinitialiser" style="display:flex; gap:12px; margin-top:24px;">
+    <button class="button" type="submit">Oui</button>
+    <a class="button" href="/organisateur/dashboard">Non</a>
+  </form>
+</div>
+{% endblock %}

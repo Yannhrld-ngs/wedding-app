@@ -71,7 +71,7 @@ def _read_guests_sql() -> list[dict]:
     rows = []
     try:
         with config.engine.connect() as conn:
-            result = conn.execute(config.text("SELECT * FROM test_guests;"))
+            result = conn.execute(config.text("SELECT * FROM guests;"))
             for row in result:
                 rows.append({
                     "prenom": row.prenom,
@@ -101,7 +101,6 @@ def _invite_to_dict(invite: Invite) -> dict:
         "presence_mairie": invite.presence_mairie.value if invite.presence_mairie else None,
         "presence_reception": invite.presence_reception.value if invite.presence_reception else None,
         "presence_after": invite.presence_after.value if invite.presence_after else None,
-        "nombre_enfants": invite.nombre_enfants,
         "mode_transport": invite.mode_transport.value if invite.mode_transport else None,
         "transport_details": invite.transport_details,
         "covoiturage_possible": invite.covoiturage_possible.value if invite.covoiturage_possible else None,
@@ -141,7 +140,6 @@ def _invite_from_dict(data: dict) -> Invite:
         presence_mairie=OuiNon(data["presence_mairie"]) if data.get("presence_mairie") else None,
         presence_reception=OuiNon(data["presence_reception"]) if data.get("presence_reception") else None,
         presence_after=OuiNon(data["presence_after"]) if data.get("presence_after") else None,
-        nombre_enfants=int(data.get("nombre_enfants") or 0),
         mode_transport=TransportMode(data["mode_transport"]) if data.get("mode_transport") else None,
         transport_details=data.get("transport_details"),
         covoiturage_possible=OuiNonPasConcerne(data["covoiturage_possible"]) if data.get("covoiturage_possible") else None,
@@ -230,7 +228,9 @@ def load_guests(organizer_only: bool = False) -> list[Invite]:
                     role=role,
                     mail=mail,
                     contact=contact,
-                    token=generate_invite_token(row["prenom"], row["nom"], categorie),
+                    token=generate_invite_token(
+                        row["prenom"], row["nom"], categorie, config.WEDDING_NAME1, config.WEDDING_DATE
+                    ),
                     qr_uuid=generate_qr_uuid(),
                 )
                 _write_qr_file(invite)
@@ -350,9 +350,6 @@ def set_organizer_password(login: str, password_hash: str) -> None:
         organizers[login] = {"password_hash": password_hash}
         _write_organizers(organizers)
 
-if __name__ == "__main__":
-    # Test de lecture des invités depuis la base de données SQL Server
-    test = load_guests(organizer_only=True)
-    qr_code_url(test[0]) if test else None
-    a=1
-    print("Invités depuis SQL Server :", test)
+if __name__ =="__main__":
+    a = load_guests(True)
+    print("A")

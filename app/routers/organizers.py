@@ -1,10 +1,16 @@
 from datetime import datetime
+from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, Request, Form
+from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
-from app import store, config
+from app import store, config, reset
+from app.analytics import (
+    compute_alimentaire_analytics,
+    compute_presence_analytics,
+    compute_transport_logement_analytics,
+)
 from app.mailer import send_email
 from app.models import OuiNon
 from app.security import (
@@ -84,7 +90,6 @@ def request_password_reset_submit(request: Request, email: str = Form(...)):
                 "request": request,
                 "confirmation": "Un lien vient de vous être envoyé sur l'adresse email renseignée."
                 "En cas de non réception veuillez patienter quelque secondes ou consulter vos SPAM",
-                "test":True,
             },
         )
     else:
@@ -93,9 +98,8 @@ def request_password_reset_submit(request: Request, email: str = Form(...)):
             {
                 "request": request,
                 "confirmation": "Vous ne figurez pas parmi les organisateurs.",
-                "test":True,
             },
-        )  
+        )
 
 @router.get("/reset-password/{token}")
 def reset_password_form(token: str, request: Request):
@@ -110,7 +114,7 @@ def reset_password_form(token: str, request: Request):
 
     return templates.TemplateResponse(
         "organizer_reset_password.html",
-        {"request": request, "token": token, "invalide": False, "inexist": False},
+        {"request": request, "token": token, "invalide": False},
     )
 
 
@@ -160,22 +164,11 @@ def dashboard(
 
     organizer = store.find_accepted_organizer_by_mail(login)
 
-    user_agent = request.headers.get("user-agent", "").lower()
-    if any(kw in user_agent for kw in ["iphone", "ipad", "ipod"]):
-        device = "ios"
-    elif "android" in user_agent:
-        device = "android"
-    else:
-        device = "other"
-
     return templates.TemplateResponse(
         "organizer_dashboard.html",
         {
             "request": request,
             "invites": invites,
-            "wedding_name1": config.WEDDING_NAME1,
-            "wedding_name2": config.WEDDING_NAME2,
-            "domain": config.BASE_URL,
             "total": total,
             "presents_mairie": presents_mairie,
             "presents_reception": presents_reception,
@@ -184,12 +177,81 @@ def dashboard(
             "confirmed_reception": confirmed_reception,
             "confirmed_after": confirmed_after,
             "organizer_login": login,
-            "device":device,
             "organizer_name": f"{organizer.prenom} {organizer.nom}" if organizer else login,
             "organizer_role": organizer.role if organizer else None,
         },
     )
 
+@router.get("/reinitialiser")
+def reinitialiser_confirm(request: Request, login: str = Depends(get_current_organizer_login)):
+    return templates.TemplateResponse("organizer_reinit_poll.html", {"request": request})
+
+
+@router.post("/reinitialiser")
+def reinitialiser_submit(request: Request, login: str = Depends(get_current_organizer_login)):
+    reset._reset_yaml_file(config.GUESTS_LOG_PATH)
+    return RedirectResponse(url="/organisateur/dashboard", status_code=303)
+
+
+@router.get("/statistiques-detaillees")
+def statistiques_detaillees(request: Request, login: str = Depends(get_current_organizer_login)):
+    return templates.TemplateResponse(
+        "analytics.html",
+        {"request": request, "data_url": "/organisateur/statistiques-detaillees/data"},
+    )
+
+
+@router.get("/statistiques-detaillees/data")
+def statistiques_detaillees_data(login: str = Depends(get_current_organizer_login)):
+    invites = store.list_guests()
+    return {
+        "presence": compute_presence_analytics(invites),
+        "alimentaire": compute_alimentaire_analytics(invites),
+        "transport": compute_transport_logement_analytics(invites),
+    }
+
+
+@router.get("/envoyer/{token}")
+def envoyer_confirm(token: str, request: Request, login: str = Depends(get_current_organizer_login)):
+    invite = store.get_by_token(token)
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invité introuvable")
+    return templates.TemplateResponse("organizer_send_invit.html", {"request": request, "invite": invite})
+
+
+@router.post("/envoyer/{token}")
+def envoyer_submit(
+    token: str,
+    request: Request,
+    canal: str = Form(...),
+    login: str = Depends(get_current_organizer_login),
+):
+    invite = store.get_by_token(token)
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invité introuvable")
+
+    message = (
+        f"Bonjour {invite.prenom} {invite.nom},\n\n"
+        f"Veuillez trouver votre invitation en consultant la page {config.BASE_URL}\n"
+        f"Votre code invité est : {invite.token[-4:].upper()}\n\n"
+        "N'oubliez pas de confirmer votre présence en répondant au sondage.\n\n"
+        f"En espérant vous revoir bientôt, \n{config.WEDDING_NAME1} & {config.WEDDING_NAME2}\n"
+        "Dieu vous garde."
+    )
+    contact = invite.contact or ""
+
+    if canal == "whatsapp":
+        url = f"https://wa.me/{contact}?text={quote(message)}"
+    elif canal == "mail":
+        url = f"mailto:{invite.mail or ''}?body={quote(message)}"
+    elif canal == "sms":
+        user_agent = request.headers.get("user-agent", "").lower()
+        sep = "?" if "android" in user_agent else "&"
+        url = f"sms:{contact}{sep}body={quote(message)}"
+    else:
+        raise HTTPException(status_code=400, detail="Canal inconnu")
+
+    return RedirectResponse(url=url, status_code=303)
 
 @router.get("/scan")
 def scan_page(request: Request, login: str = Depends(get_current_organizer_login)):

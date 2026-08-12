@@ -1,10 +1,9 @@
-from datetime import datetime
-
-from fastapi import APIRouter, Request, Form, HTTPException
+from fastapi import APIRouter, Request, Response, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
+from datetime import datetime, timedelta
 
-from app import store, config
+from app import store, config, calendar
 from app.models import (
     Invite,
     Logement,
@@ -29,18 +28,20 @@ def get_invite_or_404(token: str) -> Invite:
 @router.get("/{token}")
 def carte_invitation(token: str, request: Request):
     invite = get_invite_or_404(token)
+    today = datetime.now()
     return templates.TemplateResponse(
         "invite_card_1.html",
         {
             "request": request,
             "invite": invite,
+            "current_date":today,
+            "last_valid_date":datetime.strptime(f"{config.WEDDING_DATE} {config.WEDDING_HOUR}", "%d/%m/%Y %H:%M")-timedelta(days=config.DAYS_BEFORE_CLOSING_POLL),
             "wedding_name1": config.WEDDING_NAME1,
             "wedding_name2": config.WEDDING_NAME2,
             "wedding_date": config.WEDDING_DATE,
             "venue_name": config.VENUE_NAME,
             "venue_civil": config.VENUE_CIVIL,
             "venue_reception": config.VENUE_RECEPTION,
-            "venue_schedule": config.VENUE_SCHEDULE,
             "cover_image_url": config.COVER_IMAGE_URL,
             "wedding_colors_url":config.WEDDING_COLORS_URL,
             "qr_code_url": store.qr_code_url(invite),
@@ -51,11 +52,14 @@ def carte_invitation(token: str, request: Request):
 @router.get("/{token}/questionnaire")
 def questionnaire_form(token: str, request: Request):
     invite = get_invite_or_404(token)
+    today = datetime.now()
     return templates.TemplateResponse(
         "questionnaire.html",
         {
             "request": request,
             "invite": invite,
+            "current_date":today,
+            "last_valid_date":datetime.strptime(f"{config.WEDDING_DATE} {config.WEDDING_HOUR}", "%d/%m/%Y %H:%M")-timedelta(days=config.DAYS_BEFORE_CLOSING_POLL),
             "transport_modes": list(TransportMode),
             "venue_name": config.VENUE_NAME,
         },
@@ -69,7 +73,6 @@ def questionnaire_submit(
     presence_mairie: str = Form(...),
     presence_reception: str = Form(...),
     presence_after: str = Form(...),
-    nombre_enfants: int = Form(0),
     mode_transport: str = Form(...),
     transport_details: str = Form(""),
     covoiturage_possible: str = Form(...),
@@ -83,7 +86,6 @@ def questionnaire_submit(
     invite.presence_mairie = OuiNon(presence_mairie)
     invite.presence_reception = OuiNon(presence_reception)
     invite.presence_after = OuiNon(presence_after)
-    invite.nombre_enfants = max(0, nombre_enfants)
     invite.mode_transport = TransportMode(mode_transport)
     invite.transport_details = transport_details or None
     invite.covoiturage_possible = OuiNonPasConcerne(covoiturage_possible)
@@ -109,3 +111,17 @@ def questionnaire_submit(
     store.save_guest(invite)
 
     return RedirectResponse(url=f"/invite/{token}?merci=1", status_code=303)
+
+
+@router.get("/{token}/calendrier.ics")
+def download_calendrier_is():
+    return Response(
+                content=calendar._create(
+                    name_1 = config.WEDDING_NAME1,
+                    name_2 = config.WEDDING_NAME2,
+                    location = config.VENUE_NAME,
+                    date = config.WEDDING_DATE,
+                    heure = config.WEDDING_HOUR),
+                media_type="text/calendar",
+                headers={"Content-Disposition": "attachment; filename=mariage.ics"},
+                )
