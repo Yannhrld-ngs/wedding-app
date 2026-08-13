@@ -150,7 +150,7 @@ TRANSPORT_LABELS = {
     "voiture": "Voiture personnelle",
     "train": "Train",
     "covoiturage": "Covoiturage",
-    "en_recherche": "En réflexion / recherche",
+    "en_recherche": "En réflexion recherche",
     "autre": "Autre",
     }
 LOGEMENT_LABELS = {

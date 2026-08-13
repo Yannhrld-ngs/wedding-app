@@ -118,6 +118,23 @@
   .name-list .nom { color: var(--text-primary); font-weight: bold; }
   .name-list .detail { color: var(--text-secondary); }
   .name-list-empty { font-size: 13px; color: var(--text-muted); }
+
+  .chart-card summary {
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+  }
+  .chart-card summary:hover { color: var(--accent); }
+  .name-group-title {
+    margin: 12px 0 4px;
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+  .name-group-title:first-of-type { margin-top: 4px; }
 </style>
 
 <div class="viz-root">
@@ -155,16 +172,56 @@
         </div>
       </div>
       <div class="chart-card">
-        <h3>Invités n'ayant pas répondu</h3>
-        {% if presence.noms_questionnaire_non_rempli %}
-          <ul class="name-list">
-            {% for row in presence.noms_questionnaire_non_rempli %}
-              <li><span class="nom">{{ row.nom }}</span></li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="name-list-empty">Tout le monde a rempli le questionnaire.</p>
-        {% endif %}
+        <details>
+          <summary>Invités n'ayant pas répondu ({{ presence.noms_questionnaire_non_rempli | length }})</summary>
+          {% if presence.noms_questionnaire_non_rempli %}
+            <ul class="name-list">
+              {% for row in presence.noms_questionnaire_non_rempli %}
+                <li><span class="nom">{{ row.nom }}</span></li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="name-list-empty">Tout le monde a rempli le questionnaire.</p>
+          {% endif %}
+        </details>
+      </div>
+    </div>
+
+    <h3 style="margin-top:24px;">Suivi jour J</h3>
+    <div class="analytics-grid">
+      <div class="chart-card">
+        <details>
+          <summary>Invités n'ayant pas validé</summary>
+          {% for group in presence.noms_attendus_non_arrives %}
+            <p class="name-group-title">{{ group.phase }}</p>
+            {% if group.noms %}
+              <ul class="name-list">
+                {% for row in group.noms %}
+                  <li><span class="nom">{{ row.nom }}</span></li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="name-list-empty">Personne à signaler.</p>
+            {% endif %}
+          {% endfor %}
+        </details>
+      </div>
+      <div class="chart-card">
+        <details>
+          <summary>Imprévus</summary>
+          {% for group in presence.noms_scans_non_prevus %}
+            <p class="name-group-title">{{ group.phase }}</p>
+            {% if group.noms %}
+              <ul class="name-list">
+                {% for row in group.noms %}
+                  <li><span class="nom">{{ row.nom }}</span></li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="name-list-empty">Personne à signaler.</p>
+            {% endif %}
+          {% endfor %}
+        </details>
       </div>
     </div>
 

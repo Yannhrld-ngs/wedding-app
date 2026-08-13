@@ -66,18 +66,21 @@ def compute_presence_analytics(invites: list[Invite]) -> dict:
 
     labels = [PHASE_LABELS[p] for p in PHASES]
     arrives, attendus_non_arrives, scans_non_prevus = [], [], []
+    noms_attendus_non_arrives, noms_scans_non_prevus = [], []
 
     for phase in PHASES:
         presence_col = f"presence_{phase}"
         checked_col = f"checked_in_{phase}"
 
         attendus = df[df[presence_col] == "oui"]
-        non_arrives = int((~attendus[checked_col]).sum())
-        non_prevus = int((df[checked_col] & (df[presence_col] != "oui")).sum())
+        non_arrives_df = attendus[~attendus[checked_col]]
+        non_prevus_df = df[df[checked_col] & (df[presence_col] != "oui")]
 
-        arrives.append(len(attendus) - non_arrives)
-        attendus_non_arrives.append(non_arrives)
-        scans_non_prevus.append(non_prevus)
+        arrives.append(len(attendus) - len(non_arrives_df))
+        attendus_non_arrives.append(len(non_arrives_df))
+        scans_non_prevus.append(len(non_prevus_df))
+        noms_attendus_non_arrives.append({"phase": PHASE_LABELS[phase], "noms": _name_records(non_arrives_df)})
+        noms_scans_non_prevus.append({"phase": PHASE_LABELS[phase], "noms": _name_records(non_prevus_df)})
 
     non_rempli = df[~df["questionnaire_rempli"]]
     taux_questionnaire_non_rempli = round(len(non_rempli) / len(df) * 100, 1) if len(df) else 0.0
@@ -89,6 +92,8 @@ def compute_presence_analytics(invites: list[Invite]) -> dict:
         "scans_non_prevus": scans_non_prevus,
         "taux_questionnaire_non_rempli": taux_questionnaire_non_rempli,
         "noms_questionnaire_non_rempli": _name_records(non_rempli),
+        "noms_attendus_non_arrives": noms_attendus_non_arrives,
+        "noms_scans_non_prevus": noms_scans_non_prevus,
     }
 
 def compute_alimentaire_analytics(invites: list[Invite]) -> dict:
@@ -180,7 +185,7 @@ def _bar_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str = _ALIM_
         return base.encode(
             x=alt.X(f"{x}:N", sort="-y", title=None, axis=alt.Axis(labelAngle=0)),
             y=alt.Y(f"{y}:Q", title="Invités", axis=alt.Axis(format='d', tickMinStep=1)),
-        ).properties(title=title, width="container", height=260, autosize=autosize)
+        ).properties(title=title, width="container", height=max(120, 28 * len(df)), autosize=autosize)
 
 
 def chart_presence(presence: dict) -> alt.Chart:
@@ -196,7 +201,7 @@ def chart_presence(presence: dict) -> alt.Chart:
     hover = alt.selection_point(on="pointerover", fields=["Phase", "Statut"], empty=False)
     return (
         alt.Chart(df)
-        .mark_bar()
+        .mark_bar(size=30)
         .encode(
             x=alt.X("Phase:N", sort=None, title=None, axis=alt.Axis(labelAngle=0)),
             y=alt.Y("Invités:Q", axis=alt.Axis(format='d', tickMinStep=1)),
@@ -222,7 +227,7 @@ def chart_presence(presence: dict) -> alt.Chart:
 
 def chart_scans_non_prevus(presence: dict) -> alt.Chart:
     df = pd.DataFrame({"label": presence["phases"], "count": presence["scans_non_prevus"]})
-    return _bar_chart(df, "label", "count", "Imprévus", color=_RETARD_COLOR)
+    return _bar_chart(df, "label", "count", "Non Prévus", color=_RETARD_COLOR)
 
 
 def chart_restrictions(alimentaire: dict) -> alt.Chart:
@@ -238,3 +243,4 @@ def chart_transport(transport: dict) -> alt.Chart:
 def chart_logement(logement: dict) -> alt.Chart:
     df = pd.DataFrame(logement["logement_histogram"])
     return _bar_chart(df, "label", "count", "Logement : trouvé vs. besoin d'aide", color=_RETARD_COLOR)
+
