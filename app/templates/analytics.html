@@ -164,7 +164,8 @@
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="tab-presence">Présence</button>
     <button class="tab-btn" data-tab="tab-alimentaire">Alimentaire</button>
-    <button class="tab-btn" data-tab="tab-transport">Transport et logement</button>
+    <button class="tab-btn" data-tab="tab-transport">Transport</button>
+    <button class="tab-btn" data-tab="tab-logement">Logement</button>
   </div>
 
   <!-- ---------- Catégorie 1 : Présence ---------- -->
@@ -241,7 +242,7 @@
     </div>
   </div>
 
-  <!-- ---------- Catégorie 3 : Transport et logement ---------- -->
+  <!-- ---------- Catégorie 3 : Transport ---------- -->
   <div class="tab-panel" id="tab-transport">
     <div class="analytics-grid">
       <div class="chart-card">
@@ -250,25 +251,42 @@
       </div>
 
       <div class="chart-card">
-        <h3>Logement : trouvé vs. besoin d'aide</h3>
-        <div id="chartLogement"></div>
+        <h3>Souhaitent la navette</h3>
+        <div id="navetteList"></div>
       </div>
     </div>
 
     <div class="analytics-grid" style="margin-top:24px;">
-      <div class="chart-card">
-        <h3>Souhaitent la navette</h3>
-        <div id="navetteList"></div>
-      </div>
-
       <div class="chart-card">
         <h3>Proposent du covoiturage</h3>
         <div id="covoiturageList"></div>
       </div>
 
       <div class="chart-card">
-        <h3>Ne savent pas comment venir</h3>
+        <h3>Recherche un moyen de transport</h3>
         <div id="sansSolutionList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- Catégorie 4 : Logement ---------- -->
+  <div class="tab-panel" id="tab-logement">
+    <div class="analytics-grid">
+      <div class="chart-card">
+        <h3>Logement : trouvé vs. besoin d'aide</h3>
+        <div id="chartLogement"></div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Ne savent pas où dormir</h3>
+        <div id="logementNeSaitPasList"></div>
+      </div>
+    </div>
+
+    <div class="analytics-grid" style="margin-top:24px;">
+      <div class="chart-card">
+        <h3>Toujours en recherche de logement</h3>
+        <div id="logementEnRechercheList"></div>
       </div>
     </div>
   </div>
@@ -471,6 +489,7 @@
       const presence = data.presence;
       const alimentaire = data.alimentaire;
       const transport = data.transport;
+      const logement = data.logement;
 
       renderStacked(
         "chartPresence", presence.phases, presence.arrives, presence.attendus_non_arrives,
@@ -487,10 +506,13 @@
       renderCrosstab(alimentaire.crosstab);
 
       renderSingle("chartTransport", transport.transport_histogram.map((r) => r.label), transport.transport_histogram.map((r) => r.count), getComputedColor("--series-alim"), "Mode de transport");
-      renderSingle("chartLogement", transport.logement_histogram.map((r) => r.label), transport.logement_histogram.map((r) => r.count), getComputedColor("--series-retard"), "Logement");
       renderSimpleList("navetteList", transport.navette, "contact", "Personne n'a demandé la navette.");
       renderSimpleList("covoiturageList", transport.covoiturage, "contact", "Personne n'a proposé de covoiturage.");
       renderSimpleList("sansSolutionList", transport.sans_solution, "contact", "Tout le monde a un moyen de transport prévu.");
+
+      renderSingle("chartLogement", logement.logement_histogram.map((r) => r.label), logement.logement_histogram.map((r) => r.count), getComputedColor("--series-retard"), "Logement");
+      renderSimpleList("logementNeSaitPasList", logement.ne_sait_pas, "contact", "Tout le monde sait où dormir.");
+      renderSimpleList("logementEnRechercheList", logement.en_recherche, "contact", "Personne n'est plus en recherche de logement.");
 
       document.getElementById("lastUpdated").textContent =
         "Dernière mise à jour : " + new Date().toLocaleTimeString("fr-FR");

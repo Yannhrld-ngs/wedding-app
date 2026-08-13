@@ -6,6 +6,7 @@ Fonctionnalités principales :
 - Gestion des organisateurs et de leurs mots de passe.
 """
 import csv
+import logging
 import os
 from datetime import datetime
 from typing import Optional
@@ -15,6 +16,8 @@ import yaml
 from filelock import FileLock
 
 from app import config
+
+logger = logging.getLogger(__name__)
 from app.models import (
     Invite,
     Logement,
@@ -83,7 +86,7 @@ def _read_guests_sql() -> list[dict]:
                     "contact": row.contact,
                 })
     except Exception as e:
-        print(f"Erreur lors de la lecture des invités depuis la base de données {config.SQL_DATABASE} :", e)
+        logger.error(f"Erreur lors de la lecture des invités depuis la base de données {config.SQL_DATABASE} : {e}")
     return rows
 
 def _invite_to_dict(invite: Invite) -> dict:
@@ -207,7 +210,7 @@ def load_guests(organizer_only: bool = False) -> list[Invite]:
                 del log[key]
                 changed = True
         elif log:
-            print("Attention : aucun invité lu (CSV/SQL vide ou en erreur) — synchronisation ignorée pour éviter de tout supprimer.")
+            logger.warning("Attention : aucun invité lu (CSV/SQL vide ou en erreur) — synchronisation ignorée pour éviter de tout supprimer.")
 
         # Synchronise les invités du CSV ou de la base de données SQL Server avec le log YAML
         for row in guests_data:

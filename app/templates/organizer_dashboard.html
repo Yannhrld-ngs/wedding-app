@@ -100,9 +100,9 @@
     {% for invite in invites %}
 
       {% set presence_tags = [] %}
-      {% if invite.presence_mairie and invite.presence_mairie.value == "oui" %}{% set _ = presence_tags.append("Mairie") %}{% endif %}
-      {% if invite.presence_reception and invite.presence_reception.value == "oui" %}{% set _ = presence_tags.append("Réception") %}{% endif %}
-      {% if invite.presence_after and invite.presence_after.value == "oui" %}{% set _ = presence_tags.append("After") %}{% endif %}
+      {% if invite.presence_mairie and invite.presence_mairie.value == "oui" %}{% set _ = presence_tags.append(phase_labels.mairie) %}{% endif %}
+      {% if invite.presence_reception and invite.presence_reception.value == "oui" %}{% set _ = presence_tags.append(phase_labels.reception) %}{% endif %}
+      {% if invite.presence_after and invite.presence_after.value == "oui" %}{% set _ = presence_tags.append(phase_labels.after) %}{% endif %}
       
       <!--Main information-->
       <tr class="main-row">
@@ -122,10 +122,10 @@
           {% elif invite.restriction_alimentaire.value == "autre" %}
             {{ invite.restriction_alimentaire_autre or "Autre" }}
           {% else %}
-            {{ invite.restriction_alimentaire.value | replace("_", " ") | capitalize }}
+            {{ restriction_labels.get(invite.restriction_alimentaire.value, invite.restriction_alimentaire.value) }}
           {% endif %}
         </td>
-        <td>{{ invite.mode_transport.value if invite.mode_transport else "—" }}</td>
+        <td>{{ transport_labels.get(invite.mode_transport.value, invite.mode_transport.value) if invite.mode_transport else "—" }}</td>
         <td>
           <a class="send-btn" href="/organisateur/envoyer/{{ invite.token }}">Envoyer ▾</a>
         </td>
@@ -137,45 +137,45 @@
         <td colspan="5">
           <div style="display: grid; grid-template-columns: max-content 1fr; row-gap: 6px; column-gap: 16px; padding: 8px 0;"> 
           {% if not invite.presence_mairie %}
-            <strong>Présence Mairie:</strong> <span class="badge badge-pending">En attente</span>
+            <strong>Présence {{ phase_labels.mairie }}:</strong> <span class="badge badge-pending">En attente</span>
           {% elif invite.presence_mairie.value == "oui" %}
-            <strong>Présence Mairie:</strong> <span class="badge badge-ok">Oui</span>
+            <strong>Présence {{ phase_labels.mairie }}:</strong> <span class="badge badge-ok">Oui</span>
           {% else %}
-            <strong>Présence Mairie:</strong> <span class="badge badge-no">Non</span>
+            <strong>Présence {{ phase_labels.mairie }}:</strong> <span class="badge badge-no">Non</span>
           {% endif %}
-   
+
           {% if invite.checked_in_mairie %}
-            <strong>Validation Mairie:</strong> <span class="badge badge-ok">✓ {{ invite.checked_in_mairie_at.strftime('%H:%M') }}</span>
+            <strong>Validation {{ phase_labels.mairie }}:</strong> <span class="badge badge-ok">✓ {{ invite.checked_in_mairie_at.strftime('%H:%M') }}</span>
           {% else %}
-            <strong>Validation Mairie:</strong> <span class="badge badge-pending">Non validé</span>
+            <strong>Validation {{ phase_labels.mairie }}:</strong> <span class="badge badge-pending">Non validé</span>
           {% endif %}
 
           {% if not invite.presence_reception %}
-            <strong>Présence Reception:</strong> <span class="badge badge-pending">En attente</span>
+            <strong>Présence {{ phase_labels.reception }}:</strong> <span class="badge badge-pending">En attente</span>
           {% elif invite.presence_reception.value == "oui" %}
-            <strong>Présence Reception:</strong> <span class="badge badge-ok">Oui</span>
+            <strong>Présence {{ phase_labels.reception }}:</strong> <span class="badge badge-ok">Oui</span>
           {% else %}
-            <strong>Présence Reception:</strong> <span class="badge badge-no">Non</span>
+            <strong>Présence {{ phase_labels.reception }}:</strong> <span class="badge badge-no">Non</span>
           {% endif %}
 
           {% if invite.checked_in_reception %}
-            <strong>Validation Reception:</strong> <span class="badge badge-ok">✓ {{ invite.checked_in_reception_at.strftime('%H:%M') }}</span>
+            <strong>Validation {{ phase_labels.reception }}:</strong> <span class="badge badge-ok">✓ {{ invite.checked_in_reception_at.strftime('%H:%M') }}</span>
           {% else %}
-            <strong>Validation Reception:</strong> <span class="badge badge-pending">Non validé</span>
+            <strong>Validation {{ phase_labels.reception }}:</strong> <span class="badge badge-pending">Non validé</span>
           {% endif %}
 
           {% if not invite.presence_after %}
-            <strong>Présence After:</strong> <span class="badge badge-pending">En attente</span>
+            <strong>Présence {{ phase_labels.after }}:</strong> <span class="badge badge-pending">En attente</span>
           {% elif invite.presence_after.value == "oui" %}
-            <strong>Présence After:</strong> <span class="badge badge-ok">Oui</span>
+            <strong>Présence {{ phase_labels.after }}:</strong> <span class="badge badge-ok">Oui</span>
           {% else %}
-            <strong>Présence After:</strong> <span class="badge badge-no">Non</span>
+            <strong>Présence {{ phase_labels.after }}:</strong> <span class="badge badge-no">Non</span>
           {% endif %}
 
           {% if invite.checked_in_after %}
-            <strong>Validation After:</strong> <span class="badge badge-ok">✓ {{ invite.checked_in_after_at.strftime('%H:%M') }}</span>
+            <strong>Validation {{ phase_labels.after }}:</strong> <span class="badge badge-ok">✓ {{ invite.checked_in_after_at.strftime('%H:%M') }}</span>
           {% else %}
-            <strong>Validation After:</strong> <span class="badge badge-pending">Non validé</span>
+            <strong>Validation {{ phase_labels.after }}:</strong> <span class="badge badge-pending">Non validé</span>
           {% endif %}
           </div>
         </td>

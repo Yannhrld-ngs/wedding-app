@@ -7,9 +7,9 @@
 
   <label for="phaseSelect">Scan pour :</label>
   <select id="phaseSelect">
-    <option value="mairie">Mairie</option>
-    <option value="reception">Réception</option>
-    <option value="after">After</option>
+    {% for value, label in phase_labels.items() %}
+      <option value="{{ value }}">{{ label }}</option>
+    {% endfor %}
   </select>
 
   <div id="reader" style="width: 100%; max-width: 400px; margin: 16px auto 0;"></div>

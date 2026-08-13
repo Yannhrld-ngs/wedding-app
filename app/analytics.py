@@ -1,66 +1,84 @@
 """
-Calcule les métriques de présence (mairie/réception/after) affichées sur la
-page analytics : invités attendus mais pas encore scannés, scans non prévus
-(retardataires non confirmés), et taux de no-show.
+Calcule les métriques affichées sur la page analytics, à partir de la liste
+des invités (déjà synchronisée et verrouillée par store.list_guests())
+convertie en DataFrame pandas pour les agrégations (comptages, groupby).
 """
-from app.models import Invite, Logement, OuiNon, OuiNonPasConcerne, RestrictionAlimentaire, TransportMode
+import pandas as pd
 
-PHASES = ["mairie", "reception", "after"]
-PHASE_LABELS = {"mairie": "Mairie", "reception": "Réception", "after": "After"}
+from app.config import (
+    _BOOL_COLUMNS,
+    _COLUMNS,
+    LOGEMENT_BUCKET_LABELS,
+    PHASE_LABELS,
+    PHASES,
+    RESTRICTION_LABELS,
+    TRANSPORT_LABELS,
+)
+from app.models import Invite, Logement, OuiNonPasConcerne
 
-RESTRICTION_LABELS = {
-    "aucune": "Non",
-    "halal": "Halal",
-    "vegetarien": "Végétarien",
-    "vegetalien": "Végétalien (vegan)",
-    "sans_gluten": "Sans gluten",
-    "sans_sel": "Sans sel",
-    "sans_sucre": "Sans sucre",
-    "sans_alcool": "Sans alcool",
-    "autre": "Autre",
-}
 
-TRANSPORT_LABELS = {
-    "pas_concerne": "Pas concerné",
-    "voiture": "Voiture",
-    "train": "Train",
-    "covoiturage": "Covoiturage",
-    "en_recherche": "En recherche",
-    "autre": "Autre",
-}
+def _to_dataframe(invites: list[Invite]) -> pd.DataFrame:
+    """Aplati la liste d'Invite en DataFrame : enums résolus en str (avec le
+    même repli que l'ancien code — ex. mode_transport manquant = 'pas_concerne'),
+    prêt pour value_counts()/groupby()."""
+    if not invites:
+        # Un DataFrame vide créé juste avec `columns=` met tout en dtype
+        # object, y compris les colonnes booléennes — `~df["x"]` ne se
+        # comporte alors plus comme un masque booléen. On force les dtypes.
+        return pd.DataFrame(
+            {col: pd.Series(dtype="bool" if col in _BOOL_COLUMNS else "object") for col in _COLUMNS}
+        )
 
-LOGEMENT_LABELS = {
-    "trouve": "Logement trouvé",
-    "besoin_aide": "Besoin d'aide",
-    "pas_concerne": "Pas concerné",
-}
+    rows = [
+        {
+            "nom_complet": f"{i.prenom} {i.nom}",
+            "contact": i.contact or i.mail or "—",
+            "presence_mairie": i.presence_mairie.value if i.presence_mairie else None,
+            "presence_reception": i.presence_reception.value if i.presence_reception else None,
+            "presence_after": i.presence_after.value if i.presence_after else None,
+            "checked_in_mairie": i.checked_in_mairie,
+            "checked_in_reception": i.checked_in_reception,
+            "checked_in_after": i.checked_in_after,
+            "questionnaire_rempli": i.questionnaire_rempli,
+            "mode_transport": i.mode_transport.value if i.mode_transport else "pas_concerne",
+            "covoiturage_possible": i.covoiturage_possible.value if i.covoiturage_possible else None,
+            "navette_souhaitee": i.navette_souhaitee.value if i.navette_souhaitee else None,
+            "logement": i.logement.value if i.logement else "pas_concerne",
+            "restriction_alimentaire": i.restriction_alimentaire.value if i.restriction_alimentaire else "aucune",
+            "restriction_alimentaire_autre": i.restriction_alimentaire_autre,
+        }
+        for i in invites
+    ]
+    return pd.DataFrame(rows, columns=_COLUMNS)
+
+
+def _name_records(df: pd.DataFrame, extra_col: str | None = None, extra_key: str = "detail") -> list[dict]:
+    """DataFrame filtré -> liste de {"nom": ...} (+ un champ optionnel nommé extra_key)."""
+    if extra_col is None:
+        return [{"nom": n} for n in df["nom_complet"]]
+    return [{"nom": n, extra_key: d} for n, d in zip(df["nom_complet"], df[extra_col])]
 
 
 def compute_presence_analytics(invites: list[Invite]) -> dict:
+    df = _to_dataframe(invites)
+
     labels = [PHASE_LABELS[p] for p in PHASES]
-    arrives = []
-    attendus_non_arrives = []
-    scans_non_prevus = []
+    arrives, attendus_non_arrives, scans_non_prevus = [], [], []
 
     for phase in PHASES:
-        presence_attr = f"presence_{phase}"
-        checked_attr = f"checked_in_{phase}"
+        presence_col = f"presence_{phase}"
+        checked_col = f"checked_in_{phase}"
 
-        attendus = [i for i in invites if getattr(i, presence_attr) == OuiNon.oui]
-        non_arrives = sum(1 for i in attendus if not getattr(i, checked_attr))
-
-        non_prevus = sum(
-            1
-            for i in invites
-            if getattr(i, checked_attr) and getattr(i, presence_attr) != OuiNon.oui
-        )
+        attendus = df[df[presence_col] == "oui"]
+        non_arrives = int((~attendus[checked_col]).sum())
+        non_prevus = int((df[checked_col] & (df[presence_col] != "oui")).sum())
 
         arrives.append(len(attendus) - non_arrives)
         attendus_non_arrives.append(non_arrives)
         scans_non_prevus.append(non_prevus)
 
-    non_rempli = [i for i in invites if not i.questionnaire_rempli]
-    taux_questionnaire_non_rempli = round(len(non_rempli) / len(invites) * 100, 1) if invites else 0.0
+    non_rempli = df[~df["questionnaire_rempli"]]
+    taux_questionnaire_non_rempli = round(len(non_rempli) / len(df) * 100, 1) if len(df) else 0.0
 
     return {
         "phases": labels,
@@ -68,84 +86,66 @@ def compute_presence_analytics(invites: list[Invite]) -> dict:
         "attendus_non_arrives": attendus_non_arrives,
         "scans_non_prevus": scans_non_prevus,
         "taux_questionnaire_non_rempli": taux_questionnaire_non_rempli,
-        "noms_questionnaire_non_rempli": [{"nom": f"{i.prenom} {i.nom}"} for i in non_rempli],
+        "noms_questionnaire_non_rempli": _name_records(non_rempli),
     }
 
 
-def _restriction_key(invite: Invite) -> str:
-    return invite.restriction_alimentaire.value if invite.restriction_alimentaire else "aucune"
-
-
 def compute_alimentaire_analytics(invites: list[Invite]) -> dict:
-    counts = {r.value: 0 for r in RestrictionAlimentaire}
-    for invite in invites:
-        key = _restriction_key(invite)
-        counts[key] = counts.get(key, 0) + 1
+    df = _to_dataframe(invites)
 
+    counts = df["restriction_alimentaire"].value_counts()
     histogram = [
-        {"label": RESTRICTION_LABELS.get(key, key), "count": count}
-        for key, count in counts.items()
-        if count > 0
+        {"label": RESTRICTION_LABELS.get(key, key), "count": int(count)} for key, count in counts.items()
     ]
 
-    autres = [
-        {"nom": f"{invite.prenom} {invite.nom}", "detail": invite.restriction_alimentaire_autre}
-        for invite in invites
-        if invite.restriction_alimentaire == RestrictionAlimentaire.autre and invite.restriction_alimentaire_autre
-    ]
+    autres_df = df[(df["restriction_alimentaire"] == "autre") & df["restriction_alimentaire_autre"].fillna("").ne("")]
+    autres = _name_records(autres_df, "restriction_alimentaire_autre", "detail")
 
     crosstab = []
-    for key, count in counts.items():
-        if count == 0:
-            continue
-        subset = [i for i in invites if _restriction_key(i) == key]
-        oui = sum(1 for i in subset if i.presence_reception == OuiNon.oui)
-        non = sum(1 for i in subset if i.presence_reception == OuiNon.non)
-        en_attente = len(subset) - oui - non
-        crosstab.append(
-            {"label": RESTRICTION_LABELS.get(key, key), "oui": oui, "non": non, "en_attente": en_attente}
-        )
+    for key, group in df.groupby("restriction_alimentaire"):
+        oui = int((group["presence_reception"] == "oui").sum())
+        non = int((group["presence_reception"] == "non").sum())
+        en_attente = len(group) - oui - non
+        crosstab.append({"label": RESTRICTION_LABELS.get(key, key), "oui": oui, "non": non, "en_attente": en_attente})
 
     return {"histogram": histogram, "autres": autres, "crosstab": crosstab}
 
 
-def _guest_row(invite: Invite) -> dict:
-    return {"nom": f"{invite.prenom} {invite.nom}", "contact": invite.contact or invite.mail or "—"}
+def compute_transport_analytics(invites: list[Invite]) -> dict:
+    df = _to_dataframe(invites)
 
-
-def compute_transport_logement_analytics(invites: list[Invite]) -> dict:
-    transport_counts = {t.value: 0 for t in TransportMode}
-    for invite in invites:
-        key = invite.mode_transport.value if invite.mode_transport else "pas_concerne"
-        transport_counts[key] = transport_counts.get(key, 0) + 1
+    counts = df["mode_transport"].value_counts()
     transport_histogram = [
-        {"label": TRANSPORT_LABELS.get(key, key), "count": count}
-        for key, count in transport_counts.items()
-        if count > 0
+        {"label": TRANSPORT_LABELS.get(key, key), "count": int(count)} for key, count in counts.items()
     ]
 
-    navette = [_guest_row(i) for i in invites if i.navette_souhaitee == OuiNonPasConcerne.oui]
-    covoiturage = [_guest_row(i) for i in invites if i.covoiturage_possible == OuiNonPasConcerne.oui]
-    sans_solution = [_guest_row(i) for i in invites if i.mode_transport == TransportMode.en_recherche]
-
-    logement_counts = {"trouve": 0, "besoin_aide": 0, "pas_concerne": 0}
-    for invite in invites:
-        if invite.logement == Logement.oui:
-            logement_counts["trouve"] += 1
-        elif invite.logement in (Logement.toujours_en_recherche, Logement.ne_sait_pas):
-            logement_counts["besoin_aide"] += 1
-        else:
-            logement_counts["pas_concerne"] += 1
-    logement_histogram = [
-        {"label": LOGEMENT_LABELS[key], "count": count}
-        for key, count in logement_counts.items()
-        if count > 0
-    ]
+    navette = _name_records(df[df["navette_souhaitee"] == OuiNonPasConcerne.oui.value], "contact", "contact")
+    covoiturage = _name_records(df[df["covoiturage_possible"] == OuiNonPasConcerne.oui.value], "contact", "contact")
+    sans_solution = _name_records(df[df["mode_transport"] == "en_recherche"], "contact", "contact")
 
     return {
         "transport_histogram": transport_histogram,
         "navette": navette,
         "covoiturage": covoiturage,
         "sans_solution": sans_solution,
+    }
+
+
+def compute_logement_analytics(invites: list[Invite]) -> dict:
+    df = _to_dataframe(invites)
+
+    besoin_aide_values = {Logement.toujours_en_recherche.value, Logement.ne_sait_pas.value}
+    bucket = df["logement"].apply(
+        lambda v: "trouve" if v == Logement.oui.value else ("besoin_aide" if v in besoin_aide_values else "pas_concerne")
+    )
+    counts = bucket.value_counts()
+    logement_histogram = [{"label": LOGEMENT_BUCKET_LABELS[key], "count": int(count)} for key, count in counts.items()]
+
+    ne_sait_pas = _name_records(df[df["logement"] == Logement.ne_sait_pas.value], "contact", "contact")
+    en_recherche = _name_records(df[df["logement"] == Logement.toujours_en_recherche.value], "contact", "contact")
+
+    return {
         "logement_histogram": logement_histogram,
+        "ne_sait_pas": ne_sait_pas,
+        "en_recherche": en_recherche,
     }

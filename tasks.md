@@ -1,5 +1,4 @@
 ## À faire
-- [ ] Add loggin file
 
 ## En cours
 
@@ -17,3 +16,4 @@
 - [X] Ajouter au Calendrier: si réponse oui à l'un de serez vous présent à l'un des questionnaires. Mettre dans le calendrier Jour entier et rappel 3 jours avant. 
 - [x] Implementer bloquer modification du questionnaire une semaine avant.
 - [X] Dashboard Analytique avec clées KPI
+- [X] Add loggin file

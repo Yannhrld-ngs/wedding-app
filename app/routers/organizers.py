@@ -8,9 +8,11 @@ from fastapi.templating import Jinja2Templates
 from app import store, config, reset
 from app.analytics import (
     compute_alimentaire_analytics,
+    compute_logement_analytics,
     compute_presence_analytics,
-    compute_transport_logement_analytics,
+    compute_transport_analytics,
 )
+from app.config import PHASE_LABELS as CHART_PHASE_LABELS, RESTRICTION_LABELS, TRANSPORT_LABELS
 from app.mailer import send_email
 from app.models import OuiNon
 from app.security import (
@@ -179,6 +181,9 @@ def dashboard(
             "organizer_login": login,
             "organizer_name": f"{organizer.prenom} {organizer.nom}" if organizer else login,
             "organizer_role": organizer.role if organizer else None,
+            "phase_labels": CHART_PHASE_LABELS,
+            "restriction_labels": RESTRICTION_LABELS,
+            "transport_labels": TRANSPORT_LABELS,
         },
     )
 
@@ -207,7 +212,8 @@ def statistiques_detaillees_data(login: str = Depends(get_current_organizer_logi
     return {
         "presence": compute_presence_analytics(invites),
         "alimentaire": compute_alimentaire_analytics(invites),
-        "transport": compute_transport_logement_analytics(invites),
+        "transport": compute_transport_analytics(invites),
+        "logement": compute_logement_analytics(invites),
     }
 
 
@@ -255,7 +261,9 @@ def envoyer_submit(
 
 @router.get("/scan")
 def scan_page(request: Request, login: str = Depends(get_current_organizer_login)):
-    return templates.TemplateResponse("organizer_scan.html", {"request": request})
+    return templates.TemplateResponse(
+        "organizer_scan.html", {"request": request, "phase_labels": CHART_PHASE_LABELS}
+    )
 
 
 PHASE_LABELS = {"mairie": "la mairie", "reception": "la réception", "after": "l'after"}

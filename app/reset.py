@@ -1,25 +1,28 @@
 """
 Réinitialise l'état local généré par l'app :
 - supprime tous les QR codes dans app/static/qrcodes (config.QR_OUTPUT_DIR) ;
-- vide data/invites_log.yaml (régénéré automatiquement au prochain accès) ;
+- vide data/invites.yaml (régénéré automatiquement au prochain accès) ;
 - vide data/organizers.yaml (comptes organisateurs + mots de passe) — DEMANDE
   toujours une confirmation séparée, ce fichier étant le seul à contenir des
   identifiants de connexion.
 
 Usage :
-    python -m app.reset          # supprime QR + invites_log sans demander,
+    python -m app.reset          # supprime QR + invites.yaml sans demander,
                                   # demande confirmation avant de vider organizers.yaml
     python -m app.reset --yes    # ne demande rien, y compris pour organizers.yaml (scripts/CI)
 """
 import sys
 import os
 import glob
+import logging
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 import yaml
 
 from app import config
+
+logger = logging.getLogger(__name__)
 
 
 def _reset_qr_codes(which:str = "all" ) -> None:
@@ -33,7 +36,7 @@ def _reset_qr_codes(which:str = "all" ) -> None:
 
     for f in qr_files:
         os.remove(f)
-        print(f"{f} a bien été supprimé")
+        logger.info(f"{f} a bien été supprimé")
 
 def _reset_yaml_file(path: str) -> None:
     '''

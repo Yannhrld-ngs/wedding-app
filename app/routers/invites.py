@@ -4,6 +4,13 @@ from fastapi.templating import Jinja2Templates
 from datetime import datetime, timedelta
 
 from app import store, config, calendar
+from app.config import (
+    LOGEMENT_LABELS,
+    OUI_NON_LABELS,
+    OUI_NON_PAS_CONCERNE_LABELS,
+    RESTRICTION_LABELS,
+    TRANSPORT_LABELS,
+)
 from app.models import (
     Invite,
     Logement,
@@ -60,8 +67,12 @@ def questionnaire_form(token: str, request: Request):
             "invite": invite,
             "current_date":today,
             "last_valid_date":datetime.strptime(f"{config.WEDDING_DATE} {config.WEDDING_HOUR}", "%d/%m/%Y %H:%M")-timedelta(days=config.DAYS_BEFORE_CLOSING_POLL),
-            "transport_modes": list(TransportMode),
             "venue_name": config.VENUE_NAME,
+            "oui_non_labels": OUI_NON_LABELS,
+            "oui_non_pas_concerne_labels": OUI_NON_PAS_CONCERNE_LABELS,
+            "transport_labels": TRANSPORT_LABELS,
+            "logement_labels": LOGEMENT_LABELS,
+            "restriction_labels": RESTRICTION_LABELS,
         },
     )
 
