@@ -167,7 +167,7 @@ def _bar_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str = _ALIM_
     """Barres simples, horizon ou vertical"""
     
     hover = alt.selection_point(on="pointerover", fields=[x], empty=False)
-    base = alt.Chart(df).mark_bar(color=color, size=30).encode(
+    base = alt.Chart(df).mark_bar(color=color, size=25).encode(
         opacity=alt.condition(hover, alt.value(1), alt.value(0.75)),
         tooltip=[alt.Tooltip(x, title="Réponse"), alt.Tooltip(y, title="Invités")],
     ).add_params(hover)
@@ -201,7 +201,7 @@ def chart_presence(presence: dict) -> alt.Chart:
     hover = alt.selection_point(on="pointerover", fields=["Phase", "Statut"], empty=False)
     return (
         alt.Chart(df)
-        .mark_bar(size=30)
+        .mark_bar(size=25)
         .encode(
             x=alt.X("Phase:N", sort=None, title=None, axis=alt.Axis(labelAngle=0)),
             y=alt.Y("Invités:Q", axis=alt.Axis(format='d', tickMinStep=1)),
