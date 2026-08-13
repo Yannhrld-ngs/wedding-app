@@ -69,7 +69,14 @@ DAYS_BEFORE_CLOSING_POLL = 7
 VENUE_NAME = os.getenv("VENUE_NAME", default=default_config["inputs"]["VENUE_NAME"])
 VENUE_CIVIL = os.getenv("VENUE_CIVIL", default=default_config["inputs"]["VENUE_CIVIL"])
 VENUE_RECEPTION = os.getenv("VENUE_RECEPTION", default=default_config["inputs"]["VENUE_RECEPTION"])
-
+# Planning et accès affichés sur /organisateur/info-pratiques — seule l'heure
+PLANNING = [
+    {"heure": WEDDING_HOUR, "moment": "Cérémonie civile à la mairie"},
+    {"heure": "à confirmer", "moment": "Arrivée des invités"},
+    {"heure": "à confirmer", "moment": "à confirmer"},
+     {"heure": "à confirmer", "moment": "à confirmer"},
+     {"heure": "à confirmer", "moment": "à confirmer"},
+]
 
 # --- Local files  ---
 GUESTS_PATH = "inputs/invites_list.csv"

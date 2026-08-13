@@ -7,6 +7,11 @@ from fastapi.templating import Jinja2Templates
 
 from app import store, config, reset
 from app.analytics import (
+    chart_logement,
+    chart_presence,
+    chart_restrictions,
+    chart_scans_non_prevus,
+    chart_transport,
     compute_alimentaire_analytics,
     compute_logement_analytics,
     compute_presence_analytics,
@@ -198,23 +203,47 @@ def reinitialiser_submit(request: Request, login: str = Depends(get_current_orga
     return RedirectResponse(url="/organisateur/dashboard", status_code=303)
 
 
-@router.get("/statistiques-detaillees")
-def statistiques_detaillees(request: Request, login: str = Depends(get_current_organizer_login)):
+@router.get("/info-pratiques")
+def info_pratiques(request: Request, login: str = Depends(get_current_organizer_login)):
     return templates.TemplateResponse(
-        "analytics.html",
-        {"request": request, "data_url": "/organisateur/statistiques-detaillees/data"},
+        "organizer_info_pratiques.html",
+        {
+            "request": request,
+            "planning": config.PLANNING,
+            "organizers": store.accepted_organizers(),
+        },
     )
 
 
-@router.get("/statistiques-detaillees/data")
-def statistiques_detaillees_data(login: str = Depends(get_current_organizer_login)):
+@router.get("/statistiques-detaillees")
+def statistiques_detaillees(request: Request, login: str = Depends(get_current_organizer_login)):
     invites = store.list_guests()
-    return {
-        "presence": compute_presence_analytics(invites),
-        "alimentaire": compute_alimentaire_analytics(invites),
-        "transport": compute_transport_analytics(invites),
-        "logement": compute_logement_analytics(invites),
+
+    presence = compute_presence_analytics(invites)
+    alimentaire = compute_alimentaire_analytics(invites)
+    transport = compute_transport_analytics(invites)
+    logement = compute_logement_analytics(invites)
+
+    charts = {
+        "presence": chart_presence(presence).to_dict(),
+        "scans_non_prevus": chart_scans_non_prevus(presence).to_dict(),
+        "restrictions": chart_restrictions(alimentaire).to_dict(),
+        "transport": chart_transport(transport).to_dict(),
+        "logement": chart_logement(logement).to_dict(),
     }
+
+    return templates.TemplateResponse(
+        "analytics.html",
+        {
+            "request": request,
+            "presence": presence,
+            "alimentaire": alimentaire,
+            "transport": transport,
+            "logement": logement,
+            "charts": charts,
+            "generated_at": datetime.now().strftime("%H:%M:%S"),
+        },
+    )
 
 
 @router.get("/envoyer/{token}")

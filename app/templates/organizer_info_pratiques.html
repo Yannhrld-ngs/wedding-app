@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Informations pratiques{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Informations pratiques</h1>
+    <a href="/organisateur/dashboard">← Retour</a>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Planning détaillé</h2>
+  <table>
+    <thead>
+      <tr><th>Heure</th><th>Moment</th></tr>
+    </thead>
+    <tbody>
+      {% for etape in planning %}
+        <tr><td>{{ etape.heure }}</td><td>{{ etape.moment }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Contacts organisateurs</h2>
+  {% if organizers %}
+    <table>
+      <thead>
+        <tr><th>Nom</th><th>Rôle</th><th>Contact</th></tr>
+      </thead>
+      <tbody>
+        {% for orga in organizers %}
+          <tr>
+            <td>{{ orga.prenom }} {{ orga.nom }}</td>
+            <td>{{ orga.role or "—" }}</td>
+            <td>{{ orga.contact or orga.mail or "—" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Aucun organisateur enregistré pour le moment.</p>
+  {% endif %}
+</div>
+
+{% endblock %}

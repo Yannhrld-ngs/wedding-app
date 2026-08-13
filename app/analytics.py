@@ -3,6 +3,7 @@ Calcule les métriques affichées sur la page analytics, à partir de la liste
 des invités (déjà synchronisée et verrouillée par store.list_guests())
 convertie en DataFrame pandas pour les agrégations (comptages, groupby).
 """
+import altair as alt
 import pandas as pd
 
 from app.config import (
@@ -17,6 +18,7 @@ from app.config import (
 from app.models import Invite, Logement, OuiNonPasConcerne
 
 
+# ---------- Statistiques ----------
 def _to_dataframe(invites: list[Invite]) -> pd.DataFrame:
     """Aplati la liste d'Invite en DataFrame : enums résolus en str (avec le
     même repli que l'ancien code — ex. mode_transport manquant = 'pas_concerne'),
@@ -89,7 +91,6 @@ def compute_presence_analytics(invites: list[Invite]) -> dict:
         "noms_questionnaire_non_rempli": _name_records(non_rempli),
     }
 
-
 def compute_alimentaire_analytics(invites: list[Invite]) -> dict:
     df = _to_dataframe(invites)
 
@@ -149,3 +150,91 @@ def compute_logement_analytics(invites: list[Invite]) -> dict:
         "ne_sait_pas": ne_sait_pas,
         "en_recherche": en_recherche,
     }
+
+
+# ---------- Graphiques Altair ----------
+_ARRIVE_COLOR = "#0B8A7A"
+_ATTENTE_COLOR = "#C1694A"
+_RETARD_COLOR = "#96492F"
+_ALIM_COLOR = "#96492F"
+
+def _bar_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str = _ALIM_COLOR, horizontal: bool = False):
+    """Barres simples, horizon ou vertical"""
+    
+    hover = alt.selection_point(on="pointerover", fields=[x], empty=False)
+    base = alt.Chart(df).mark_bar(color=color, size=30).encode(
+        opacity=alt.condition(hover, alt.value(1), alt.value(0.75)),
+        tooltip=[alt.Tooltip(x, title="Réponse"), alt.Tooltip(y, title="Invités")],
+    ).add_params(hover)
+
+    autosize = alt.AutoSizeParams(type="fit-x", contains="padding")
+    base = base.configure_axis(grid=False, ticks=False, domain=False)
+    base = base.configure_view(strokeWidth=0)
+
+    if horizontal:
+        return base.encode(
+            y=alt.Y(f"{x}:N", sort="-x", title=None, axis=alt.Axis(labelAngle=0)),
+            x=alt.X(f"{y}:Q", title="Invités", axis=alt.Axis(format='d', tickMinStep=1)),
+        ).properties(title=title, width="container", height=max(120, 28 * len(df)), autosize=autosize)
+    else:
+        return base.encode(
+            x=alt.X(f"{x}:N", sort="-y", title=None, axis=alt.Axis(labelAngle=0)),
+            y=alt.Y(f"{y}:Q", title="Invités", axis=alt.Axis(format='d', tickMinStep=1)),
+        ).properties(title=title, width="container", height=260, autosize=autosize)
+
+
+def chart_presence(presence: dict) -> alt.Chart:
+    """Barres empilées Arrivés / Attendus (non arrivés), par phase."""
+    phases = presence["phases"]
+    df = pd.DataFrame(
+        {
+            "Phase": phases + phases,
+            "Statut": ["Arrivés"] * len(phases) + ["Attendus"] * len(phases),
+            "Invités": presence["arrives"] + presence["attendus_non_arrives"],
+        }
+    )
+    hover = alt.selection_point(on="pointerover", fields=["Phase", "Statut"], empty=False)
+    return (
+        alt.Chart(df)
+        .mark_bar()
+        .encode(
+            x=alt.X("Phase:N", sort=None, title=None, axis=alt.Axis(labelAngle=0)),
+            y=alt.Y("Invités:Q", axis=alt.Axis(format='d', tickMinStep=1)),
+            color=alt.Color(
+                "Statut:N",
+                title=None,
+                scale=alt.Scale(domain=["Arrivés", "Attendus"], range=[_ARRIVE_COLOR, _ATTENTE_COLOR]),
+            ),
+            opacity=alt.condition(hover, alt.value(1), alt.value(0.75)),
+            tooltip=["Phase", "Statut", "Invités"],
+        )
+        .add_params(hover)
+        .configure_axis(grid=False, ticks=False, domain=False)
+        .configure_view(strokeWidth=0)
+        .properties(
+            title="Arrivés vs. Attendus",
+            width="container",
+            height=260,
+            autosize=alt.AutoSizeParams(type="fit-x", contains="padding"),
+        )
+    )
+
+
+def chart_scans_non_prevus(presence: dict) -> alt.Chart:
+    df = pd.DataFrame({"label": presence["phases"], "count": presence["scans_non_prevus"]})
+    return _bar_chart(df, "label", "count", "Imprévus", color=_RETARD_COLOR)
+
+
+def chart_restrictions(alimentaire: dict) -> alt.Chart:
+    df = pd.DataFrame(alimentaire["histogram"])
+    return _bar_chart(df, "label", "count", "Restrictions alimentaires", color=_ALIM_COLOR, horizontal=True)
+
+
+def chart_transport(transport: dict) -> alt.Chart:
+    df = pd.DataFrame(transport["transport_histogram"])
+    return _bar_chart(df, "label", "count", "Répartition des modes de transport", color=_ALIM_COLOR)
+
+
+def chart_logement(logement: dict) -> alt.Chart:
+    df = pd.DataFrame(logement["logement_histogram"])
+    return _bar_chart(df, "label", "count", "Logement : trouvé vs. besoin d'aide", color=_RETARD_COLOR)

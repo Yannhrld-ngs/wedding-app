@@ -13,5 +13,6 @@ pyyaml==6.0.2
 filelock==3.16.1
 sqlalchemy==2.0.35
 pandas==2.2.3
+altair==6.2.2
 sib-api-v3-sdk==7.6.0
 icalendar==7.2.2
