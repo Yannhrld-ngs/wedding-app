@@ -1,8 +1,8 @@
 inputs:
-  WEDDING_NAME1: Sandra
-  WEDDING_NAME2: Yann
-  WEDDING_DATE: 10/10/2026 #dd/mm/yyyy
+  WEDDING_NAME1: Lea
+  WEDDING_NAME2: Nathan
+  WEDDING_DATE: 29/08/2026 #dd/mm/yyyy
   WEDDING_HOUR: "10:00" #hh/mn
-  VENUE_NAME: Grand Dax, dans les Landes
-  VENUE_CIVIL: 14 rue Saint-Pierre, 40100 Dax
-  VENUE_RECEPTION: 3A Rue Gustave Eiffel, 40180 Narrosse
+  VENUE_NAME: Nice
+  VENUE_CIVIL: XX rue XX, 6000 Nice
+  VENUE_RECEPTION: XX Avenue XX, 6000  Nice

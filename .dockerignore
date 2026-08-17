@@ -16,3 +16,6 @@ __pycache__/
 # Config et données sensibles (montées en volume au runtime, pas dans l'image)
 .env
 data/
+
+#
+*.mp4

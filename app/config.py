@@ -93,7 +93,7 @@ HOME_IMAGE_URL = os.getenv("HOME_IMAGE_URL", default="/static/Images/home.png")
 BASE_URL = os.getenv("BASE_URL", default="http://localhost:8000")
 
 # List des personnes autorisées à se connecter à l'interface organisateur (login, mot de passe)
-ORGANIZER_ROLES = ["testeur"]
+ORGANIZER_ROLES = ["accueil"]
 
 # --- Envoi d'email (création / réinitialisation de mot de passe organisateur) ---
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", default=None)

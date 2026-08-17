@@ -1,5 +1,6 @@
 ## À faire
-
+- [] Log file is outside docker so it needed to be corrected. 
+- [] Change brevo domain 
 ## En cours
 
 ## Fait
