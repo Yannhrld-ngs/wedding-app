@@ -165,3 +165,5 @@ def download_calendrier_is():
                 media_type="text/calendar",
                 headers={"Content-Disposition": "attachment; filename=mariage.ics"},
                 )
+
+                
