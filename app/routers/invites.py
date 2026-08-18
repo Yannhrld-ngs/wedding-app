@@ -37,7 +37,7 @@ def carte_invitation(token: str, request: Request):
     invite = get_invite_or_404(token)
     today = datetime.now()
     return templates.TemplateResponse(
-        "invite_card_demo.html",
+        "invite_card_1.html",
         {
             "request": request,
             "invite": invite,
