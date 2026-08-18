@@ -1,3 +1,5 @@
+import json
+import re
 from datetime import datetime
 from urllib.parse import quote
 
@@ -7,19 +9,22 @@ from fastapi.templating import Jinja2Templates
 
 from app import store, config, reset
 from app.analytics import (
+    chart_alcool,
+    chart_ambiance,
     chart_logement,
     chart_presence,
     chart_restrictions,
     chart_scans_non_prevus,
     chart_transport,
     compute_alimentaire_analytics,
+    compute_ambiance_analytics,
     compute_logement_analytics,
     compute_presence_analytics,
     compute_transport_analytics,
 )
 from app.config import PHASE_LABELS as CHART_PHASE_LABELS, RESTRICTION_LABELS, TRANSPORT_LABELS
 from app.mailer import send_email
-from app.models import OuiNon
+from app.models import OuiNon, PresenceAfter
 from app.security import (
     verify_password,
     hash_password,
@@ -164,7 +169,7 @@ def dashboard(
     total = len(invites)
     presents_mairie = sum(1 for i in invites if i.presence_mairie == OuiNon.oui)
     presents_reception = sum(1 for i in invites if i.presence_reception == OuiNon.oui)
-    presents_after = sum(1 for i in invites if i.presence_after == OuiNon.oui)
+    presents_after = sum(1 for i in invites if i.presence_after == PresenceAfter.oui)
     confirmed_mairie = sum(1 for i in invites if i.checked_in_mairie)
     confirmed_reception = sum(1 for i in invites if i.checked_in_reception)
     confirmed_after = sum(1 for i in invites if i.checked_in_after)
@@ -191,6 +196,105 @@ def dashboard(
             "transport_labels": TRANSPORT_LABELS,
         },
     )
+
+@router.post("/place/{token}")
+def update_place(
+    token: str,
+    place_mairie: str = Form(""),
+    place_reception: str = Form(""),
+    place_after: str = Form(""),
+    login: str = Depends(get_current_organizer_login),
+):
+    invite = store.get_by_token(token)
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invité introuvable")
+
+    invite.place_mairie = place_mairie.strip() or None
+    invite.place_reception = place_reception.strip() or None
+    invite.place_after = place_after.strip() or None
+    store.save_guest(invite)
+
+    return RedirectResponse(url="/organisateur/dashboard", status_code=303)
+
+
+_PLACE_RE = re.compile(r"^(.*) #(\d+)$")
+
+
+def _group_places(invites: list, place_attr: str) -> list[dict]:
+    """Reconstruit les repères (ex. "Table 1" -> [token1, token2, ...]) à
+    partir des places déjà enregistrées, pour préremplir l'éditeur."""
+    groups: dict[str, list[tuple[int, str]]] = {}
+    for invite in invites:
+        value = getattr(invite, place_attr)
+        match = _PLACE_RE.match(value) if value else None
+        if not match:
+            continue
+        groups.setdefault(match.group(1), []).append((int(match.group(2)), invite.token))
+
+    return [
+        {"repere": repere, "tokens": [token for _, token in sorted(entries)]}
+        for repere, entries in sorted(groups.items())
+    ]
+
+
+@router.get("/choix-des-places")
+def choix_des_places_form(request: Request, login: str = Depends(get_current_organizer_login)):
+    invites = store.list_guests()
+
+    def as_options(filtered: list) -> list[dict]:
+        return [{"token": i.token, "nom": f"{i.prenom} {i.nom}"} for i in filtered]
+
+    invites_mairie = [i for i in invites if i.presence_mairie == OuiNon.oui]
+    invites_reception = [i for i in invites if i.presence_reception == OuiNon.oui]
+    invites_after = [i for i in invites if i.presence_after == PresenceAfter.oui]
+
+    return templates.TemplateResponse(
+        "organizer_choix_des_places.html",
+        {
+            "request": request,
+            "guests_mairie": as_options(invites_mairie),
+            "guests_reception": as_options(invites_reception),
+            "guests_after": as_options(invites_after),
+            "groups_mairie": _group_places(invites, "place_mairie"),
+            "groups_reception": _group_places(invites, "place_reception"),
+            "groups_after": _group_places(invites, "place_after"),
+        },
+    )
+
+
+@router.post("/choix-des-places")
+def choix_des_places_submit(
+    data_mairie: str = Form("[]"),
+    data_reception: str = Form("[]"),
+    data_after: str = Form("[]"),
+    login: str = Depends(get_current_organizer_login),
+):
+    raw_by_phase = {"mairie": data_mairie, "reception": data_reception, "after": data_after}
+    invites = store.list_guests()
+
+    for phase, raw in raw_by_phase.items():
+        try:
+            groups = json.loads(raw)
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Données invalides")
+
+        place_by_token = {}
+        for group in groups:
+            repere = (group.get("repere") or "").strip()
+            if not repere:
+                continue
+            for i, token in enumerate(group.get("tokens") or []):
+                place_by_token[token] = f"{repere} #{i + 1}"
+
+        attr = f"place_{phase}"
+        for invite in invites:
+            new_value = place_by_token.get(invite.token)
+            if getattr(invite, attr) != new_value:
+                setattr(invite, attr, new_value)
+                store.save_guest(invite)
+
+    return RedirectResponse(url="/organisateur/choix-des-places", status_code=303)
+
 
 @router.get("/reinitialiser")
 def reinitialiser_confirm(request: Request, login: str = Depends(get_current_organizer_login)):
@@ -223,13 +327,16 @@ def statistiques_detaillees(request: Request, login: str = Depends(get_current_o
     alimentaire = compute_alimentaire_analytics(invites)
     transport = compute_transport_analytics(invites)
     logement = compute_logement_analytics(invites)
+    ambiance = compute_ambiance_analytics(invites)
 
     charts = {
         "presence": chart_presence(presence).to_dict(),
         "scans_non_prevus": chart_scans_non_prevus(presence).to_dict(),
         "restrictions": chart_restrictions(alimentaire).to_dict(),
+        "alcool": chart_alcool(alimentaire).to_dict(),
         "transport": chart_transport(transport).to_dict(),
         "logement": chart_logement(logement).to_dict(),
+        "ambiance": chart_ambiance(ambiance).to_dict(),
     }
 
     return templates.TemplateResponse(
@@ -240,6 +347,7 @@ def statistiques_detaillees(request: Request, login: str = Depends(get_current_o
             "alimentaire": alimentaire,
             "transport": transport,
             "logement": logement,
+            "ambiance": ambiance,
             "charts": charts,
             "generated_at": datetime.now().strftime("%H:%M:%S"),
         },
@@ -295,7 +403,14 @@ def scan_page(request: Request, login: str = Depends(get_current_organizer_login
     )
 
 
-PHASE_LABELS = {"mairie": "la mairie", "reception": "la réception", "after": "l'after"}
+PHASE_LABELS = {"mairie": "la mairie", "reception": "la réception", "after": "la soirée"}
+
+# Places associées à chaque phase de scan (voir Invite.place_*).
+PHASE_PLACES = {
+    "mairie": [("place_mairie", "la mairie")],
+    "reception": [("place_reception", "la réception")],
+    "after": [("place_after", "la soirée")],
+}
 
 
 @router.post("/scan")
@@ -318,7 +433,7 @@ def scan_checkin(
             {
                 "success": False,
                 "message": f"{invite.prenom} {invite.nom} a déjà été {invite.accord('validé', 'validée')} "
-                f"pour {PHASE_LABELS[phase]} à {already_at.strftime('%H:%M')}",
+                f"pour {PHASE_LABELS[phase]} à {already_at.strftime('%H:%M')}. La place attribuée est: {getattr(invite,PHASE_PLACES[phase][0][0])}",
             },
             status_code=409,
         )
@@ -328,9 +443,8 @@ def scan_checkin(
     setattr(invite, f"checked_in_{phase}_by", login)
     store.save_guest(invite)
 
-    return JSONResponse(
-        {
-            "success": True,
-            "message": f"{invite.prenom} {invite.nom} {invite.accord('validé', 'validée')} pour {PHASE_LABELS[phase]} ✓",
-        }
-    )
+    message = f"{invite.prenom} {invite.nom} {invite.accord('validé', 'validée')} pour {PHASE_LABELS[phase]} ✓"
+    for attr, label in PHASE_PLACES[phase]:
+        message += f" — Votre place à {label} est : {getattr(invite, attr) or 'non attribuée'}"
+
+    return JSONResponse({"success": True, "message": message})

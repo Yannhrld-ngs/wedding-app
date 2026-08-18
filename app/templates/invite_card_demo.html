@@ -543,9 +543,18 @@
              alt="QR code de check-in de {{ invite.prenom }} {{ invite.nom }}">
       </div>
       <p class="help">
-        Ce code sera scanné à votre arrivée pour valider votre présence. Conservez-le
-        (photo ou impression) et présentez-le à l'accueil.
+        Une fois scanné, votre place apparaitra ci dessous.
       </p>
+
+      {% if invite.checked_in_mairie and invite.place_mairie %}
+        <p class="help"><strong>Votre place à la mairie :</strong> {{ invite.place_mairie }}</p>
+      {% endif %}
+      {% if invite.checked_in_reception and invite.place_reception %}
+        <p class="help"><strong>Votre place à la réception :</strong> {{ invite.place_reception }}</p>
+      {% endif %}
+      {% if invite.checked_in_after and invite.place_after %}
+        <p class="help"><strong>Votre place à la soirée :</strong> {{ invite.place_after }}</p>
+      {% endif %}
     </div>
   </section>
 
@@ -589,7 +598,7 @@
         <div class="time">20h00</div>
         <div class="rail"><div class="dot"></div></div>
         <div class="content">
-          <h4>After - soirée</h4>
+          <h4>Soirée</h4>
           <p>Soirée dansante et bonne humeur jusqu'au bout de la nuit.
         </div>
       </div>

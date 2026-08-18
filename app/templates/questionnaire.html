@@ -18,8 +18,7 @@
 {% block content %}
 <div class="card">
   <h2>Questionnaire — {{ invite.prenom }} {{ invite.nom }}</h2>
-  <p>Merci de répondre à toutes les questions ci-dessous — la réponse ne peut pas être envoyée tant qu'il en manque une.
-    Si une question ne vous concerne pas, l'option "Pas concerné(e)" est prévue pour ça.</p>
+  <p>Merci de répondre à toutes les questions ci-dessous — la réponse ne peut pas être envoyée tant qu'il en manque une.</p>
 
   <form method="post" action="/invite/{{ invite.token }}/questionnaire#rsvp-id">
 
@@ -34,27 +33,48 @@
     <label>Comment prévoyez-vous de rejoindre la ville de {{ venue_name }} ?</label>
     {{ select_field("mode_transport", transport_labels, invite.mode_transport.value if invite.mode_transport else none, placeholder=true) }}
 
-    <label>Si "Autre", veuillez préciser</label>
-    <textarea name="transport_details" rows="2" placeholder="Ex : Auto-stop etc.">{{ invite.transport_details or "" }}</textarea>
+    <div id="transport-autre-block" style="display:none;">
+      <label>Vous avez répondu "Autre", veuillez préciser SVP.</label>
+      <textarea name="transport_details" rows="2" placeholder="Ex : Auto-stop etc.">{{ invite.transport_details or "" }}</textarea>
+    </div>
 
-    <label>Si vous disposez d'un véhicule personnel, pensez-vous pouvoir proposer du covoiturage à d'autres invités ?</label>
-    {{ select_field("covoiturage_possible", oui_non_pas_concerne_labels, invite.covoiturage_possible.value if invite.covoiturage_possible else none) }}
+    <div id="covoiturage-block" style="display:none;">
+      <label>Étant donné que vous disposez d'un véhicule personnel, pensez-vous pouvoir proposer du covoiturage à d'autres invités ?</label>
+      {{ select_field("covoiturage_possible", oui_non_labels, invite.covoiturage_possible.value if invite.covoiturage_possible else none, placeholder=true) }}
+    </div>
 
-    <label>Pour info, le dernier train quitte la ville autours de 20h. En tenant compte de cela, serez-vous {{ invite.accord("présent", "présente") }} à l'after ?</label>
-    {{ select_field("presence_after", oui_non_labels, invite.presence_after.value if invite.presence_after else none, placeholder=true) }}
+    <label>Pour info, le dernier train quitte la ville autours de 20h. En tenant compte de cela, serez-vous {{ invite.accord("présent", "présente") }} à la soirée ?</label>
+    {{ select_field("presence_after", presence_after_labels, invite.presence_after.value if invite.presence_after else none, placeholder=true) }}
+
+    <div id="chansons-block" style="display:none;">
+      <label>Vous désirez prendre part à la soirée. Veuillez sélectionner un top 3 des musiques que vous aimeriez écouter</label>
+      {% for i in [1, 2, 3] %}
+        <div class="song-field">
+          <input type="text" name="chanson_{{ i }}" id="chanson_{{ i }}" autocomplete="off"
+                 placeholder="(ex : Titre {{ i }} - Artiste {{ i }})"
+                 value="{{ (invite.chanson_1 if i == 1 else invite.chanson_2 if i == 2 else invite.chanson_3) or '' }}">
+          <ul class="song-suggestions" id="chanson_{{ i }}-suggestions"></ul>
+        </div>
+      {% endfor %}
+    </div>
 
     <label>Une navette sera mise à disposition de la gare jusqu'à la mairie/au lieu de réception. Souhaitez-vous en bénéficier ?</label>
-    {{ select_field("navette_souhaitee", oui_non_pas_concerne_labels, invite.navette_souhaitee.value if invite.navette_souhaitee else none) }}
+    {{ select_field("navette_souhaitee", oui_non_labels, invite.navette_souhaitee.value if invite.navette_souhaitee else none, placeholder=true) }}
 
     <label>Si vous venez de loin ou comptez dormir aux alentours, avez-vous déjà {{ invite.accord("trouvé", "trouvée") }} un logement ?</label>
     {{ select_field("logement", logement_labels, invite.logement.value if invite.logement else none) }}
 
     <!-- ---------- Repas ---------- -->
-    <label>Avez-vous des restrictions alimentaires ?</label>
+    <label>Consommez-vous de l'alcool ?</label>
+    {{ select_field("consomme_alcool", oui_non_labels, invite.consomme_alcool.value if invite.consomme_alcool else none, placeholder=true) }}
+
+    <label>Avez-vous d'autres restrictions alimentaires ?</label>
     {{ select_field("restriction_alimentaire", restriction_labels, invite.restriction_alimentaire.value if invite.restriction_alimentaire else none) }}
 
-    <label>Si "Autre", précisez laquelle</label>
-    <input type="text" name="restriction_alimentaire_autre" placeholder="Ex : allergie aux fruits de mer etc." value="{{ invite.restriction_alimentaire_autre or '' }}">
+    <div id="restriction-autre-block" style="display:none;">
+      <label>Vous avez {{ invite.accord("répondu", "répondue") }} "Autres, veuillez préciser SVP.</label>
+      <input type="text" name="restriction_alimentaire_autre" placeholder="Ex : allergie aux fruits de mer etc." value="{{ invite.restriction_alimentaire_autre or '' }}">
+    </div>
 
     {% if current_date > last_valid_date %}
       <p style="margin-top: 24px;">
@@ -69,4 +89,107 @@
   </form>
   <p><a href="/invite/{{ invite.token }}">← Retour à l'invitation</a></p>
 </div>
+
+<style>
+  .song-field { position: relative; margin-top: 8px; }
+  .song-suggestions {
+    list-style: none;
+    margin: 2px 0 0;
+    padding: 0;
+    position: absolute;
+    z-index: 5;
+    width: 100%;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+  .song-suggestions:empty { border: none; }
+  .song-suggestions li {
+    padding: 8px 10px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .song-suggestions li:hover { background: #f0e6d7; }
+</style>
+
+<script>
+  (function () {
+    const presenceAfterSelect = document.querySelector('select[name="presence_after"]');
+    const chansonsBlock = document.getElementById("chansons-block");
+
+    function updateChansonsVisibility() {
+      chansonsBlock.style.display = presenceAfterSelect.value === "oui" ? "block" : "none";
+    }
+    presenceAfterSelect.addEventListener("change", updateChansonsVisibility);
+    updateChansonsVisibility();
+
+    const modeTransportSelect = document.querySelector('select[name="mode_transport"]');
+    const covoiturageBlock = document.getElementById("covoiturage-block");
+    const covoiturageSelect = document.querySelector('select[name="covoiturage_possible"]');
+    const transportAutreBlock = document.getElementById("transport-autre-block");
+
+    function updateCovoiturageVisibility() {
+      // required doit suivre la visibilité, sinon un select caché bloque
+      // silencieusement la soumission du formulaire.
+      const show = modeTransportSelect.value === "voiture";
+      covoiturageBlock.style.display = show ? "block" : "none";
+      covoiturageSelect.required = show;
+    }
+    function updateTransportAutreVisibility() {
+      transportAutreBlock.style.display = modeTransportSelect.value === "autre" ? "block" : "none";
+    }
+    modeTransportSelect.addEventListener("change", updateCovoiturageVisibility);
+    modeTransportSelect.addEventListener("change", updateTransportAutreVisibility);
+    updateCovoiturageVisibility();
+    updateTransportAutreVisibility();
+
+    const restrictionSelect = document.querySelector('select[name="restriction_alimentaire"]');
+    const restrictionAutreBlock = document.getElementById("restriction-autre-block");
+
+    function updateRestrictionAutreVisibility() {
+      restrictionAutreBlock.style.display = restrictionSelect.value === "autre" ? "block" : "none";
+    }
+    restrictionSelect.addEventListener("change", updateRestrictionAutreVisibility);
+    updateRestrictionAutreVisibility();
+
+    // Autocomplétion : débounce 400ms + 3 caractères minimum.
+    ["chanson_1", "chanson_2", "chanson_3"].forEach(function (fieldId) {
+      const input = document.getElementById(fieldId);
+      const suggestions = document.getElementById(fieldId + "-suggestions");
+      let debounceTimer;
+
+      input.addEventListener("input", function () {
+        clearTimeout(debounceTimer);
+        const query = input.value.trim();
+        if (query.length < 3) {
+          suggestions.innerHTML = "";
+          return;
+        }
+        debounceTimer = setTimeout(function () {
+          fetch("/invite/{{ invite.token }}/song-search?q=" + encodeURIComponent(query))
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+              suggestions.innerHTML = "";
+              (data.results || []).forEach(function (title) {
+                const li = document.createElement("li");
+                li.textContent = title;
+                li.addEventListener("click", function () {
+                  input.value = title;
+                  suggestions.innerHTML = "";
+                });
+                suggestions.appendChild(li);
+              });
+            })
+            .catch(function () { suggestions.innerHTML = ""; });
+        }, 400);
+      });
+
+      document.addEventListener("click", function (e) {
+        if (e.target !== input) suggestions.innerHTML = "";
+      });
+    });
+  })();
+</script>
 {% endblock %}

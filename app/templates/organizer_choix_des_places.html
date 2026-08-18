@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block title %}Choix des places{% endblock %}
+{% block content %}
+
+<style>
+  .repere-block {
+    background: #faf8f5;
+    border: 1px solid #e7e1d6;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+  }
+  .repere-header {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .repere-header input[type="text"] {
+    margin-top: 0;
+  }
+  .remove-repere-btn {
+    flex-shrink: 0;
+    background: #f0d7d7;
+    color: #a13b3b;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+  .guest-checklist {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  .guest-checklist li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 14px;
+  }
+  .guest-checklist label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: normal;
+    margin: 0;
+  }
+  .guest-checklist input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+  }
+  .place-preview {
+    font-size: 12px;
+    color: #7a5c45;
+  }
+  .add-repere-btn {
+    margin-top: 12px;
+    background: #e8e0d2;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+</style>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Choix des places</h1>
+    <a href="/organisateur/dashboard">← Retour</a>
+  </div>
+  <p> N'oubliez pas de sauvegarder les changements.</p>
+</div>
+
+<form id="form-places" method="post" action="/organisateur/choix-des-places">
+  <input type="hidden" id="data-mairie" name="data_mairie" value="[]">
+  <input type="hidden" id="data-reception" name="data_reception" value="[]">
+  <input type="hidden" id="data-after" name="data_after" value="[]">
+
+  <div class="card">
+    <h2>Mairie</h2>
+    <div id="container-mairie"></div>
+    <button type="button" id="add-mairie" class="add-repere-btn">+ Ajouter un repère</button>
+  </div>
+
+  <div class="card">
+    <h2>Réception</h2>
+    <div id="container-reception"></div>
+    <button type="button" id="add-reception" class="add-repere-btn">+ Ajouter un repère</button>
+  </div>
+
+  <div class="card">
+    <h2>Soirée</h2>
+    <div id="container-after"></div>
+    <button type="button" id="add-after" class="add-repere-btn">+ Ajouter un repère</button>
+  </div>
+
+  <p><button type="submit" class="button">Sauvegarder les changements</button></p>
+</form>
+
+<script>
+  function createPhaseEditor(config) {
+    const container = document.getElementById(config.containerId);
+    const dataInput = document.getElementById(config.dataInputId);
+    const guests = config.guests;
+    const blocks = [];
+
+    function updateAll() {
+      const payload = blocks.map(function (block) {
+        return { repere: block.nameInput.value.trim(), tokens: block.tokensOrder.slice() };
+      });
+      blocks.forEach(function (block) {
+        const repereName = block.nameInput.value.trim();
+        guests.forEach(function (guest) {
+          const idx = block.tokensOrder.indexOf(guest.token);
+          const preview = block.previewEls[guest.token];
+          preview.textContent = idx === -1 || !repereName ? "" : "→ " + repereName + " #" + (idx + 1);
+        });
+      });
+      dataInput.value = JSON.stringify(payload);
+    }
+
+    function uncheckElsewhere(token, exceptBlock) {
+      blocks.forEach(function (block) {
+        if (block === exceptBlock) return;
+        const idx = block.tokensOrder.indexOf(token);
+        if (idx !== -1) {
+          block.tokensOrder.splice(idx, 1);
+          block.checkboxes[token].checked = false;
+        }
+      });
+    }
+
+    function addBlock(repereName, tokens) {
+      const el = document.createElement("div");
+      el.className = "repere-block";
+
+      const header = document.createElement("div");
+      header.className = "repere-header";
+
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.placeholder = 'Ex : Table 1';
+      nameInput.value = repereName || "";
+      nameInput.addEventListener("input", updateAll);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "remove-repere-btn";
+      removeBtn.textContent = "✕ Supprimer";
+      removeBtn.addEventListener("click", function () {
+        el.remove();
+        const i = blocks.indexOf(block);
+        if (i !== -1) blocks.splice(i, 1);
+        updateAll();
+      });
+
+      header.appendChild(nameInput);
+      header.appendChild(removeBtn);
+      el.appendChild(header);
+
+      const list = document.createElement("ul");
+      list.className = "guest-checklist";
+
+      const block = { nameInput: nameInput, tokensOrder: (tokens || []).slice(), checkboxes: {}, previewEls: {} };
+
+      guests.forEach(function (guest) {
+        const li = document.createElement("li");
+        const label = document.createElement("label");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = block.tokensOrder.indexOf(guest.token) !== -1;
+
+        checkbox.addEventListener("change", function () {
+          if (checkbox.checked) {
+            uncheckElsewhere(guest.token, block);
+            if (block.tokensOrder.indexOf(guest.token) === -1) block.tokensOrder.push(guest.token);
+          } else {
+            const idx = block.tokensOrder.indexOf(guest.token);
+            if (idx !== -1) block.tokensOrder.splice(idx, 1);
+          }
+          updateAll();
+        });
+
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(" " + guest.nom));
+
+        const preview = document.createElement("span");
+        preview.className = "place-preview";
+
+        li.appendChild(label);
+        li.appendChild(preview);
+        list.appendChild(li);
+
+        block.checkboxes[guest.token] = checkbox;
+        block.previewEls[guest.token] = preview;
+      });
+
+      el.appendChild(list);
+      container.appendChild(el);
+      blocks.push(block);
+    }
+
+    document.getElementById(config.addBtnId).addEventListener("click", function () {
+      addBlock("", []);
+      updateAll();
+    });
+
+    (config.initialGroups && config.initialGroups.length ? config.initialGroups : [{ repere: "", tokens: [] }])
+      .forEach(function (g) { addBlock(g.repere, g.tokens); });
+    updateAll();
+
+    document.getElementById("form-places").addEventListener("submit", updateAll);
+  }
+
+  createPhaseEditor({
+    containerId: "container-mairie", addBtnId: "add-mairie", dataInputId: "data-mairie",
+    guests: {{ guests_mairie | tojson }}, initialGroups: {{ groups_mairie | tojson }},
+  });
+  createPhaseEditor({
+    containerId: "container-reception", addBtnId: "add-reception", dataInputId: "data-reception",
+    guests: {{ guests_reception | tojson }}, initialGroups: {{ groups_reception | tojson }},
+  });
+  createPhaseEditor({
+    containerId: "container-after", addBtnId: "add-after", dataInputId: "data-after",
+    guests: {{ guests_after | tojson }}, initialGroups: {{ groups_after | tojson }},
+  });
+</script>
+{% endblock %}

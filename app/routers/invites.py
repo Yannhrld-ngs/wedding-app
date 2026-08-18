@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Request, Response, Form, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from datetime import datetime, timedelta
 
-from app import store, config, calendar
+from app import store, config, calendar, song_search
 from app.config import (
     LOGEMENT_LABELS,
     OUI_NON_LABELS,
-    OUI_NON_PAS_CONCERNE_LABELS,
+    PRESENCE_AFTER_LABELS,
     RESTRICTION_LABELS,
     TRANSPORT_LABELS,
 )
@@ -15,7 +15,7 @@ from app.models import (
     Invite,
     Logement,
     OuiNon,
-    OuiNonPasConcerne,
+    PresenceAfter,
     PresenceStatus,
     RestrictionAlimentaire,
     TransportMode,
@@ -37,7 +37,7 @@ def carte_invitation(token: str, request: Request):
     invite = get_invite_or_404(token)
     today = datetime.now()
     return templates.TemplateResponse(
-        "invite_card_1.html",
+        "invite_card_demo.html",
         {
             "request": request,
             "invite": invite,
@@ -69,12 +69,19 @@ def questionnaire_form(token: str, request: Request):
             "last_valid_date":datetime.strptime(f"{config.WEDDING_DATE} {config.WEDDING_HOUR}", "%d/%m/%Y %H:%M")-timedelta(days=config.DAYS_BEFORE_CLOSING_POLL),
             "venue_name": config.VENUE_NAME,
             "oui_non_labels": OUI_NON_LABELS,
-            "oui_non_pas_concerne_labels": OUI_NON_PAS_CONCERNE_LABELS,
+            "presence_after_labels": PRESENCE_AFTER_LABELS,
             "transport_labels": TRANSPORT_LABELS,
             "logement_labels": LOGEMENT_LABELS,
             "restriction_labels": RESTRICTION_LABELS,
         },
     )
+
+
+@router.get("/{token}/song-search")
+def song_search_endpoint(token: str, q: str = ""):
+    """Proxy vers l'iTunes Search API pour l'autocomplétion des morceaux."""
+    get_invite_or_404(token)
+    return JSONResponse({"results": song_search.search_songs(q)})
 
 
 @router.post("/{token}/questionnaire")
@@ -86,22 +93,37 @@ def questionnaire_submit(
     presence_after: str = Form(...),
     mode_transport: str = Form(...),
     transport_details: str = Form(""),
-    covoiturage_possible: str = Form(...),
+    covoiturage_possible: str = Form(""),
     navette_souhaitee: str = Form(...),
     logement: str = Form(...),
+    consomme_alcool: str = Form(...),
     restriction_alimentaire: str = Form(...),
     restriction_alimentaire_autre: str = Form(""),
+    chanson_1: str = Form(""),
+    chanson_2: str = Form(""),
+    chanson_3: str = Form(""),
 ):
     invite = get_invite_or_404(token)
 
     invite.presence_mairie = OuiNon(presence_mairie)
     invite.presence_reception = OuiNon(presence_reception)
-    invite.presence_after = OuiNon(presence_after)
+    invite.presence_after = PresenceAfter(presence_after)
     invite.mode_transport = TransportMode(mode_transport)
-    invite.transport_details = transport_details or None
-    invite.covoiturage_possible = OuiNonPasConcerne(covoiturage_possible)
-    invite.navette_souhaitee = OuiNonPasConcerne(navette_souhaitee)
+    invite.transport_details = (
+        transport_details or None
+        if invite.mode_transport == TransportMode.autre
+        else None
+    )
+
+    invite.covoiturage_possible = (
+        OuiNon(covoiturage_possible)
+        if invite.mode_transport == TransportMode.voiture and covoiturage_possible
+        else None
+    )
+
+    invite.navette_souhaitee = OuiNon(navette_souhaitee)
     invite.logement = Logement(logement)
+    invite.consomme_alcool = OuiNon(consomme_alcool)
     invite.restriction_alimentaire = RestrictionAlimentaire(restriction_alimentaire)
     invite.restriction_alimentaire_autre = (
         restriction_alimentaire_autre or None
@@ -109,8 +131,15 @@ def questionnaire_submit(
         else None
     )
 
-    # Statut global dérivé des réponses détaillées : présent si présent à la
-    # mairie et/ou à la réception, pas de question générique redondante.
+    if invite.presence_after == PresenceAfter.oui:
+        invite.chanson_1 = chanson_1.strip() or None
+        invite.chanson_2 = chanson_2.strip() or None
+        invite.chanson_3 = chanson_3.strip() or None
+    else:
+        invite.chanson_1 = None
+        invite.chanson_2 = None
+        invite.chanson_3 = None
+
     invite.statut_presence = (
         PresenceStatus.present
         if OuiNon.oui in (invite.presence_mairie, invite.presence_reception)

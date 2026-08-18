@@ -62,13 +62,16 @@
 <div style="display:flex; justify-content:space-between; align-items:center; max-width: 1200px;">
   <h2>Tableau de bord — {{ organizer_name }}{% if organizer_role %} ({{ organizer_role.upper() }}){% endif %}</h2>
   <a href="/organisateur/logout">Déconnexion</a> 
-  <a href="/organisateur/reinitialiser" class="reset-action" id="resetAction" style="margin-left: 10px">Réinitialiser</a>
+  {% if organizer_role =="admin" %}
+    <a href="/organisateur/reinitialiser" class="reset-action" id="resetAction" style="margin-left: 10px">Réinitialiser</a>
+  {% endif %}
   </div>      
 </div>
 
 <div class="button-row" style="max-width: 1200px;  margin-left: 20px;">
   <a class="button" href="/organisateur/scan">📷 Scanner un QR code</a></p>
   <a class="button" href="/organisateur/statistiques-detaillees">📊 Statistiques détaillées</a></p>
+  <a class="button" href="/organisateur/choix-des-places">🪑 Choix des places</a></p>
   <a class="button" href="/organisateur/info-pratiques">ℹ️ Informations pratiques</a></p>
 </div>
 
@@ -80,12 +83,12 @@
 <div class="stats" style="gap: 6px; max-width: 1200px;  margin-left: 20px;margin-bottom:5px;">
   <div class="stat"><div class="value">{{ presents_mairie }}</div>Présence attendue - Mairie</div>
   <div class="stat"><div class="value">{{ presents_reception }}</div>Présence attendue - Réception</div>
-  <div class="stat"><div class="value">{{ presents_after }}</div>Présence attendue - After</div>
+  <div class="stat"><div class="value">{{ presents_after }}</div>Présence attendue - Soirée</div>
 </div>
 <div class="stats" style="gap: 6px; max-width: 1200px;  margin-left: 20px;margin-bottom:15px;">
   <div class="stat"><div class="value">{{ confirmed_mairie }}</div>Présence confirmée - Mairie</div>
   <div class="stat"><div class="value">{{ confirmed_reception }}</div>Présence confirmée - Réception</div>
-  <div class="stat"><div class="value">{{ confirmed_after }}</div>Présence confirmée - After</div>
+  <div class="stat"><div class="value">{{ confirmed_after }}</div>Présence confirmée - Soirée</div>
 </div>
 
 <input type="text" id="search" class="search-box" placeholder="Rechercher un invité...">
@@ -132,7 +135,7 @@
       <tr class="detail-row" id="detail-{{ loop.index }}" style="display: none;">
         <td></td>
         <td colspan="5">
-          <div style="display: grid; grid-template-columns: max-content 1fr; row-gap: 6px; column-gap: 16px; padding: 8px 0;"> 
+          <div style="display: grid; grid-template-columns: max-content 1fr; row-gap: 6px; column-gap: 16px; padding: 8px 0;">
           {% if not invite.presence_mairie %}
             <strong>Présence {{ phase_labels.mairie }}:</strong> <span class="badge badge-pending">En attente</span>
           {% elif invite.presence_mairie.value == "oui" %}
@@ -146,6 +149,8 @@
           {% else %}
             <strong>Validation {{ phase_labels.mairie }}:</strong> <span class="badge badge-pending">Non validé</span>
           {% endif %}
+
+          <strong>Place Mairie:</strong> <span>{{ invite.place_mairie or "—" }}</span>
 
           {% if not invite.presence_reception %}
             <strong>Présence {{ phase_labels.reception }}:</strong> <span class="badge badge-pending">En attente</span>
@@ -161,10 +166,14 @@
             <strong>Validation {{ phase_labels.reception }}:</strong> <span class="badge badge-pending">Non validé</span>
           {% endif %}
 
+          <strong>Place Réception:</strong> <span>{{ invite.place_reception or "—" }}</span>
+
           {% if not invite.presence_after %}
             <strong>Présence {{ phase_labels.after }}:</strong> <span class="badge badge-pending">En attente</span>
           {% elif invite.presence_after.value == "oui" %}
             <strong>Présence {{ phase_labels.after }}:</strong> <span class="badge badge-ok">Oui</span>
+          {% elif invite.presence_after.value == "en_reflexion" %}
+            <strong>Présence {{ phase_labels.after }}:</strong> <span class="badge badge-pending">En réflexion</span>
           {% else %}
             <strong>Présence {{ phase_labels.after }}:</strong> <span class="badge badge-no">Non</span>
           {% endif %}
@@ -174,6 +183,9 @@
           {% else %}
             <strong>Validation {{ phase_labels.after }}:</strong> <span class="badge badge-pending">Non validé</span>
           {% endif %}
+
+          <strong>Place Soirée:</strong> <span>{{ invite.place_after or "—" }}</span>
+
           </div>
         </td>
       </tr>

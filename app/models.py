@@ -60,7 +60,7 @@ class TransportMode(str, enum.Enum):
     voiture = "voiture"
     train = "train"
     covoiturage = "covoiturage"
-    en_recherche = "en_recherche"
+    en_reflexion = "en_reflexion"
     autre = "autre"
 
 
@@ -74,10 +74,10 @@ class OuiNon(str, enum.Enum):
     non = "non"
 
 
-class OuiNonPasConcerne(str, enum.Enum):
-    pas_concerne = "pas_concerne"
+class PresenceAfter(str, enum.Enum):
     oui = "oui"
     non = "non"
+    en_reflexion = "en_reflexion"
 
 
 class RestrictionAlimentaire(str, enum.Enum):
@@ -85,10 +85,6 @@ class RestrictionAlimentaire(str, enum.Enum):
     halal = "halal"
     vegetarien = "vegetarien"
     vegetalien = "vegetalien"
-    sans_gluten = "sans_gluten"
-    sans_sel = "sans_sel"
-    sans_sucre = "sans_sucre"
-    sans_alcool = "sans_alcool"
     autre = "autre"
 
 
@@ -115,14 +111,20 @@ class Invite:
     # Questionnaire
     presence_mairie: Optional[OuiNon] = None
     presence_reception: Optional[OuiNon] = None
-    presence_after: Optional[OuiNon] = None
+    presence_after: Optional[PresenceAfter] = None
     mode_transport: Optional[TransportMode] = None
     transport_details: Optional[str] = None
-    covoiturage_possible: Optional[OuiNonPasConcerne] = None
-    navette_souhaitee: Optional[OuiNonPasConcerne] = None
+    covoiturage_possible: Optional[OuiNon] = None
+    navette_souhaitee: Optional[OuiNon] = None
     logement: Optional[Logement] = None
+    consomme_alcool: Optional[OuiNon] = None
     restriction_alimentaire: Optional[RestrictionAlimentaire] = None
     restriction_alimentaire_autre: Optional[str] = None
+
+    # Top 3 morceaux souhaités pour la soirée
+    chanson_1: Optional[str] = None
+    chanson_2: Optional[str] = None
+    chanson_3: Optional[str] = None
 
     questionnaire_rempli: bool = False
     questionnaire_rempli_le: Optional[datetime] = None
@@ -137,6 +139,11 @@ class Invite:
     checked_in_after: bool = False
     checked_in_after_at: Optional[datetime] = None
     checked_in_after_by: Optional[str] = None
+
+    # Places assises, visibles depuis le dashboard
+    place_mairie: Optional[str] = None
+    place_reception: Optional[str] = None
+    place_after: Optional[str] = None
 
     created_at: datetime = field(default_factory=datetime.utcnow)
 

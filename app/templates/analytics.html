@@ -152,6 +152,7 @@
     <button class="tab-btn" data-tab="tab-alimentaire">Alimentaire</button>
     <button class="tab-btn" data-tab="tab-transport">Transport</button>
     <button class="tab-btn" data-tab="tab-logement">Logement</button>
+    <button class="tab-btn" data-tab="tab-ambiance">Ambiance</button>
   </div>
 
   <!-- ---------- Catégorie 1 : Présence ---------- -->
@@ -265,6 +266,8 @@
           <p class="name-list-empty">Aucune précision "Autre" renseignée pour le moment.</p>
         {% endif %}
       </div>
+
+      <div class="chart-card"><div id="chart-alcool" class="chart-embed"></div></div>
     </div>
 
     <h3 style="margin-top:24px;">Restriction × présence réception</h3>
@@ -376,6 +379,31 @@
       </div>
     </div>
   </div>
+
+  <!-- ---------- Catégorie 5 : Ambiance ---------- -->
+  <div class="tab-panel" id="tab-ambiance">
+    <div class="analytics-grid">
+      <div class="chart-card"><div id="chart-ambiance" class="chart-embed"></div></div>
+
+      <div class="chart-card">
+        <details open>
+          <summary>Classement des morceaux demandés</summary>
+          {% if ambiance.classement %}
+            {% for groupe in ambiance.classement %}
+              <p class="name-group-title">{{ groupe.titre }} ({{ groupe.count }})</p>
+              <ul class="name-list">
+                {% for row in groupe.noms %}
+                  <li><span class="nom">{{ row.nom }}</span></li>
+                {% endfor %}
+              </ul>
+            {% endfor %}
+          {% else %}
+            <p class="name-list-empty">Aucun morceau demandé pour le moment.</p>
+          {% endif %}
+        </details>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Rendu des graphiques Altair (specs Vega-Lite générées côté serveur dans
@@ -389,8 +417,10 @@
     "chart-presence": {{ charts.presence | tojson }},
     "chart-scans-non-prevus": {{ charts.scans_non_prevus | tojson }},
     "chart-restrictions": {{ charts.restrictions | tojson }},
+    "chart-alcool": {{ charts.alcool | tojson }},
     "chart-transport": {{ charts.transport | tojson }},
     "chart-logement": {{ charts.logement | tojson }},
+    "chart-ambiance": {{ charts.ambiance | tojson }},
   };
 
   // vega-embed mesure la largeur du conteneur au moment où il dessine : un

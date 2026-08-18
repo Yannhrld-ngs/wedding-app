@@ -22,7 +22,7 @@ from app.models import (
     Invite,
     Logement,
     OuiNon,
-    OuiNonPasConcerne,
+    PresenceAfter,
     PresenceStatus,
     RestrictionAlimentaire,
     Sexe,
@@ -109,8 +109,12 @@ def _invite_to_dict(invite: Invite) -> dict:
         "covoiturage_possible": invite.covoiturage_possible.value if invite.covoiturage_possible else None,
         "navette_souhaitee": invite.navette_souhaitee.value if invite.navette_souhaitee else None,
         "logement": invite.logement.value if invite.logement else None,
+        "consomme_alcool": invite.consomme_alcool.value if invite.consomme_alcool else None,
         "restriction_alimentaire": invite.restriction_alimentaire.value if invite.restriction_alimentaire else None,
         "restriction_alimentaire_autre": invite.restriction_alimentaire_autre,
+        "chanson_1": invite.chanson_1,
+        "chanson_2": invite.chanson_2,
+        "chanson_3": invite.chanson_3,
         "questionnaire_rempli": invite.questionnaire_rempli,
         "questionnaire_rempli_le": invite.questionnaire_rempli_le.isoformat()
         if invite.questionnaire_rempli_le
@@ -124,6 +128,9 @@ def _invite_to_dict(invite: Invite) -> dict:
         "checked_in_after": invite.checked_in_after,
         "checked_in_after_at": invite.checked_in_after_at.isoformat() if invite.checked_in_after_at else None,
         "checked_in_after_by": invite.checked_in_after_by,
+        "place_mairie": invite.place_mairie,
+        "place_reception": invite.place_reception,
+        "place_after": invite.place_after,
         "created_at": invite.created_at.isoformat(),
     }
 
@@ -142,14 +149,18 @@ def _invite_from_dict(data: dict) -> Invite:
         statut_presence=PresenceStatus(data.get("statut_presence") or "en_attente"),
         presence_mairie=OuiNon(data["presence_mairie"]) if data.get("presence_mairie") else None,
         presence_reception=OuiNon(data["presence_reception"]) if data.get("presence_reception") else None,
-        presence_after=OuiNon(data["presence_after"]) if data.get("presence_after") else None,
+        presence_after=PresenceAfter(data["presence_after"]) if data.get("presence_after") else None,
         mode_transport=TransportMode(data["mode_transport"]) if data.get("mode_transport") else None,
         transport_details=data.get("transport_details"),
-        covoiturage_possible=OuiNonPasConcerne(data["covoiturage_possible"]) if data.get("covoiturage_possible") else None,
-        navette_souhaitee=OuiNonPasConcerne(data["navette_souhaitee"]) if data.get("navette_souhaitee") else None,
+        covoiturage_possible=OuiNon(data["covoiturage_possible"]) if data.get("covoiturage_possible") else None,
+        navette_souhaitee=OuiNon(data["navette_souhaitee"]) if data.get("navette_souhaitee") else None,
         logement=Logement(data["logement"]) if data.get("logement") else None,
+        consomme_alcool=OuiNon(data["consomme_alcool"]) if data.get("consomme_alcool") else None,
         restriction_alimentaire=RestrictionAlimentaire(data["restriction_alimentaire"]) if data.get("restriction_alimentaire") else None,
         restriction_alimentaire_autre=data.get("restriction_alimentaire_autre"),
+        chanson_1=data.get("chanson_1"),
+        chanson_2=data.get("chanson_2"),
+        chanson_3=data.get("chanson_3"),
         questionnaire_rempli=bool(data.get("questionnaire_rempli", False)),
         questionnaire_rempli_le=datetime.fromisoformat(data["questionnaire_rempli_le"])
         if data.get("questionnaire_rempli_le")
@@ -163,6 +174,9 @@ def _invite_from_dict(data: dict) -> Invite:
         checked_in_after=bool(data.get("checked_in_after", False)),
         checked_in_after_at=datetime.fromisoformat(data["checked_in_after_at"]) if data.get("checked_in_after_at") else None,
         checked_in_after_by=data.get("checked_in_after_by"),
+        place_mairie=data.get("place_mairie"),
+        place_reception=data.get("place_reception"),
+        place_after=data.get("place_after"),
         created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else datetime.utcnow(),
     )
 

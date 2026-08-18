@@ -55,8 +55,6 @@ if SQL_USERNAME and SQL_PASSWORD and SQL_DATABASE and SQL_SERVER:
 
 
 # --- Infos du mariage --- 
-# save personal information in a yaml file that must be included in .gitignore 
-# to avoid sharing personal information publicly
 with open("inputs/config.yaml", "r") as f:
     default_config = yaml.safe_load(f) 
 
@@ -69,13 +67,20 @@ DAYS_BEFORE_CLOSING_POLL = 7
 VENUE_NAME = os.getenv("VENUE_NAME", default=default_config["inputs"]["VENUE_NAME"])
 VENUE_CIVIL = os.getenv("VENUE_CIVIL", default=default_config["inputs"]["VENUE_CIVIL"])
 VENUE_RECEPTION = os.getenv("VENUE_RECEPTION", default=default_config["inputs"]["VENUE_RECEPTION"])
+
 # Planning et accès affichés sur /organisateur/info-pratiques — seule l'heure
 PLANNING = [
-    {"heure": WEDDING_HOUR, "moment": "Cérémonie civile à la mairie"},
-    {"heure": "à confirmer", "moment": "Arrivée des invités"},
-    {"heure": "à confirmer", "moment": "à confirmer"},
-     {"heure": "à confirmer", "moment": "à confirmer"},
-     {"heure": "à confirmer", "moment": "à confirmer"},
+    {"heure": WEDDING_HOUR, "moment": "Cérémonie civile"},
+    {"heure": "à confirmer", "moment": "Arrivée des convives"},
+    {"heure": "à confirmer", "moment": "Cocktail de bienvenue"},
+     {"heure": "à confirmer", "moment": "Bénédiction nuptiale"},
+     {"heure": "à confirmer", "moment": "Vin d'honneur, Animations & Séance photo"},
+     {"heure": "à confirmer", "moment": "Soirée - Gala"},
+     {"heure": "à confirmer", "moment": "Soirée - XX"},
+     {"heure": "à confirmer", "moment": "Soirée - XX"},
+     {"heure": "à confirmer", "moment": "Soirée - Coupures Gateaux"},
+     {"heure": "à confirmer", "moment": "Soirée - Présentation Cadeaux"},
+     {"heure": "à confirmer", "moment": "Soirée - XX"},
 ]
 
 # --- Local files  ---
@@ -93,16 +98,14 @@ HOME_IMAGE_URL = os.getenv("HOME_IMAGE_URL", default="/static/Images/home.png")
 BASE_URL = os.getenv("BASE_URL", default="http://localhost:8000")
 
 # List des personnes autorisées à se connecter à l'interface organisateur (login, mot de passe)
-ORGANIZER_ROLES = ["accueil"]
+ORGANIZER_ROLES = ["accueil", "décoration", "organisation","testeur","admin"]
 
 # --- Envoi d'email (création / réinitialisation de mot de passe organisateur) ---
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", default=None)
 SMTP_FROM = os.getenv("SMTP_FROM", default=f"no-reply@mariage-{WEDDING_NAME1}-et-{WEDDING_NAME2}.org")
 
+
 # --- Analytics (app/analytics.py) ---
-# Colonnes du DataFrame construit à partir des invités, et libellés affichés
-# à la fois dans le questionnaire (options des <select>) et sur le tableau
-# de bord analytics (graphiques/tableaux) — une seule source pour les deux.
 _COLUMNS = [
     "nom_complet",
     "contact",
@@ -117,47 +120,52 @@ _COLUMNS = [
     "covoiturage_possible",
     "navette_souhaitee",
     "logement",
+    "consomme_alcool",
     "restriction_alimentaire",
     "restriction_alimentaire_autre",
+    "chanson_1",
+    "chanson_2",
+    "chanson_3",
 ]
 PHASES = ["mairie", "reception", "after"]
 OUI_NON = ['oui', "non"]
 
 PHASE_LABELS = {
-    name: name.capitalize() for name in PHASES
+    name: ("Soirée" if name == "after" else name.capitalize()) for name in PHASES
     }
 OUI_NON_LABELS = {
     name: name.capitalize() for name in OUI_NON
     }
-OUI_NON_PAS_CONCERNE_LABELS = {
-    "pas_concerne": "Pas concerné(e)",
+PRESENCE_AFTER_LABELS = {
+    "oui": "Oui",
+    "en_reflexion": "En réflexion",
+    "non": "Non",
+    }
+CONSOMME_ALCOOL_LABELS = {
     "oui": "Oui",
     "non": "Non",
+    "sans_reponse": "Sans réponse",
     }
 RESTRICTION_LABELS = {
     "aucune": "Pas concerné(e)",
     "halal": "Halal",
     "vegetarien": "Végétarien",
-    "vegetalien": "Végétalien (vegan)",
-    "sans_gluten": "Sans gluten",
-    "sans_sel": "Sans sel",
-    "sans_sucre": "Sans sucre",
-    "sans_alcool": "Sans alcool",
-    "autre": "Autre",
+    "vegetalien": "Vegan",
+    "autre": "Autres",
     }
 TRANSPORT_LABELS = {
     "pas_concerne": "Pas concerné(e)",
     "voiture": "Voiture personnelle",
     "train": "Train",
     "covoiturage": "Covoiturage",
-    "en_recherche": "En recherche",
+    "en_reflexion": "En réflexion",
     "autre": "Autre",
     }
 LOGEMENT_LABELS = {
     "pas_concerne": "Pas concerné(e)",
     "oui": "Oui",
-    "toujours_en_recherche": "Toujours en recherche",
-    "ne_sait_pas": "Non, je ne sais où dormir",
+    "ne_sait_pas": "Non",
+    "toujours_en_recherche": "En recherche",
 }
 LOGEMENT_BUCKET_LABELS = {
     "trouve": "Logement trouvé",

@@ -1,32 +1,26 @@
-"""
-Calcule les métriques affichées sur la page analytics, à partir de la liste
-des invités (déjà synchronisée et verrouillée par store.list_guests())
-convertie en DataFrame pandas pour les agrégations (comptages, groupby).
-"""
+"""Calcule les métriques de la page analytics à partir de la liste des invités."""
 import altair as alt
 import pandas as pd
 
 from app.config import (
     _BOOL_COLUMNS,
     _COLUMNS,
+    CONSOMME_ALCOOL_LABELS,
     LOGEMENT_BUCKET_LABELS,
     PHASE_LABELS,
     PHASES,
     RESTRICTION_LABELS,
     TRANSPORT_LABELS,
 )
-from app.models import Invite, Logement, OuiNonPasConcerne
+from app.models import Invite, Logement, OuiNon
 
 
 # ---------- Statistiques ----------
 def _to_dataframe(invites: list[Invite]) -> pd.DataFrame:
-    """Aplati la liste d'Invite en DataFrame : enums résolus en str (avec le
-    même repli que l'ancien code — ex. mode_transport manquant = 'pas_concerne'),
-    prêt pour value_counts()/groupby()."""
+    """Aplatit la liste d'Invite en DataFrame, enums résolus en str."""
     if not invites:
-        # Un DataFrame vide créé juste avec `columns=` met tout en dtype
-        # object, y compris les colonnes booléennes — `~df["x"]` ne se
-        # comporte alors plus comme un masque booléen. On force les dtypes.
+        # `pd.DataFrame(columns=...)` met tout en dtype object (y compris les
+        # colonnes booléennes), ce qui casse `~df["x"]` — on force les dtypes.
         return pd.DataFrame(
             {col: pd.Series(dtype="bool" if col in _BOOL_COLUMNS else "object") for col in _COLUMNS}
         )
@@ -46,8 +40,12 @@ def _to_dataframe(invites: list[Invite]) -> pd.DataFrame:
             "covoiturage_possible": i.covoiturage_possible.value if i.covoiturage_possible else None,
             "navette_souhaitee": i.navette_souhaitee.value if i.navette_souhaitee else None,
             "logement": i.logement.value if i.logement else "pas_concerne",
+            "consomme_alcool": i.consomme_alcool.value if i.consomme_alcool else "sans_reponse",
             "restriction_alimentaire": i.restriction_alimentaire.value if i.restriction_alimentaire else "aucune",
             "restriction_alimentaire_autre": i.restriction_alimentaire_autre,
+            "chanson_1": i.chanson_1,
+            "chanson_2": i.chanson_2,
+            "chanson_3": i.chanson_3,
         }
         for i in invites
     ]
@@ -104,6 +102,11 @@ def compute_alimentaire_analytics(invites: list[Invite]) -> dict:
         {"label": RESTRICTION_LABELS.get(key, key), "count": int(count)} for key, count in counts.items()
     ]
 
+    alcool_counts = df["consomme_alcool"].value_counts()
+    alcool_histogram = [
+        {"label": CONSOMME_ALCOOL_LABELS.get(key, key), "count": int(count)} for key, count in alcool_counts.items()
+    ]
+
     autres_df = df[(df["restriction_alimentaire"] == "autre") & df["restriction_alimentaire_autre"].fillna("").ne("")]
     autres = _name_records(autres_df, "restriction_alimentaire_autre", "detail")
 
@@ -114,7 +117,7 @@ def compute_alimentaire_analytics(invites: list[Invite]) -> dict:
         en_attente = len(group) - oui - non
         crosstab.append({"label": RESTRICTION_LABELS.get(key, key), "oui": oui, "non": non, "en_attente": en_attente})
 
-    return {"histogram": histogram, "autres": autres, "crosstab": crosstab}
+    return {"histogram": histogram, "autres": autres, "crosstab": crosstab, "alcool_histogram": alcool_histogram}
 
 
 def compute_transport_analytics(invites: list[Invite]) -> dict:
@@ -125,9 +128,9 @@ def compute_transport_analytics(invites: list[Invite]) -> dict:
         {"label": TRANSPORT_LABELS.get(key, key), "count": int(count)} for key, count in counts.items()
     ]
 
-    navette = _name_records(df[df["navette_souhaitee"] == OuiNonPasConcerne.oui.value], "contact", "contact")
-    covoiturage = _name_records(df[df["covoiturage_possible"] == OuiNonPasConcerne.oui.value], "contact", "contact")
-    sans_solution = _name_records(df[df["mode_transport"] == "en_recherche"], "contact", "contact")
+    navette = _name_records(df[df["navette_souhaitee"] == OuiNon.oui.value], "contact", "contact")
+    covoiturage = _name_records(df[df["covoiturage_possible"] == OuiNon.oui.value], "contact", "contact")
+    sans_solution = _name_records(df[df["mode_transport"] == "en_reflexion"], "contact", "contact")
 
     return {
         "transport_histogram": transport_histogram,
@@ -155,6 +158,30 @@ def compute_logement_analytics(invites: list[Invite]) -> dict:
         "ne_sait_pas": ne_sait_pas,
         "en_recherche": en_recherche,
     }
+
+
+def compute_ambiance_analytics(invites: list[Invite]) -> dict:
+    """Morceaux souhaités pour la soirée, classés du plus au moins demandé."""
+    df = _to_dataframe(invites)
+
+    chansons = []
+    for col in ("chanson_1", "chanson_2", "chanson_3"):
+        subset = df[df[col].notna() & (df[col] != "")]
+        chansons.extend(_name_records(subset, col, "chanson"))
+
+    counts = pd.Series([c["chanson"] for c in chansons], dtype="object").value_counts()
+    top_titres = [{"label": label, "count": int(count)} for label, count in counts.items()]
+
+    noms_par_titre: dict[str, list[dict]] = {}
+    for c in chansons:
+        noms_par_titre.setdefault(c["chanson"], []).append({"nom": c["nom"]})
+
+    classement = [
+        {"titre": label, "count": int(count), "noms": noms_par_titre[label]}
+        for label, count in counts.items()
+    ]
+
+    return {"top_titres": top_titres, "classement": classement}
 
 
 # ---------- Graphiques Altair ----------
@@ -235,6 +262,11 @@ def chart_restrictions(alimentaire: dict) -> alt.Chart:
     return _bar_chart(df, "label", "count", "Restrictions alimentaires", color=_ALIM_COLOR, horizontal=True)
 
 
+def chart_alcool(alimentaire: dict) -> alt.Chart:
+    df = pd.DataFrame(alimentaire["alcool_histogram"])
+    return _bar_chart(df, "label", "count", "Consommez-vous de l'alcool ?", color=_ALIM_COLOR)
+
+
 def chart_transport(transport: dict) -> alt.Chart:
     df = pd.DataFrame(transport["transport_histogram"])
     return _bar_chart(df, "label", "count", "Répartition des modes de transport", color=_ALIM_COLOR)
@@ -243,4 +275,31 @@ def chart_transport(transport: dict) -> alt.Chart:
 def chart_logement(logement: dict) -> alt.Chart:
     df = pd.DataFrame(logement["logement_histogram"])
     return _bar_chart(df, "label", "count", "Logement : trouvé vs. besoin d'aide", color=_RETARD_COLOR)
+
+
+def chart_ambiance(ambiance: dict) -> alt.Chart:
+    """Bubble chart : un cercle par morceau, taille = nombre de demandes."""
+    df = pd.DataFrame(ambiance["top_titres"], columns=["label", "count"])
+
+    hover = alt.selection_point(on="pointerover", fields=["label"], empty=False)
+    return (
+        alt.Chart(df)
+        .mark_circle(color=_ALIM_COLOR)
+        .encode(
+            x=alt.X("label:N", sort="-y", title=None, axis=alt.Axis(labelAngle=-30)),
+            y=alt.Y("count:Q", title="Demandes", axis=alt.Axis(format="d", tickMinStep=1)),
+            size=alt.Size("count:Q", title="Demandes", scale=alt.Scale(range=[200, 3000]), legend=None),
+            opacity=alt.condition(hover, alt.value(1), alt.value(0.75)),
+            tooltip=[alt.Tooltip("label:N", title="Morceau"), alt.Tooltip("count:Q", title="Demandes")],
+        )
+        .add_params(hover)
+        .configure_axis(grid=False, ticks=False, domain=False)
+        .configure_view(strokeWidth=0)
+        .properties(
+            title="Morceaux les plus demandés",
+            width="container",
+            height=320,
+            autosize=alt.AutoSizeParams(type="fit-x", contains="padding"),
+        )
+    )
 
