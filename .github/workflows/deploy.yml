@@ -28,3 +28,4 @@ jobs:
               -v ~/wedding-app/data:/app/data \
               --env-file .env \
               wedding-app:latest
+            docker image prune -f

@@ -84,10 +84,10 @@ PLANNING = [
 ]
 
 # --- Local files  ---
-GUESTS_PATH = "inputs/invites_list.csv"
-QR_OUTPUT_DIR = "app/static/qrcodes"
-GUESTS_LOG_PATH = "data/invites.yaml" 
-ORGANIZERS_PATH = "data/organizers.yaml"
+GUESTS_PATH = os.getenv("GUESTS_PATH", default="inputs/invites_list.csv")
+QR_OUTPUT_DIR = os.getenv("QR_OUTPUT_DIR", default="app/static/qrcodes")
+GUESTS_LOG_PATH = os.getenv("GUESTS_LOG_PATH", default="data/invites.yaml" )
+ORGANIZERS_PATH = os.getenv("ORGANIZERS_PATH", default="data/organizers.yaml")
 
 # Images
 COVER_IMAGE_URL = os.getenv("COVER_IMAGE_URL", default="/static/Images/couverture-invitation.png")
