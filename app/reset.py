@@ -50,4 +50,4 @@ def _reset_yaml_file(path: str) -> None:
 if __name__ == "__main__":
     _reset_qr_codes()
     _reset_yaml_file(config.GUESTS_LOG_PATH)
-    _reset_yaml_file(config.ORGANIZERS_PATH)
+    _reset_yaml_file(config.ORGANIZERS_LOG_PATH)

@@ -35,7 +35,7 @@ from app.security import (
 )
 from app.config import SESSION_COOKIE_NAME
 
-router = APIRouter(prefix="/organisateur", tags=["organizers"])
+router = APIRouter(prefix="/16mesures/organisation", tags=["organizers"])
 templates = Jinja2Templates(directory="app/templates")
 
 
@@ -59,7 +59,7 @@ def login_submit(
         )
 
     token = create_session_token(login)
-    response = RedirectResponse(url="/organisateur/dashboard", status_code=303)
+    response = RedirectResponse(url="/16mesures/organisation/dashboard", status_code=303)
     response.set_cookie(
         SESSION_COOKIE_NAME, token, httponly=True, samesite="lax", secure=False  # secure=True en prod (HTTPS)
     )
@@ -68,7 +68,7 @@ def login_submit(
 
 @router.get("/logout")
 def logout():
-    response = RedirectResponse(url="/organisateur/login", status_code=303)
+    response = RedirectResponse(url="/16mesures/organisation/login", status_code=303)
     response.delete_cookie(SESSION_COOKIE_NAME)
     return response
 
@@ -84,7 +84,7 @@ def request_password_reset_submit(request: Request, email: str = Form(...)):
 
     if organizer:
         token = create_password_reset_token(organizer.mail)
-        reset_link = f"{config.BASE_URL}/organisateur/reset-password/{token}"
+        reset_link = f"{config.BASE_URL}/16mesures/organisation/reset-password/{token}"
         send_email(
             to=organizer.mail,
             subject=f"Créer votre mot de passe organisateur — {config.WEDDING_NAME1} & {config.WEDDING_NAME2}",
@@ -157,7 +157,7 @@ def reset_password_submit(
         )
 
     store.set_organizer_password(email, hash_password(password))
-    return RedirectResponse(url="/organisateur/login?mot_de_passe_defini=1", status_code=303)
+    return RedirectResponse(url="/16mesures/organisation/login?mot_de_passe_defini=1", status_code=303)
 
 
 @router.get("/dashboard")
@@ -167,33 +167,31 @@ def dashboard(
 ):
     invites = store.list_guests()
     total = len(invites)
-    presents_mairie = sum(1 for i in invites if i.presence_mairie == OuiNon.oui)
-    presents_reception = sum(1 for i in invites if i.presence_reception == OuiNon.oui)
-    presents_after = sum(1 for i in invites if i.presence_after == PresenceAfter.oui)
-    confirmed_mairie = sum(1 for i in invites if i.checked_in_mairie)
-    confirmed_reception = sum(1 for i in invites if i.checked_in_reception)
-    confirmed_after = sum(1 for i in invites if i.checked_in_after)
+    #presents_mairie = sum(1 for i in invites if i.presence_mairie == OuiNon.oui)
+    #presents_reception = sum(1 for i in invites if i.presence_reception == OuiNon.oui)
+    #presents_after = sum(1 for i in invites if i.presence_after == PresenceAfter.oui)
+    #confirmed_mairie = sum(1 for i in invites if i.checked_in_mairie)
+    #confirmed_reception = sum(1 for i in invites if i.checked_in_reception)
+    #confirmed_after = sum(1 for i in invites if i.checked_in_after)
 
     organizer = store.find_accepted_organizer_by_mail(login)
-
+    
     return templates.TemplateResponse(
         "organizer_dashboard.html",
         {
             "request": request,
             "invites": invites,
             "total": total,
-            "presents_mairie": presents_mairie,
-            "presents_reception": presents_reception,
-            "presents_after": presents_after,
-            "confirmed_mairie": confirmed_mairie,
-            "confirmed_reception": confirmed_reception,
-            "confirmed_after": confirmed_after,
+            "presents_after": 1,
+            "confirmed_mairie": 1,
+            "confirmed_reception": 1,
+            "confirmed_after": 1,
             "organizer_login": login,
             "organizer_name": f"{organizer.prenom} {organizer.nom}" if organizer else login,
             "organizer_role": organizer.role if organizer else None,
-            "phase_labels": CHART_PHASE_LABELS,
-            "restriction_labels": RESTRICTION_LABELS,
-            "transport_labels": TRANSPORT_LABELS,
+            "phase_labels": None,
+            "restriction_labels": None,
+            "transport_labels": None,
         },
     )
 
@@ -214,7 +212,7 @@ def update_place(
     invite.place_after = place_after.strip() or None
     store.save_guest(invite)
 
-    return RedirectResponse(url="/organisateur/dashboard", status_code=303)
+    return RedirectResponse(url="/16mesures/organisation/dashboard", status_code=303)
 
 
 _PLACE_RE = re.compile(r"^(.*) #(\d+)$")
@@ -293,7 +291,7 @@ def choix_des_places_submit(
                 setattr(invite, attr, new_value)
                 store.save_guest(invite)
 
-    return RedirectResponse(url="/organisateur/choix-des-places", status_code=303)
+    return RedirectResponse(url="/16mesures/organisation/choix-des-places", status_code=303)
 
 
 @router.get("/reinitialiser")
@@ -304,7 +302,7 @@ def reinitialiser_confirm(request: Request, login: str = Depends(get_current_org
 @router.post("/reinitialiser")
 def reinitialiser_submit(request: Request, login: str = Depends(get_current_organizer_login)):
     reset._reset_yaml_file(config.GUESTS_LOG_PATH)
-    return RedirectResponse(url="/organisateur/dashboard", status_code=303)
+    return RedirectResponse(url="/16mesures/organisation/dashboard", status_code=303)
 
 
 @router.get("/info-pratiques")

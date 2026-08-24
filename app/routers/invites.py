@@ -1,27 +1,13 @@
 from fastapi import APIRouter, Request, Response, Form, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from app import store, config, calendar, song_search
-from app.config import (
-    LOGEMENT_LABELS,
-    OUI_NON_LABELS,
-    PRESENCE_AFTER_LABELS,
-    RESTRICTION_LABELS,
-    TRANSPORT_LABELS,
-)
-from app.models import (
-    Invite,
-    Logement,
-    OuiNon,
-    PresenceAfter,
-    PresenceStatus,
-    RestrictionAlimentaire,
-    TransportMode,
-)
+from app.mailer import send_email
+from app.models import Invite, OuiNon, Sexe, generate_invite_token, generate_qr_uuid
 
-router = APIRouter(prefix="/invite", tags=["invites"])
+router = APIRouter(prefix="/16mesures/invites", tags=["invites"])
 templates = Jinja2Templates(directory="app/templates")
 
 
@@ -32,50 +18,108 @@ def get_invite_or_404(token: str) -> Invite:
     return invite
 
 
-@router.get("/{token}")
-def carte_invitation(token: str, request: Request):
-    invite = get_invite_or_404(token)
-    today = datetime.now()
-    return templates.TemplateResponse(
-        "invite_card_1.html",
-        {
-            "request": request,
-            "invite": invite,
-            "current_date":today,
-            "last_valid_date":datetime.strptime(f"{config.WEDDING_DATE} {config.WEDDING_HOUR}", "%d/%m/%Y %H:%M")-timedelta(days=config.DAYS_BEFORE_CLOSING_POLL),
-            "wedding_name1": config.WEDDING_NAME1,
-            "wedding_name2": config.WEDDING_NAME2,
-            "wedding_date": config.WEDDING_DATE,
-            "venue_name": config.VENUE_NAME,
-            "venue_civil": config.VENUE_CIVIL,
-            "venue_reception": config.VENUE_RECEPTION,
-            "cover_image_url": config.COVER_IMAGE_URL,
-            "wedding_colors_url":config.WEDDING_COLORS_URL,
-            "qr_code_url": store.qr_code_url(invite),
-        },
-    )
-
-
-@router.get("/{token}/questionnaire")
-def questionnaire_form(token: str, request: Request):
-    invite = get_invite_or_404(token)
-    today = datetime.now()
+@router.get("/inscription")
+def inscription_form(request: Request):
     return templates.TemplateResponse(
         "questionnaire.html",
         {
             "request": request,
-            "invite": invite,
-            "current_date":today,
-            "last_valid_date":datetime.strptime(f"{config.WEDDING_DATE} {config.WEDDING_HOUR}", "%d/%m/%Y %H:%M")-timedelta(days=config.DAYS_BEFORE_CLOSING_POLL),
-            "venue_name": config.VENUE_NAME,
-            "oui_non_labels": OUI_NON_LABELS,
-            "presence_after_labels": PRESENCE_AFTER_LABELS,
-            "transport_labels": TRANSPORT_LABELS,
-            "logement_labels": LOGEMENT_LABELS,
-            "restriction_labels": RESTRICTION_LABELS,
+            "merci": bool(request.query_params.get("merci")),
         },
     )
 
+
+@router.post("/inscription")
+def inscription_submit(
+    request: Request,
+    prenom: str = Form(...),
+    nom: str = Form(...),
+    email: str = Form(...),
+    telephone: str = Form(""),
+    sexe: str = Form(...),
+    debat: str = Form(...),
+    force: str = Form(""),
+):
+    prenom = prenom.strip()
+    nom = nom.strip()
+    email = email.strip()
+
+    existing = store.find_by_email(email)
+    if existing and not force:
+        return templates.TemplateResponse(
+            "questionnaire.html",
+            {
+                "request": request,
+                "duplicate": True,
+                "form_data": {
+                    "prenom": prenom,
+                    "nom": nom,
+                    "email": email,
+                    "telephone": telephone,
+                    "sexe": sexe,
+                    "debat": debat,
+                },
+            },
+        )
+
+    if existing and force:
+        store.delete_guest(existing.token)
+
+    invite = Invite(
+        prenom=prenom,
+        nom=nom,
+        categorie="spectateur",
+        token=generate_invite_token(prenom, nom, "spectateur", "16-mesures", datetime.utcnow().isoformat()),
+        qr_uuid=generate_qr_uuid(),
+        sexe=Sexe(sexe),
+        mail=email,
+        contact=telephone.strip() or None,
+        presence_diffusion=OuiNon.oui,
+        presence_debat=OuiNon(debat),
+    )
+    store._write_qr_file(invite)
+    store.save_guest(invite)
+
+    confirm_link = f"{config.BASE_URL}/16mesures/invites/confirmation-presence/{invite.token}"
+    send_email(
+        to=invite.mail,
+        subject="Confirmation présence - 16 mesures",
+        body=(
+            f"Bonjour {invite.prenom} {invite.nom},\n\n"
+            "Vous avez manifesté votre souhait de prendre part à la diffusion de 16 mesures.\n"
+            f"Votre code spectateur est : {invite.token[-6:]}\n\n"
+            "Cliquez sur ce lien pour confirmer votre présence :\n"
+            f"{confirm_link}\n\n"
+            "Ceci est un mail automatique. Veuillez ne pas répondre."
+        ),
+    )
+
+    return RedirectResponse(url="/16mesures/invites/inscription?merci=1", status_code=303)
+
+
+@router.get("/confirmation-presence/{token}")
+def confirmation_presence(token: str, request: Request):
+    invite = store.get_by_token(token)
+    if not invite:
+        raise HTTPException(status_code=404, detail="Inscription introuvable")
+
+    if not invite.confirmation_mail:
+        invite.confirmation_mail = True
+        store.save_guest(invite)
+
+    return templates.TemplateResponse(
+        "invite_card.html",
+        {
+            "request": request,
+            "invite": invite,
+            "lieu": config.VENUE_NAME,
+            "adresse": config.VENUE_RECEPTION,
+            "date": config.WEDDING_DATE,
+            "heure": config.WEDDING_HOUR,
+            "cover_image_url": "/static/Images/16mesures.png",
+            "qr_code_url": store.qr_code_url(invite),
+        },
+    )
 
 @router.get("/{token}/song-search")
 def song_search_endpoint(token: str, q: str = ""):
@@ -84,86 +128,19 @@ def song_search_endpoint(token: str, q: str = ""):
     return JSONResponse({"results": song_search.search_songs(q)})
 
 
-@router.post("/{token}/questionnaire")
-def questionnaire_submit(
-    token: str,
-    request: Request,
-    presence_mairie: str = Form(...),
-    presence_reception: str = Form(...),
-    presence_after: str = Form(...),
-    mode_transport: str = Form(...),
-    transport_details: str = Form(""),
-    covoiturage_possible: str = Form(""),
-    navette_souhaitee: str = Form(...),
-    logement: str = Form(...),
-    consomme_alcool: str = Form(...),
-    restriction_alimentaire: str = Form(...),
-    restriction_alimentaire_autre: str = Form(""),
-    chanson_1: str = Form(""),
-    chanson_2: str = Form(""),
-    chanson_3: str = Form(""),
-):
-    invite = get_invite_or_404(token)
-
-    invite.presence_mairie = OuiNon(presence_mairie)
-    invite.presence_reception = OuiNon(presence_reception)
-    invite.presence_after = PresenceAfter(presence_after)
-    invite.mode_transport = TransportMode(mode_transport)
-    invite.transport_details = (
-        transport_details or None
-        if invite.mode_transport == TransportMode.autre
-        else None
-    )
-
-    invite.covoiturage_possible = (
-        OuiNon(covoiturage_possible)
-        if invite.mode_transport == TransportMode.voiture and covoiturage_possible
-        else None
-    )
-
-    invite.navette_souhaitee = OuiNon(navette_souhaitee)
-    invite.logement = Logement(logement)
-    invite.consomme_alcool = OuiNon(consomme_alcool)
-    invite.restriction_alimentaire = RestrictionAlimentaire(restriction_alimentaire)
-    invite.restriction_alimentaire_autre = (
-        restriction_alimentaire_autre or None
-        if invite.restriction_alimentaire == RestrictionAlimentaire.autre
-        else None
-    )
-
-    if invite.presence_after == PresenceAfter.oui:
-        invite.chanson_1 = chanson_1.strip() or None
-        invite.chanson_2 = chanson_2.strip() or None
-        invite.chanson_3 = chanson_3.strip() or None
-    else:
-        invite.chanson_1 = None
-        invite.chanson_2 = None
-        invite.chanson_3 = None
-
-    invite.statut_presence = (
-        PresenceStatus.present
-        if OuiNon.oui in (invite.presence_mairie, invite.presence_reception)
-        else PresenceStatus.absent
-    )
-    invite.questionnaire_rempli = True
-    invite.questionnaire_rempli_le = datetime.utcnow()
-
-    store.save_guest(invite)
-
-    return RedirectResponse(url=f"/invite/{token}?merci=1", status_code=303)
-
-
 @router.get("/{token}/calendrier.ics")
-def download_calendrier_is():
+def download_calendrier_is(token: str):
+    invite = store.get_by_token(token)
+    if not invite:
+        raise HTTPException(status_code=404, detail="Inscription introuvable")
+
     return Response(
                 content=calendar._create(
-                    name_1 = config.WEDDING_NAME1,
-                    name_2 = config.WEDDING_NAME2,
-                    location = config.VENUE_NAME,
-                    date = config.WEDDING_DATE,
-                    heure = config.WEDDING_HOUR),
+                    summary="16 mesures — Diffusion",
+                    description=f"Bonjour {invite.prenom}, votre place pour la diffusion de 16 mesures est confirmée.",
+                    location=f"{config.VENUE_NAME}, {config.VENUE_RECEPTION}",
+                    date=config.WEDDING_DATE,
+                    heure=config.WEDDING_HOUR),
                 media_type="text/calendar",
-                headers={"Content-Disposition": "attachment; filename=mariage.ics"},
+                headers={"Content-Disposition": "attachment; filename=16mesures.ics"},
                 )
-
-                

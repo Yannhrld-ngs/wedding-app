@@ -1,6 +1,7 @@
 ## À faire
 - [] Log file is outside docker so it needed to be corrected. 
 - [] Change brevo domain 
+- [] Database, passage guest organisteur -> change current key
 ## En cours
 
 ## Fait

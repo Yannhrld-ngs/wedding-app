@@ -16,25 +16,23 @@ import yaml
 from filelock import FileLock
 
 from app import config
+from app.database import SqlRepository
 
-logger = logging.getLogger(__name__)
 from app.models import (
     Invite,
-    Logement,
+    Organisateur,
     OuiNon,
-    PresenceAfter,
     PresenceStatus,
-    RestrictionAlimentaire,
     Sexe,
-    TransportMode,
     generate_invite_token,
     generate_qr_uuid,
     natural_key,
     slugify,
 )
 
+logger = logging.getLogger(__name__)
 LOCK_TIMEOUT = 10  # secondes
-
+SQL_REPO = SqlRepository(config.engine)
 
 # ---------- Invités ----------
 def _guests_lock() -> FileLock:
@@ -42,52 +40,62 @@ def _guests_lock() -> FileLock:
 
 
 def _read_log() -> dict:
-    if not os.path.exists(config.GUESTS_LOG_PATH):
+    if config.SQL_DB:
+        all_guests = SQL_REPO.load(Invite, table_name="guests")
+        return {f"{natural_key(guest.prenom, guest.nom) }":_invite_to_dict(guest) for guest in all_guests}
+    else:
+        if not os.path.exists(config.GUESTS_LOG_PATH):#create if not exist
+            with open(config.GUESTS_LOG_PATH, "w", encoding="utf-8") as f:
+                yaml.dump([], f, allow_unicode=True, sort_keys=False)
+
+        with open(config.GUESTS_LOG_PATH, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f) or {}
+
+
+def _write_log(log: dict, obj:list[Invite]) -> None:
+    if config.SQL_DB:
+        all_guests = obj
+        table = SQL_REPO.create(Invite, table_name="guests", primary_key="token")
+        for guest in all_guests:
+            SQL_REPO.update(guest, table, primary_key="token") 
+    else:
+        os.makedirs(os.path.dirname(config.GUESTS_LOG_PATH), exist_ok=True)
         with open(config.GUESTS_LOG_PATH, "w", encoding="utf-8") as f:
-            yaml.dump([], f, allow_unicode=True, sort_keys=False)
-
-    with open(config.GUESTS_LOG_PATH, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+            yaml.safe_dump(log, f, allow_unicode=True, sort_keys=True)
 
 
-def _write_log(log: dict) -> None:
-    os.makedirs(os.path.dirname(config.GUESTS_LOG_PATH), exist_ok=True)
-    with open(config.GUESTS_LOG_PATH, "w", encoding="utf-8") as f:
-        yaml.safe_dump(log, f, allow_unicode=True, sort_keys=True)
-
-
-def _read_guests_csv() -> list[dict]:
-    if not os.path.exists(config.GUESTS_PATH):
-        return []
+def _read_guests() -> list[dict]:
+    '''
+    Read guest as a list of dict, either from SQL database or from yaml file.
+    '''
     rows = []
-    with open(config.GUESTS_PATH, newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for raw in reader:
-            row = {(k or "").strip().lower(): (v or "").strip() for k, v in raw.items()}
-            if row.get("prenom") and row.get("nom"):
-                rows.append(row)
-    return rows
+    if config.SQL_DB:
+        results = SQL_REPO.load(Invite, table_name="guests")
+        if not results:
+            return rows
 
-def _read_guests_sql() -> list[dict]:
-    if not config.SQL_DB:
-        return []
-    rows = []
-    try:
-        with config.engine.connect() as conn:
-            result = conn.execute(config.text("SELECT * FROM guests;"))
-            for row in result:
-                rows.append({
-                    "prenom": row.prenom,
-                    "nom": row.nom,
-                    "sexe": row.sexe,
-                    "categorie": row.categorie,
-                    "role": row.role,
-                    "mail": row.mail,
-                    "contact": row.contact,
+        for row in results:
+            rows.append({
+                "prenom": row.prenom,
+                "nom": row.nom,
+                "sexe": row.sexe,
+                "categorie": row.categorie,
+                "role": row.role,
+                "mail": row.mail,
+                "contact": row.contact,
                 })
-    except Exception as e:
-        logger.error(f"Erreur lors de la lecture des invités depuis la base de données {config.SQL_DATABASE} : {e}")
+    else:
+        if not os.path.exists(config.GUESTS_PATH):
+            return rows 
+        
+        with open(config.GUESTS_PATH, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for raw in reader:
+                row = {(k or "").strip().lower(): (v or "").strip() for k, v in raw.items()}
+                if row.get("prenom") and row.get("nom"):
+                    rows.append(row)
     return rows
+
 
 def _invite_to_dict(invite: Invite) -> dict:
     return {
@@ -101,37 +109,16 @@ def _invite_to_dict(invite: Invite) -> dict:
         "token": invite.token,
         "qr_uuid": invite.qr_uuid,
         "statut_presence": invite.statut_presence.value,
-        "presence_mairie": invite.presence_mairie.value if invite.presence_mairie else None,
-        "presence_reception": invite.presence_reception.value if invite.presence_reception else None,
-        "presence_after": invite.presence_after.value if invite.presence_after else None,
-        "mode_transport": invite.mode_transport.value if invite.mode_transport else None,
-        "transport_details": invite.transport_details,
-        "covoiturage_possible": invite.covoiturage_possible.value if invite.covoiturage_possible else None,
-        "navette_souhaitee": invite.navette_souhaitee.value if invite.navette_souhaitee else None,
-        "logement": invite.logement.value if invite.logement else None,
-        "consomme_alcool": invite.consomme_alcool.value if invite.consomme_alcool else None,
-        "restriction_alimentaire": invite.restriction_alimentaire.value if invite.restriction_alimentaire else None,
-        "restriction_alimentaire_autre": invite.restriction_alimentaire_autre,
-        "chanson_1": invite.chanson_1,
-        "chanson_2": invite.chanson_2,
-        "chanson_3": invite.chanson_3,
-        "questionnaire_rempli": invite.questionnaire_rempli,
-        "questionnaire_rempli_le": invite.questionnaire_rempli_le.isoformat()
-        if invite.questionnaire_rempli_le
-        else None,
-        "checked_in_mairie": invite.checked_in_mairie,
-        "checked_in_mairie_at": invite.checked_in_mairie_at.isoformat() if invite.checked_in_mairie_at else None,
-        "checked_in_mairie_by": invite.checked_in_mairie_by,
-        "checked_in_reception": invite.checked_in_reception,
-        "checked_in_reception_at": invite.checked_in_reception_at.isoformat() if invite.checked_in_reception_at else None,
-        "checked_in_reception_by": invite.checked_in_reception_by,
-        "checked_in_after": invite.checked_in_after,
-        "checked_in_after_at": invite.checked_in_after_at.isoformat() if invite.checked_in_after_at else None,
-        "checked_in_after_by": invite.checked_in_after_by,
-        "place_mairie": invite.place_mairie,
-        "place_reception": invite.place_reception,
-        "place_after": invite.place_after,
+        "presence_diffusion": invite.presence_diffusion.value if invite.presence_diffusion else None,
+        "presence_debat": invite.presence_debat.value if invite.presence_debat else None,
+        "checked_in_diffusion": invite.checked_in_diffusion,
+        "checked_in_diffusion_at": invite.checked_in_diffusion_at.isoformat() if invite.checked_in_diffusion_at else None,
+        "checked_in_diffusion_by": invite.checked_in_diffusion_by,
+        "checked_in_debat": invite.checked_in_debat,
+        "checked_in_debat_at": invite.checked_in_debat_at.isoformat() if invite.checked_in_debat_at else None,
+        "checked_in_debat_by": invite.checked_in_debat_by,
         "created_at": invite.created_at.isoformat(),
+        "confirmation_mail": invite.confirmation_mail,
     }
 
 
@@ -147,37 +134,16 @@ def _invite_from_dict(data: dict) -> Invite:
         token=data["token"],
         qr_uuid=data["qr_uuid"],
         statut_presence=PresenceStatus(data.get("statut_presence") or "en_attente"),
-        presence_mairie=OuiNon(data["presence_mairie"]) if data.get("presence_mairie") else None,
-        presence_reception=OuiNon(data["presence_reception"]) if data.get("presence_reception") else None,
-        presence_after=PresenceAfter(data["presence_after"]) if data.get("presence_after") else None,
-        mode_transport=TransportMode(data["mode_transport"]) if data.get("mode_transport") else None,
-        transport_details=data.get("transport_details"),
-        covoiturage_possible=OuiNon(data["covoiturage_possible"]) if data.get("covoiturage_possible") else None,
-        navette_souhaitee=OuiNon(data["navette_souhaitee"]) if data.get("navette_souhaitee") else None,
-        logement=Logement(data["logement"]) if data.get("logement") else None,
-        consomme_alcool=OuiNon(data["consomme_alcool"]) if data.get("consomme_alcool") else None,
-        restriction_alimentaire=RestrictionAlimentaire(data["restriction_alimentaire"]) if data.get("restriction_alimentaire") else None,
-        restriction_alimentaire_autre=data.get("restriction_alimentaire_autre"),
-        chanson_1=data.get("chanson_1"),
-        chanson_2=data.get("chanson_2"),
-        chanson_3=data.get("chanson_3"),
-        questionnaire_rempli=bool(data.get("questionnaire_rempli", False)),
-        questionnaire_rempli_le=datetime.fromisoformat(data["questionnaire_rempli_le"])
-        if data.get("questionnaire_rempli_le")
-        else None,
-        checked_in_mairie=bool(data.get("checked_in_mairie", False)),
-        checked_in_mairie_at=datetime.fromisoformat(data["checked_in_mairie_at"]) if data.get("checked_in_mairie_at") else None,
-        checked_in_mairie_by=data.get("checked_in_mairie_by"),
-        checked_in_reception=bool(data.get("checked_in_reception", False)),
-        checked_in_reception_at=datetime.fromisoformat(data["checked_in_reception_at"]) if data.get("checked_in_reception_at") else None,
-        checked_in_reception_by=data.get("checked_in_reception_by"),
-        checked_in_after=bool(data.get("checked_in_after", False)),
-        checked_in_after_at=datetime.fromisoformat(data["checked_in_after_at"]) if data.get("checked_in_after_at") else None,
-        checked_in_after_by=data.get("checked_in_after_by"),
-        place_mairie=data.get("place_mairie"),
-        place_reception=data.get("place_reception"),
-        place_after=data.get("place_after"),
+        presence_diffusion=OuiNon(data["presence_diffusion"]) if data.get("presence_diffusion") else None,
+        presence_debat=OuiNon(data["presence_debat"]) if data.get("presence_debat") else None,
+        checked_in_diffusion=bool(data.get("checked_in_diffusion", False)),
+        checked_in_diffusion_at=datetime.fromisoformat(data["checked_in_diffusion_at"]) if data.get("checked_in_diffusion_at") else None,
+        checked_in_diffusion_by=data.get("checked_in_diffusion_by"),
+        checked_in_debat=bool(data.get("checked_in_debat", False)),
+        checked_in_debat_at=datetime.fromisoformat(data["checked_in_debat_at"]) if data.get("checked_in_debat_at") else None,
+        checked_in_debat_by=data.get("checked_in_debat_by"),
         created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else datetime.utcnow(),
+        confirmation_mail=bool(data.get("confirmation_mail", False)),
     )
 
 def qr_code_path(invite: Invite) -> str:
@@ -201,26 +167,22 @@ def _delete_qr_file(filename: str) -> None:
     if os.path.exists(full_path):
         os.remove(full_path)
 
-def load_guests(organizer_only: bool = False) -> list[Invite]:
+def load_guests() -> list[Invite]:
     """Charge la liste des invités depuis le CSV ou la base de données SQL Server, synchronise les logs et retourne la liste des objets Invite.
     """
-    if config.SQL_DB:
-        guests_data = _read_guests_sql()
-    else:  
-        guests_data = _read_guests_csv()
+    guests_data = _read_guests()
 
     with _guests_lock(): # Lock the log file to prevent concurrent modifications
         log = _read_log()
         changed = False
 
         # Clean log des invités qui ne sont plus dans le CSV ou la base de données SQL Server.
-        # Ne jamais faire ce nettoyage si la lecture n'a rien renvoyé : ça peut vouloir dire
-        # que le CSV/la connexion SQL a échoué, pas que tout le monde a été supprimé.
         if guests_data:
             current_keys = {natural_key(row["prenom"], row["nom"]) for row in guests_data}
-            keys_to_remove = [key for key in log if key not in current_keys]
+            keys_to_remove = [ key for key, entry in log.items() if key not in current_keys ]
             for key in keys_to_remove:
-                _delete_qr_file(f"{key}-qrcode.png")
+                entry = log[key]
+                _delete_qr_file(f"{slugify(entry['nom'])}-{slugify(entry['prenom'])}-qrcode.png")
                 del log[key]
                 changed = True
         elif log:
@@ -269,13 +231,12 @@ def load_guests(organizer_only: bool = False) -> list[Invite]:
                     entry["contact"] = contact
                     changed = True
 
+        output = [_invite_from_dict(data) for data in log.values()]
+                
         if changed:
-            _write_log(log)
+            _write_log(log, output)
 
-        if organizer_only==False:
-            return [_invite_from_dict(data) for data in log.values()]
-        else:
-            return [_invite_from_dict(data) for data in log.values() if data.get("role") in config.ORGANIZER_ROLES]
+        return output 
 
 
 def list_guests() -> list[Invite]:
@@ -300,33 +261,79 @@ def get_by_token_suffix(suffix: str) -> Optional[Invite]:
 
 
 def save_guest(invite: Invite) -> None:
-    """Persiste l'état (réponses, check-in...) d'un invité dans le log YAML."""
-    key = natural_key(invite.prenom, invite.nom)
+    """Crée ou persiste l'état (réponses, check-in...) d'un invité dans le log"""
     with _guests_lock():
         log = _read_log()
+        existing_key = next(
+            (key for key, entry in log.items() if entry.get("token") == invite.token),
+            None,
+        )
+        key = existing_key or invite.token
         log[key] = _invite_to_dict(invite)
-        _write_log(log)
+        _write_log(log, [invite])
+
+
+def find_by_email(email: str) -> Optional[Invite]:
+    """Une personne ne doit avoir qu'un seul code actif : utilisé pour
+    détecter un invité déjà enregistré pour cette adresse (ex. spectateur
+    qui s'inscrirait deux fois)."""
+    email = (email or "").strip().lower()
+    if not email:
+        return None
+    return next((g for g in load_guests() if (g.mail or "").lower() == email), None)
+
+
+def delete_guest(token: str) -> None:
+    with _guests_lock():
+        log = _read_log()
+        key = next((key for key, entry in log.items() if entry.get("token") == token), None)
+        if key is not None:
+            del log[key]
+            data = [_invite_from_dict(data) for data in log.values()]
+            _write_log(log, data)
 
 
 # ---------- Organisateurs ----------
 def _organizers_lock() -> FileLock:
-    return FileLock(config.ORGANIZERS_PATH + ".lock", timeout=LOCK_TIMEOUT)
+    return FileLock(config.ORGANIZERS_LOG_PATH + ".lock", timeout=LOCK_TIMEOUT)
 
 
 def _read_organizers() -> dict:
-    if not os.path.exists(config.ORGANIZERS_PATH):
-        with open(config.ORGANIZERS_PATH, "w", encoding="utf-8") as f:
+    if not os.path.exists(config.ORGANIZERS_LOG_PATH):
+        with open(config.ORGANIZERS_LOG_PATH, "w", encoding="utf-8") as f:
             yaml.dump({}, f, allow_unicode=True, sort_keys=True)
 
-    with open(config.ORGANIZERS_PATH, "r", encoding="utf-8") as f:
+    with open(config.ORGANIZERS_LOG_PATH, "r", encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
 def _write_organizers(organizers: dict) -> None:
-    os.makedirs(os.path.dirname(config.ORGANIZERS_PATH), exist_ok=True)
-    with open(config.ORGANIZERS_PATH, "w", encoding="utf-8") as f:
+    os.makedirs(os.path.dirname(config.ORGANIZERS_LOG_PATH), exist_ok=True)
+    with open(config.ORGANIZERS_LOG_PATH, "w", encoding="utf-8") as f:
         yaml.safe_dump(organizers, f, allow_unicode=True, sort_keys=True)
 
+def _organisateur_to_dict(organisateur: Organisateur) -> dict:
+    return {
+        "prenom": organisateur.prenom,
+        "nom": organisateur.nom,
+        "sexe": organisateur.sexe.value,
+        "categorie": organisateur.categorie,
+        "role": organisateur.role,
+        "mail": organisateur.mail,
+        "contact": organisateur.contact,
+    }
+
+
+def _organisateur_from_dict(data: dict) -> Organisateur:
+    return Organisateur(
+        prenom=data["prenom"],
+        nom=data["nom"],
+        sexe=Sexe(data.get("sexe") or "homme"),
+        categorie=data.get("categorie"),
+        role=data.get("role"),
+        mail=data.get("mail"),
+        contact=data.get("contact"),
+    )
 
 def get_organizer_password_hash(login: str) -> Optional[str]:
     with _organizers_lock():
@@ -346,10 +353,30 @@ def create_organizer(login: str, password_hash: str) -> bool:
         return True
 
 
-def accepted_organizers() -> list[Invite]:
+def accepted_organizers() -> list[Organisateur]:
     """Retourne la liste des invités organisateurs acceptés."""
-    return load_guests(organizer_only=True)
-
+    if config.SQL_DB:
+        return SQL_REPO.load(Organisateur, table_name="organizers") 
+    else:
+        if not os.path.exists(config.ORGANIZERS_PATH):
+            return [] 
+        
+        rows = []
+        with open(ORGANIZERS_PATH, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for data in reader:
+                rows.append( 
+                    Organisateur(
+                                prenom = data['prenom'],
+                                nom = data['nom'],
+                                categorie= data['categorie'],
+                                sexe = data['sexe'],
+                                role = data['role'],
+                                mail = data['mail'],
+                                contact = data['contact'],
+                                )
+                )
+        return rows
 
 def find_accepted_organizer_by_mail(mail: str) -> Optional[Invite]:
     """Retourne l'invité organisateur accepté correspondant à cet email, sinon None."""
@@ -368,5 +395,7 @@ def set_organizer_password(login: str, password_hash: str) -> None:
         _write_organizers(organizers)
 
 if __name__ =="__main__":
-    a = load_guests(True)
-    print("A")
+    print( accepted_organizers() )
+    print(find_accepted_organizer_by_mail("yannhrld@gmail.com"))
+    print(find_accepted_organizer_by_mail("yann656@hotma.com"))
+    print('ww')

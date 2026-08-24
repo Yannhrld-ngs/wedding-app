@@ -32,6 +32,7 @@ SQL_USERNAME = os.getenv("SQL_USERNAME", default=None)
 SQL_PASSWORD = os.getenv("SQL_PASSWORD", default=None)
 SQL_SERVER = os.getenv("SQL_SERVER", default=None)
 SQL_DB = False
+engine = None 
 
 if SQL_USERNAME and SQL_PASSWORD and SQL_DATABASE and SQL_SERVER:
     conn_str = (
@@ -40,22 +41,13 @@ if SQL_USERNAME and SQL_PASSWORD and SQL_DATABASE and SQL_SERVER:
     )
     try:
         engine = create_engine(conn_str, echo=False)
-
-        with engine.connect() as conn:
-            result = conn.execute(text("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public';"))
-            all_tables = [row[0] for row in result]
-            required_tables = ["guests"]
-            missing_tables = [table for table in required_tables if table not in all_tables]
-            if missing_tables:
-                raise FileNotFoundError(f"Les tables suivantes sont manquantes dans la base de données {SQL_DATABASE}: {', '.join(missing_tables)}")
-
     except Exception as e:
         logger.error(f"Erreur lors de la connexion à la base de données {SQL_DATABASE} : {e}")
     SQL_DB = True
 
 
 # --- Infos du mariage --- 
-with open("inputs/config.yaml", "r") as f:
+with open("inputs/config.yaml", "r", encoding="utf-8") as f:
     default_config = yaml.safe_load(f) 
 
 WEDDING_NAME1 = os.getenv("WEDDING_NAME1", default=default_config["inputs"]["WEDDING_NAME1"])
@@ -68,7 +60,6 @@ VENUE_NAME = os.getenv("VENUE_NAME", default=default_config["inputs"]["VENUE_NAM
 VENUE_CIVIL = os.getenv("VENUE_CIVIL", default=default_config["inputs"]["VENUE_CIVIL"])
 VENUE_RECEPTION = os.getenv("VENUE_RECEPTION", default=default_config["inputs"]["VENUE_RECEPTION"])
 
-# Planning et accès affichés sur /organisateur/info-pratiques — seule l'heure
 PLANNING = [
     {"heure": WEDDING_HOUR, "moment": "Cérémonie civile"},
     {"heure": "à confirmer", "moment": "Arrivée des convives"},
@@ -84,18 +75,29 @@ PLANNING = [
 ]
 
 # --- Local files  ---
-GUESTS_PATH = os.getenv("GUESTS_PATH", default="inputs/invites_list.csv")
 QR_OUTPUT_DIR = os.getenv("QR_OUTPUT_DIR", default="app/static/qrcodes")
+GUESTS_PATH = os.getenv("GUESTS_PATH", default="inputs/invites_list.csv")
 GUESTS_LOG_PATH = os.getenv("GUESTS_LOG_PATH", default="data/invites.yaml" )
-ORGANIZERS_PATH = os.getenv("ORGANIZERS_PATH", default="data/organizers.yaml")
+ORGANIZERS_PATH = os.getenv("ORGANIZERS_PATH", default="inputs/organisateurs_list.csv")
+ORGANIZERS_LOG_PATH = os.getenv("ORGANIZERS_LOG_PATH", default="data/organizers.yaml")
 
 # Images
 COVER_IMAGE_URL = os.getenv("COVER_IMAGE_URL", default="/static/Images/couverture-invitation.png")
 WEDDING_COLORS_URL= os.getenv("WEDDING_COLORS_URL", default="/static/Images/couleur-mariage.png")
 HOME_IMAGE_URL = os.getenv("HOME_IMAGE_URL", default="/static/Images/home.png")
+ABOUT_IMAGE_URL = os.getenv(
+    "ABOUT_IMAGE_URL",
+    default="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='500'%3E"
+    "%3Crect width='400' height='500' fill='%23e8e0d2'/%3E"
+    "%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='18' fill='%23968a76' "
+    "text-anchor='middle' dominant-baseline='middle'%3EVotre photo%3C/text%3E%3C/svg%3E",
+)
+
+# Réseaux sociaux (page d'accueil, section Contact)
+INSTAGRAM_URL = os.getenv("INSTAGRAM_URL", default="https://www.instagram.com/")
 
 # URL de base utilisée pour générer les liens dans les QR codes
-BASE_URL = os.getenv("BASE_URL", default="http://localhost:8000")
+BASE_URL = os.getenv("BASE_URL", default="http://localhost:80")
 
 # List des personnes autorisées à se connecter à l'interface organisateur (login, mot de passe)
 ORGANIZER_ROLES = ["accueil", "décoration", "organisation","testeur","admin"]

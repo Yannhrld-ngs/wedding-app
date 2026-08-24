@@ -7,20 +7,20 @@
   <p>Choisissez le moyen d'envoi de l'invitation.</p>
 
   <div style="display:flex; flex-direction:column; gap:12px; margin-top:24px; max-width:320px;">
-    <form method="post" action="/organisateur/envoyer/{{ invite.token }}">
+    <form method="post" action="/16mesures/organisation/envoyer/{{ invite.token }}">
       <input type="hidden" name="canal" value="whatsapp">
       <button class="button" type="submit" style="width:100%;">📱 WhatsApp</button>
     </form>
-    <form method="post" action="/organisateur/envoyer/{{ invite.token }}">
+    <form method="post" action="/16mesures/organisation/envoyer/{{ invite.token }}">
       <input type="hidden" name="canal" value="mail">
       <button class="button" type="submit" style="width:100%;">✉️ Email</button>
     </form>
-    <form method="post" action="/organisateur/envoyer/{{ invite.token }}">
+    <form method="post" action="/16mesures/organisation/envoyer/{{ invite.token }}">
       <input type="hidden" name="canal" value="sms">
       <button class="button" type="submit" style="width:100%;">💬 SMS</button>
     </form>
   </div>
 
-  <p style="margin-top:24px;"><a href="/organisateur/dashboard">← Retour au tableau de bord</a></p>
+  <p style="margin-top:24px;"><a href="/16mesures/organisation/dashboard">← Retour au tableau de bord</a></p>
 </div>
 {% endblock %}

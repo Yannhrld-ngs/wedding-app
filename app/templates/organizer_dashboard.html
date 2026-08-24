@@ -61,18 +61,18 @@
 
 <div style="display:flex; justify-content:space-between; align-items:center; max-width: 1200px;">
   <h2>Tableau de bord — {{ organizer_name }}{% if organizer_role %} ({{ organizer_role.upper() }}){% endif %}</h2>
-  <a href="/organisateur/logout">Déconnexion</a> 
+  <a href="/16mesures/organisation/logout">Déconnexion</a> 
   {% if organizer_role =="admin" %}
-    <a href="/organisateur/reinitialiser" class="reset-action" id="resetAction" style="margin-left: 10px">Réinitialiser</a>
+    <a href="/16mesures/organisation/reinitialiser" class="reset-action" id="resetAction" style="margin-left: 10px">Réinitialiser</a>
   {% endif %}
   </div>      
 </div>
 
 <div class="button-row" style="max-width: 1200px;  margin-left: 20px;">
-  <a class="button" href="/organisateur/scan">📷 Scanner un QR code</a></p>
-  <a class="button" href="/organisateur/statistiques-detaillees">📊 Statistiques détaillées</a></p>
-  <a class="button" href="/organisateur/choix-des-places">🪑 Choix des places</a></p>
-  <a class="button" href="/organisateur/info-pratiques">ℹ️ Informations pratiques</a></p>
+  <a class="button" href="/16mesures/organisation/scan">📷 Scanner un QR code</a></p>
+  <a class="button" href="/16mesures/organisation/statistiques-detaillees">📊 Statistiques détaillées</a></p>
+  <a class="button" href="/16mesures/organisation/choix-des-places">🪑 Choix des places</a></p>
+  <a class="button" href="/16mesures/organisation/info-pratiques">ℹ️ Informations pratiques</a></p>
 </div>
 
 <p><br></p>
@@ -127,7 +127,7 @@
         <td><code>{{ invite.token[-4:] | upper }}</code></td>
         <td>{{ presence_tags | join(", ") if presence_tags else "Non" }}</td>
         <td>
-          <a class="send-btn" href="/organisateur/envoyer/{{ invite.token }}">Envoyer ▾</a>
+          <a class="send-btn" href="/16mesures/organisation/envoyer/{{ invite.token }}">Envoyer ▾</a>
         </td>
       </tr>
       

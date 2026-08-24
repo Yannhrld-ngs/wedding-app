@@ -4,7 +4,7 @@
 <div class="card">
   <h2>Connexion organisateur</h2>
   {% if erreur %}<p style="color:#a13b3b;">{{ erreur }}</p>{% endif %}
-  <form method="post" action="/organisateur/login">
+  <form method="post" action="/16mesures/organisation/login">
     <label>Adresse e-mail</label>
     <input type="email" name="login" required>
     <label>Mot de passe</label>
@@ -14,10 +14,10 @@
     </p>
   </form>
   <p style="margin-top: 20px;">
-    <a href="/organisateur/request-password-reset">Je me connecte pour la première fois / j'ai oublié mon mot de passe</a>
+    <a href="/16mesures/organisation/request-password-reset">Je me connecte pour la première fois / j'ai oublié mon mot de passe</a>
   </p>
   <p style="margin-top: 20px;">
-    <a href="/">← Retour à l'accueil</a>
+    <a href="/16mesures">← Retour à l'accueil</a>
   </p>
 </div>
 {% endblock %}

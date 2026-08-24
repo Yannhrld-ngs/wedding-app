@@ -1,8 +1,8 @@
 inputs:
-  WEDDING_NAME1: Lea
-  WEDDING_NAME2: Nathan
-  WEDDING_DATE: 29/08/2026 #dd/mm/yyyy
-  WEDDING_HOUR: "10:00" #hh/mn
-  VENUE_NAME: Nice
-  VENUE_CIVIL: XX rue XX, 6000 Nice
-  VENUE_RECEPTION: XX Avenue XX, 6000  Nice
+  WEDDING_NAME1: AB
+  WEDDING_NAME2: CD
+  WEDDING_DATE: "15/09/2026" #dd/mm/yyyy
+  WEDDING_HOUR: "19:00" #hh/mn
+  VENUE_NAME: "Cinémathèque de Toulouse (Avant première)"
+  VENUE_CIVIL: 
+  VENUE_RECEPTION: "69 rue du Taur 31000 Toulouse"

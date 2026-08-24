@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
-SLUG_SUFFIX_LENGTH = 4
+SLUG_SUFFIX_LENGTH = 6
 
 
 def slugify(value: str) -> str:
@@ -109,43 +109,38 @@ class Invite:
     statut_presence: PresenceStatus = PresenceStatus.en_attente
 
     # Questionnaire
-    presence_mairie: Optional[OuiNon] = None
-    presence_reception: Optional[OuiNon] = None
-    presence_after: Optional[PresenceAfter] = None
-    mode_transport: Optional[TransportMode] = None
-    transport_details: Optional[str] = None
-    covoiturage_possible: Optional[OuiNon] = None
-    navette_souhaitee: Optional[OuiNon] = None
-    logement: Optional[Logement] = None
-    consomme_alcool: Optional[OuiNon] = None
-    restriction_alimentaire: Optional[RestrictionAlimentaire] = None
-    restriction_alimentaire_autre: Optional[str] = None
+    presence_diffusion: Optional[OuiNon] = None #Force to be oui
+    presence_debat: Optional[OuiNon] = None
 
-    # Top 3 morceaux souhaités pour la soirée
-    chanson_1: Optional[str] = None
-    chanson_2: Optional[str] = None
-    chanson_3: Optional[str] = None
+    # Check-in jour J, 
+    checked_in_diffusion: bool = False
+    checked_in_diffusion_at: Optional[datetime] = None
+    checked_in_diffusion_by: Optional[str] = None
+    place_diffusion: Optional[str] = None
 
-    questionnaire_rempli: bool = False
-    questionnaire_rempli_le: Optional[datetime] = None
-
-    # Check-in jour J, un par phase (le même QR peut être scanné 3 fois)
-    checked_in_mairie: bool = False
-    checked_in_mairie_at: Optional[datetime] = None
-    checked_in_mairie_by: Optional[str] = None
-    checked_in_reception: bool = False
-    checked_in_reception_at: Optional[datetime] = None
-    checked_in_reception_by: Optional[str] = None
-    checked_in_after: bool = False
-    checked_in_after_at: Optional[datetime] = None
-    checked_in_after_by: Optional[str] = None
-
-    # Places assises, visibles depuis le dashboard
-    place_mairie: Optional[str] = None
-    place_reception: Optional[str] = None
-    place_after: Optional[str] = None
+    checked_in_debat: bool = False
+    checked_in_debat_at: Optional[datetime] = None
+    checked_in_debat_by: Optional[str] = None
+    place_debat: Optional[str] = None
 
     created_at: datetime = field(default_factory=datetime.utcnow)
+    confirmation_mail: bool = False
+
+    def accord(self, masculin: str, feminin: str) -> str:
+        """Forme accordée selon le sexe de l'invité (masculin par défaut)."""
+        return feminin if self.sexe == Sexe.femme else masculin
+
+
+@dataclass
+class Organisateur:
+    prenom: str
+    nom: str
+    categorie: str
+    sexe: Sexe = Sexe.homme
+    role: Optional[str] = None
+    mail: Optional[str] = None
+    contact: Optional[str] = None
+    
 
     def accord(self, masculin: str, feminin: str) -> str:
         """Forme accordée selon le sexe de l'invité (masculin par défaut)."""

@@ -1,195 +1,238 @@
-{% extends "base.html" %}
-{% block title %}Questionnaire{% endblock %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>S'inscrire à une diffusion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#f6f0e4;
+    --cream-soft: rgba(246,240,228,0.92);
+    --ink:#2c2620;
+    --ink-soft: rgba(44,38,32,0.72);
+    --gold:#c9a24b;
+  }
 
-{% macro select_field(name, options, current, placeholder=false) %}
-<select name="{{ name }}" required>
-  {% if placeholder %}
-    <option value="" disabled {% if not current %}selected{% endif %}>-- Choisir --</option>
-  {% endif %}
-  {% for value, label in options.items() %}
-    <option value="{{ value }}"
-      {%- if current == value %} selected
-      {%- elif not placeholder and not current and loop.first %} selected
-      {%- endif %}>{{ label }}</option>
-  {% endfor %}
-</select>
-{% endmacro %}
+  *{ box-sizing:border-box; }
 
-{% block content %}
-<div class="card">
-  <h2>Questionnaire — {{ invite.prenom }} {{ invite.nom }}</h2>
-  <p>Merci de répondre à toutes les questions ci-dessous — la réponse ne peut pas être envoyée tant qu'il en manque une.</p>
+  html,body{
+    margin:0;
+    padding:0;
+    min-height:100%;
+    font-family:'Jost', sans-serif;
+    color:var(--cream);
+    background:#1a1712;
+  }
 
-  <form method="post" action="/invite/{{ invite.token }}/questionnaire#rsvp-id">
+  .page{
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:48px 24px;
+  }
 
-    <!-- ---------- Présence ---------- -->
-    <label>Serez-vous {{ invite.accord("présent", "présente") }} à la mairie ?</label>
-    {{ select_field("presence_mairie", oui_non_labels, invite.presence_mairie.value if invite.presence_mairie else none, placeholder=true) }}
+  .back-link{
+    position:fixed;
+    top:20px;
+    left:24px;
+    font-size:12px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--cream);
+    text-decoration:none;
+    padding:8px 16px;
+    border:1px solid rgba(246,240,228,0.5);
+    border-radius:999px;
+    background:rgba(26,23,18,0.35);
+    transition:background 0.2s ease, border-color 0.2s ease;
+  }
+  .back-link:hover{
+    background:rgba(246,240,228,0.15);
+    border-color:var(--cream);
+  }
 
-    <label>Serez-vous {{ invite.accord("présent", "présente") }} à la réception ?</label>
-    {{ select_field("presence_reception", oui_non_labels, invite.presence_reception.value if invite.presence_reception else none, placeholder=true) }}
+  .card{
+    width:100%;
+    max-width:460px;
+    background:var(--cream-soft);
+    color:var(--ink);
+    border-radius:16px;
+    padding:40px 36px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.4);
+  }
 
-    <!-- ---------- Logistique / déplacement ---------- -->
-    <label>Comment prévoyez-vous de rejoindre la ville de {{ venue_name }} ?</label>
-    {{ select_field("mode_transport", transport_labels, invite.mode_transport.value if invite.mode_transport else none, placeholder=true) }}
+  h1{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:500;
+    font-style:italic;
+    font-size:32px;
+    margin:0 0 8px;
+    text-align:center;
+  }
 
-    <div id="transport-autre-block" style="display:none;">
-      <label>Vous avez répondu "Autre", veuillez préciser SVP.</label>
-      <textarea name="transport_details" rows="2" placeholder="Ex : Auto-stop etc.">{{ invite.transport_details or "" }}</textarea>
-    </div>
+  .card > p.intro{
+    font-size:14px;
+    color:var(--ink-soft);
+    text-align:center;
+    margin:0 0 28px;
+  }
 
-    <div id="covoiturage-block" style="display:none;">
-      <label>Étant donné que vous disposez d'un véhicule personnel, pensez-vous pouvoir proposer du covoiturage à d'autres invités ?</label>
-      {{ select_field("covoiturage_possible", oui_non_labels, invite.covoiturage_possible.value if invite.covoiturage_possible else none, placeholder=true) }}
-    </div>
+  label{
+    display:block;
+    font-size:12px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    margin:16px 0 6px;
+  }
 
-    <label>Pour info, le dernier train quitte la ville autours de 20h. En tenant compte de cela, serez-vous {{ invite.accord("présent", "présente") }} à la soirée ?</label>
-    {{ select_field("presence_after", presence_after_labels, invite.presence_after.value if invite.presence_after else none, placeholder=true) }}
+  input, select{
+    width:100%;
+    font-family:'Jost', sans-serif;
+    font-size:14px;
+    padding:10px 14px;
+    border-radius:8px;
+    border:1px solid rgba(44,38,32,0.25);
+    background:#fff;
+    color:var(--ink);
+  }
 
-    <div id="chansons-block" style="display:none;">
-      <label>Vous désirez prendre part à la soirée. Veuillez sélectionner un top 3 des musiques que vous aimeriez écouter</label>
-      {% for i in [1, 2, 3] %}
-        <div class="song-field">
-          <input type="text" name="chanson_{{ i }}" id="chanson_{{ i }}" autocomplete="off"
-                 placeholder="(ex : Titre {{ i }} - Artiste {{ i }})"
-                 value="{{ (invite.chanson_1 if i == 1 else invite.chanson_2 if i == 2 else invite.chanson_3) or '' }}">
-          <ul class="song-suggestions" id="chanson_{{ i }}-suggestions"></ul>
-        </div>
-      {% endfor %}
-    </div>
+  input:focus-visible, select:focus-visible{
+    outline:2px solid var(--gold);
+    outline-offset:1px;
+  }
 
-    <label>Une navette sera mise à disposition de la gare jusqu'à la mairie/au lieu de réception. Souhaitez-vous en bénéficier ?</label>
-    {{ select_field("navette_souhaitee", oui_non_labels, invite.navette_souhaitee.value if invite.navette_souhaitee else none, placeholder=true) }}
+  .row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
 
-    <label>Si vous venez de loin ou comptez dormir aux alentours, avez-vous déjà {{ invite.accord("trouvé", "trouvée") }} un logement ?</label>
-    {{ select_field("logement", logement_labels, invite.logement.value if invite.logement else none) }}
+  button[type="submit"]{
+    width:100%;
+    margin-top:28px;
+    font-family:'Jost', sans-serif;
+    font-size:14px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:14px;
+    border-radius:999px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--cream);
+    cursor:pointer;
+    transition:background 0.2s ease, border-color 0.2s ease;
+  }
+  button[type="submit"]:hover, button[type="submit"]:focus-visible{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:#1a1712;
+    outline:none;
+  }
 
-    <!-- ---------- Repas ---------- -->
-    <label>Consommez-vous de l'alcool ?</label>
-    {{ select_field("consomme_alcool", oui_non_labels, invite.consomme_alcool.value if invite.consomme_alcool else none, placeholder=true) }}
+  .confirmation{
+    text-align:center;
+  }
+  .confirmation .emoji{ font-size:36px; display:block; margin-bottom:12px; }
+  .confirmation p{ color:var(--ink-soft); font-size:15px; margin-bottom:10px; }
 
-    <label>Avez-vous d'autres restrictions alimentaires ?</label>
-    {{ select_field("restriction_alimentaire", restriction_labels, invite.restriction_alimentaire.value if invite.restriction_alimentaire else none) }}
+  .button-secondary{
+    display:inline-block;
+    width:100%;
+    margin-top:20px;
+    font-family:'Jost', sans-serif;
+    font-size:13px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    padding:12px;
+    border-radius:999px;
+    border:1px solid var(--ink-soft);
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:border-color 0.2s ease, color 0.2s ease;
+  }
+  .button-secondary:hover, .button-secondary:focus-visible{
+    border-color:var(--ink);
+    color:var(--ink);
+    outline:none;
+  }
+</style>
+</head>
+<body>
 
-    <div id="restriction-autre-block" style="display:none;">
-      <label>Vous avez {{ invite.accord("répondu", "répondue") }} "Autres, veuillez préciser SVP.</label>
-      <input type="text" name="restriction_alimentaire_autre" placeholder="Ex : allergie aux fruits de mer etc." value="{{ invite.restriction_alimentaire_autre or '' }}">
-    </div>
+<a class="back-link" href="/16mesures">← Retour</a>
 
-    {% if current_date > last_valid_date %}
-      <p style="margin-top: 24px;">
-        <span> QUESTIONNAIRE FERME ❌ </span>
-      </p>
+<div class="page">
+  <div class="card">
+    {% if merci %}
+      <div class="confirmation">
+        <span class="emoji">🎬</span>
+        <h1>Merci !</h1>
+        <p>Vous êtes pré-inscris ! Veuillez confirmer votre inscription via le lien recu par mail.</p>
+      </div>
+    {% elif duplicate %}
+      <div class="confirmation">
+        <span class="emoji">⚠️</span>
+        <h1>Vous êtes déjà inscrit(e)</h1>
+        <p>Un code d'accès a déjà été envoyé à cette adresse email. Merci de vérifier votre boîte de réception (et vos spams).</p>
+        <p>Si vous insistez, votre ancien code sera supprimé et un nouveau sera créé.</p>
+        <form method="post" action="/16mesures/invites/inscription">
+          <input type="hidden" name="prenom" value="{{ form_data.prenom }}">
+          <input type="hidden" name="nom" value="{{ form_data.nom }}">
+          <input type="hidden" name="email" value="{{ form_data.email }}">
+          <input type="hidden" name="telephone" value="{{ form_data.telephone }}">
+          <input type="hidden" name="sexe" value="{{ form_data.sexe }}">
+          <input type="hidden" name="debat" value="{{ form_data.debat }}">
+          <input type="hidden" name="force" value="1">
+          <button type="submit" class="button-secondary">Continuer quand même</button>
+        </form>
+      </div>
     {% else %}
-      <p style="margin-top: 24px;">
-        <button class="button" type="submit">Envoyer ma réponse</button>
-      </p>
-      <p><strong>Attention ! Le sondage se cloturera dans {{(current_date-last_valid_date).days | abs}} jours </strong></p>
+      <h1>S'inscrire à une diffusion</h1>
+      <p class="intro">Renseignez vos informations pour réserver votre place.</p>
+
+      <form method="post" action="/16mesures/invites/inscription">
+        <div class="row">
+          <div>
+            <label for="prenom">Prénom</label>
+            <input type="text" id="prenom" name="prenom" required>
+          </div>
+          <div>
+            <label for="nom">Nom</label>
+            <input type="text" id="nom" name="nom" required>
+          </div>
+        </div>
+
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+
+        <label for="telephone">Téléphone (optionnel)</label>
+        <input type="tel" id="telephone" name="telephone">
+
+        <label for="sexe">Quel est votre sexe ?</label>
+        <select id="sexe" name="sexe" required>
+          <option value="" disabled selected>-- Choisir --</option>
+          <option value="homme">Homme</option>
+          <option value="femme">Femme</option>
+        </select>
+
+        <label for="debat">Participez-vous au débat après le film ?</label>
+        <select id="debat" name="debat" required>
+          <option value="" disabled selected>-- Choisir --</option>
+          <option value="oui">Oui</option>
+          <option value="non">Non</option>
+        </select>
+
+        <button type="submit">S'inscrire</button>
+      </form>
     {% endif %}
-  </form>
-  <p><a href="/invite/{{ invite.token }}">← Retour à l'invitation</a></p>
+  </div>
 </div>
 
-<style>
-  .song-field { position: relative; margin-top: 8px; }
-  .song-suggestions {
-    list-style: none;
-    margin: 2px 0 0;
-    padding: 0;
-    position: absolute;
-    z-index: 5;
-    width: 100%;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    max-height: 180px;
-    overflow-y: auto;
-  }
-  .song-suggestions:empty { border: none; }
-  .song-suggestions li {
-    padding: 8px 10px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  .song-suggestions li:hover { background: #f0e6d7; }
-</style>
-
-<script>
-  (function () {
-    const presenceAfterSelect = document.querySelector('select[name="presence_after"]');
-    const chansonsBlock = document.getElementById("chansons-block");
-
-    function updateChansonsVisibility() {
-      chansonsBlock.style.display = presenceAfterSelect.value === "oui" ? "block" : "none";
-    }
-    presenceAfterSelect.addEventListener("change", updateChansonsVisibility);
-    updateChansonsVisibility();
-
-    const modeTransportSelect = document.querySelector('select[name="mode_transport"]');
-    const covoiturageBlock = document.getElementById("covoiturage-block");
-    const covoiturageSelect = document.querySelector('select[name="covoiturage_possible"]');
-    const transportAutreBlock = document.getElementById("transport-autre-block");
-
-    function updateCovoiturageVisibility() {
-      // required doit suivre la visibilité, sinon un select caché bloque
-      // silencieusement la soumission du formulaire.
-      const show = modeTransportSelect.value === "voiture";
-      covoiturageBlock.style.display = show ? "block" : "none";
-      covoiturageSelect.required = show;
-    }
-    function updateTransportAutreVisibility() {
-      transportAutreBlock.style.display = modeTransportSelect.value === "autre" ? "block" : "none";
-    }
-    modeTransportSelect.addEventListener("change", updateCovoiturageVisibility);
-    modeTransportSelect.addEventListener("change", updateTransportAutreVisibility);
-    updateCovoiturageVisibility();
-    updateTransportAutreVisibility();
-
-    const restrictionSelect = document.querySelector('select[name="restriction_alimentaire"]');
-    const restrictionAutreBlock = document.getElementById("restriction-autre-block");
-
-    function updateRestrictionAutreVisibility() {
-      restrictionAutreBlock.style.display = restrictionSelect.value === "autre" ? "block" : "none";
-    }
-    restrictionSelect.addEventListener("change", updateRestrictionAutreVisibility);
-    updateRestrictionAutreVisibility();
-
-    // Autocomplétion : débounce 400ms + 3 caractères minimum.
-    ["chanson_1", "chanson_2", "chanson_3"].forEach(function (fieldId) {
-      const input = document.getElementById(fieldId);
-      const suggestions = document.getElementById(fieldId + "-suggestions");
-      let debounceTimer;
-
-      input.addEventListener("input", function () {
-        clearTimeout(debounceTimer);
-        const query = input.value.trim();
-        if (query.length < 3) {
-          suggestions.innerHTML = "";
-          return;
-        }
-        debounceTimer = setTimeout(function () {
-          fetch("/invite/{{ invite.token }}/song-search?q=" + encodeURIComponent(query))
-            .then(function (res) { return res.json(); })
-            .then(function (data) {
-              suggestions.innerHTML = "";
-              (data.results || []).forEach(function (title) {
-                const li = document.createElement("li");
-                li.textContent = title;
-                li.addEventListener("click", function () {
-                  input.value = title;
-                  suggestions.innerHTML = "";
-                });
-                suggestions.appendChild(li);
-              });
-            })
-            .catch(function () { suggestions.innerHTML = ""; });
-        }, 400);
-      });
-
-      document.addEventListener("click", function (e) {
-        if (e.target !== input) suggestions.innerHTML = "";
-      });
-    });
-  })();
-</script>
-{% endblock %}
+</body>
+</html>

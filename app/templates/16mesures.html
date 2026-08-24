@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>16 mesures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#f6f0e4;
+    --cream-soft: rgba(246,240,228,0.92);
+    --ink:#2c2620;
+    --ink-soft: rgba(44,38,32,0.72);
+    --gold:#c9a24b;
+    --overlay-top: rgba(20,16,12,0.15);
+    --overlay-bottom: rgba(15,12,9,0.55);
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0;
+    padding:0;
+    height:100%;
+    font-family:'Jost', sans-serif;
+    color:var(--cream);
+  }
+
+  .hero{
+    position:relative;
+    min-height:100dvh;
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    background-color:#1a1712;
+  }
+
+  .hero__bg{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:fill;
+    z-index:0;
+    filter:blur(20px);
+    transform:scale(1.05); /* cache le halo flou sur les bords */
+    transition:filter 0.6s ease-out;
+  }
+  .hero__bg.is-loaded{
+    filter:blur(0);
+  }
+
+  .hero__overlay{
+    position:absolute;
+    inset:0;
+    z-index:1;
+    background:
+      linear-gradient(180deg, var(--overlay-top) 0%, rgba(0,0,0,0) 35%, rgba(0,0,0,0) 55%, var(--overlay-bottom) 100%);
+  }
+
+  .hero__content{
+    position:relative;
+    z-index:2;
+    width:100%;
+    max-width:900px;
+    padding:14vh 24px 48px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    animation: riseIn 1.1s ease-out both;
+  }
+
+  .hero__content > p{
+    color:var(--cream);
+  }
+
+  @keyframes riseIn{
+    from{ opacity:0; transform:translateY(14px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  .eyebrow{
+    letter-spacing:0.35em;
+    text-transform:uppercase;
+    font-size:12px;
+    font-weight:400;
+    color:var(--cream);
+    opacity:0.85;
+    margin-bottom:18px;
+  }
+
+  .names{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:400;
+    font-size:clamp(48px, 10vw, 108px);
+    line-height:1.08;
+    margin:0;
+    text-shadow: 0 2px 24px rgba(0,0,0,0.35);
+  }
+
+  .names .amp{
+    display:block;
+    font-style:italic;
+    font-size:0.55em;
+    color:var(--gold);
+    margin:6px 0;
+  }
+
+  .actions{
+    margin-top:40px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    justify-content:center;
+    opacity:0;
+    animation: riseIn 0.8s ease-out 2s both;
+  }
+
+  .top-actions{
+    position:fixed;
+    top:20px;
+    left:24px;
+    z-index:3;
+    display:flex;
+    gap:10px;
+  }
+  .btn-small{
+    font-family:'Jost', sans-serif;
+    font-size:12px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    text-decoration:none;
+    color:var(--cream);
+    padding:8px 16px;
+    border:1px solid rgba(246,240,228,0.5);
+    border-radius:999px;
+    background:rgba(26,23,18,0.35);
+    backdrop-filter:blur(4px);
+    transition:background 0.2s ease, border-color 0.2s ease;
+  }
+  .btn-small:hover, .btn-small:focus-visible{
+    background:rgba(246,240,228,0.15);
+    border-color:var(--cream);
+    outline:none;
+  }
+
+  .btn{
+    font-family:'Jost', sans-serif;
+    font-size:14px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:14px 30px;
+    border-radius:999px;
+    border:1px solid var(--cream);
+    background:var(--cream);
+    color:var(--ink);
+    cursor:pointer;
+    transition:all 0.25s ease;
+  }
+
+  .btn:hover, 
+  
+  .btn:focus-visible{
+    background:var(--cream);
+    color:var(--ink);
+    border-color:var(--cream);
+  }
+
+  .btn:focus-visible{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:#1a1712;
+  }
+
+  .btn--primary{
+    background:var(--cream);
+    color:var(--ink);
+    border-color:var(--cream);
+  }
+
+  .btn--primary:hover, 
+
+  .btn--primary:focus-visible{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:#1a1712;
+  }
+
+  /* Guest code panel */
+  .guest-panel{
+    margin-top:14px;
+    width:100%;
+    max-width:260px;
+    max-height:0;
+    opacity:0;
+    overflow:hidden;
+    transition: max-height 0.4s ease, opacity 0.35s ease, margin-top 0.35s ease;
+  }
+
+  .guest-panel.is-open{
+    max-height:250px;
+    opacity:1;
+  }
+
+  .guest-panel__form{
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+    background:var(--cream-soft);
+    border-radius:16px;
+    padding:12px;
+    box-shadow:0 12px 30px rgba(0,0,0,0.25);
+  }
+
+  .guest-panel__input{
+    font-family:'Jost', sans-serif;
+    font-size:13px;
+    padding:8px 14px;
+    border-radius:999px;
+    border:1px solid rgba(44,38,32,0.25);
+    background:#fff;
+    color:var(--ink);
+    text-align:center;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+  }
+
+  .guest-panel__input:focus-visible{
+    outline:2px solid var(--gold);
+    outline-offset:2px;
+  }
+
+  .guest-panel__submit{
+    font-family:'Jost', sans-serif;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:8px 16px;
+    border-radius:999px;
+    border:none;
+    background:var(--ink);
+    color:var(--cream);
+    cursor:pointer;
+    transition: background 0.2s ease;
+  }
+
+  .guest-panel__submit:hover, .guest-panel__submit:focus-visible{
+    background:var(--gold);
+    color:#1a1712;
+    outline:none;
+  }
+
+  .guest-panel__error{
+    font-size:12px;
+    color:#b23a2f;
+    min-height:14px;
+  }
+
+  @media (max-width: 560px){
+    .actions{
+      flex-direction:column;
+      width:100%;
+      max-width:320px;
+    }
+    .btn{ width:100%; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .hero__content{ animation:none; }
+    .guest-panel{ transition:none; }
+    .actions{ animation:none; opacity:1; }
+  }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <img class="hero__bg" src="{{ film_image }}" >
+  <div class="hero__overlay"></div>
+
+    <div class="top-actions">
+      <a class="btn-small" href="/">
+        Page d'accueil
+      </a>
+      <a class="btn-small" href="https://www.leetchi.com/fr/c/16-mesures-et-au-dela-2062569?utm_source=copylink&utm_medium=social_sharing">
+        Soutenir
+      </a>
+    </div>
+
+  <div class="hero__content">
+    <h4>
+      16 Mesures est né d'une conviction profonde : le cinéma peut encore surprendre lorsqu'il ose emprunter des chemins inattendus.
+      Pensé, écrit et réalisé à Toulouse, ce thriller psychologique explore la frontière fragile entre la vérité et les apparences, entre 
+      ce que nous montrons au monde et ce que nous cherchons à lui cacher. <br>
+
+      À travers une mise en scène où chaque détail possède une signification, le film fait dialoguer l'écriture, la musique et le cinéma afin 
+      de raconter une histoire où chaque mot peut devenir une preuve, chaque silence une révélation. <br>
+
+      Plus qu'une projection, cette avant-première marque la naissance publique d'une oeuvre indépendante portée par la volonté de faire rayonner 
+      la création toulousaine et de proposer un regard singulier sur la culture hip-hop comme langage cinématographique.
+    </h4>
+    <h5> 
+      Prochaine diffusion  : <br>
+      Le {{date}} à partir de {{heure}} <br>
+      {{lieu}}, {{adresse}}  
+    </h5>
+
+    <div class="actions" id="heroActions">
+      <a class="btn btn--primary" href="https://www.youtube.com/watch?v=mvrXZC9IMP4" onclick="event.preventDefault(); ouvrirVideo(this.href);">
+        Bande annonce
+      </a>
+      <div id="modaleVideo" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); align-items:center; margin-top:-30vh; justify-content:center; z-index:1000;">
+        <div style="position:relative; width:80%; max-width:800px;">
+          <span onclick="fermerVideo()" style="position:absolute; top:-35px; right:0; color:white; cursor:pointer; font-size:28px;">&times;</span>
+          <div style="position:relative; padding-bottom:56.25%; height:0;">
+              <iframe id="videoFrame" src="" style="position:absolute; top:0; left:0; width:100%; height:100%;" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+      <a class="btn btn--primary" href="/16mesures/invites/inscription">
+        S'inscrire
+      </a>
+      <button type="button" class="btn btn--primary" id="guestCodeBtn" aria-expanded="{{ 'true' if GUEST_CODE_ERROR else 'false' }}" aria-controls="guestPanel">
+        Spectacteur
+      </button>
+      <a class="btn btn--primary" href="/16mesures/organisation/login">
+        Organisateur
+      </a>
+    </div>
+
+    <div class="guest-panel{% if GUEST_CODE_ERROR %} is-open{% endif %}" id="guestPanel">
+      <form class="guest-panel__form" action="{{ GUEST_CODE_SUBMIT_URL }}" method="post" id="guestCodeForm">
+        <label for="guestCodeInput" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">
+          Code invité
+        </label>
+        <input
+          type="text"
+          id="guestCodeInput"
+          name="guest_code"
+          class="guest-panel__input"
+          placeholder="Entrez votre code"
+          autocomplete="off"
+          required
+        >
+        <p class="guest-panel__error" id="guestCodeError">{{ GUEST_CODE_ERROR|default('') }}</p>
+        <button type="submit" class="guest-panel__submit">Valider</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+function extraireIdYoutube(url) {
+    const patterns = [/youtube\.com\/watch\?v=([^&]+)/, /youtu\.be\/([^?]+)/];
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+    }
+    return null;
+}
+function ouvrirVideo(url) {
+    const id = extraireIdYoutube(url);
+    document.getElementById('videoFrame').src = 'https://www.youtube.com/embed/' + id + '?autoplay=1';
+    document.getElementById('modaleVideo').style.display = 'flex';
+}
+function fermerVideo() {
+    document.getElementById('videoFrame').src = '';
+    document.getElementById('modaleVideo').style.display = 'none';
+}
+</script>
+
+<script>
+  (function(){
+    var toggleBtn = document.getElementById('guestCodeBtn');
+    var panel = document.getElementById('guestPanel');
+    var input = document.getElementById('guestCodeInput');
+
+    toggleBtn.addEventListener('click', function(){
+      var isOpen = panel.classList.toggle('is-open');
+      toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      if(isOpen){
+        window.requestAnimationFrame(function(){ input.focus(); });
+      }
+    });
+  })();
+
+  (function(){
+    var heroImg = document.querySelector('.hero__bg');
+    function reveal(){ heroImg.classList.add('is-loaded'); }
+    if(heroImg.complete){
+      reveal(); // déjà en cache, pas d'événement "load" à attendre
+    } else {
+      heroImg.addEventListener('load', reveal);
+    }
+  })();
+</script>
+
+</body>
+</html>
