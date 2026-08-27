@@ -10,7 +10,7 @@ templates = Jinja2Templates(directory="app/templates")
 app = FastAPI(title="Wedding App")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-GUEST_CODE_SUBMIT_URL = "/16mesures/guest-access"
+GUEST_CODE_SUBMIT_URL = "/16mesures/acces"
 
 
 def _home_context(request: Request, **extra):
@@ -37,11 +37,11 @@ def racine(request: Request):
     return templates.TemplateResponse("16mesures.html", _home_context(request))
 
 
-@app.post("/16mesures/guest-access")
+@app.post("/16mesures/acces")
 def guest_access(request: Request, guest_code: str = Form(...)):
     invite = store.get_by_token_suffix(guest_code)
     if invite:
-        return RedirectResponse(url=f"/16mesures/invites/confirmation-presence/{invite.token}", status_code=303)
+        return RedirectResponse(url=f"/16mesures/invites/confirmation/{invite.token}", status_code=303)
 
     return templates.TemplateResponse(
         "16mesures.html",

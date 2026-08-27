@@ -8,7 +8,7 @@ from __future__ import annotations
 import datetime
 import typing
 from typing import Any, Generic, Optional, Type, TypeVar
-
+from dataclasses import asdict
 import sqlalchemy as sa
 from sqlalchemy import Boolean, DateTime, Float, Integer, String 
 from sqlalchemy import Column, MetaData, Table, select, text
@@ -84,8 +84,8 @@ class SqlRepository(Generic[T]):
         """
         try:
             with self.engine.begin() as conn:
-                conn.execute(table.insert().values(**obj.__dict__))
-            return True
+                conn.execute(table.insert().values(** asdict(obj) ))
+            return 
         except Exception as e:
             logger.error(f"Erreur lors de la connexion à la base de données {self.engine.url.database} : {e}")
             return False
@@ -95,13 +95,29 @@ class SqlRepository(Generic[T]):
         """
             Update the row matching primary_key with obj's current values
         """
-        values = obj.__dict__
+        values = asdict(obj)
         pk_value = values.pop(primary_key)
 
         try:
             with self.engine.begin() as conn:
                 result = conn.execute(
                     table.update().where(table.c[primary_key] == pk_value).values(**values)
+                )
+        except Exception as e:
+            logger.error(f"Erreur lors de la connexion à la base de données {self.engine.url.database} : {e}")
+        return result.rowcount
+
+    def delete(self, obj:T, table:Table, primary_key) -> int:
+        """
+            delete the row matching primary_key with obj's current values
+        """
+        values = asdict(obj)
+        pk_value = values.pop(primary_key)
+
+        try:
+            with self.engine.begin() as conn:
+                result = conn.execute(
+                    table.delete().where(table.c[primary_key] == pk_value).values(**values)
                 )
         except Exception as e:
             logger.error(f"Erreur lors de la connexion à la base de données {self.engine.url.database} : {e}")
@@ -123,7 +139,7 @@ if __name__ == "__main__":
     #org =  Invite(prenom="org", nom="irg", mail="xzz", contact="00", categorie="ax", token="xyz", qr_uuid="tes")
     #data = db.load(Invite, table_name="guests") 
 
-    table = db.create(Invite, table_name="guests", primary_key="token")
+    #table = db.create(Invite, table_name="guests", primary_key="token")
     table = db.create(Organisateur, table_name="organizers", primary_key="mail")
     #check = db.insert(inv, table)
     #db.update(inv, table, primary_key="token") 

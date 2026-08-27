@@ -16,17 +16,16 @@ import yaml
 from filelock import FileLock
 
 from app import config
+from dataclasses import asdict
 from app.database import SqlRepository
-
 from app.models import (
     Invite,
     Organisateur,
     OuiNon,
     PresenceStatus,
     Sexe,
-    generate_invite_token,
     generate_qr_uuid,
-    natural_key,
+    get_key,
     slugify,
 )
 
@@ -42,7 +41,7 @@ def _guests_lock() -> FileLock:
 def _read_log() -> dict:
     if config.SQL_DB:
         all_guests = SQL_REPO.load(Invite, table_name="guests")
-        return {f"{natural_key(guest.prenom, guest.nom) }":_invite_to_dict(guest) for guest in all_guests}
+        return {f"{get_key(guest)}":asdict(guest) for guest in all_guests}
     else:
         if not os.path.exists(config.GUESTS_LOG_PATH):#create if not exist
             with open(config.GUESTS_LOG_PATH, "w", encoding="utf-8") as f:
@@ -52,39 +51,39 @@ def _read_log() -> dict:
             return yaml.safe_load(f) or {}
 
 
-def _write_log(log: dict, obj:list[Invite]) -> None:
+def _write_log(log: dict, invites:list[Invite]) -> None:
+    """
+    Should : add new guest, update guest infos, delete guest info. 
+    """
     if config.SQL_DB:
-        all_guests = obj
         table = SQL_REPO.create(Invite, table_name="guests", primary_key="token")
-        for guest in all_guests:
-            SQL_REPO.update(guest, table, primary_key="token") 
+        table_content = SQL_REPO.load(Invite, table_name="guests")
+        table_key = [guest.token for guest in table_content] if table_content else []
+        for guest in invites:
+            if guest.token not in log.keys():
+                print("here")
+                SQL_REPO.delete(guest, table,primary_key="token") 
+                return None
+            elif guest.token in table_key:
+                SQL_REPO.update(guest, table,primary_key="token") 
+            else:
+                SQL_REPO.insert(guest, table) 
     else:
         os.makedirs(os.path.dirname(config.GUESTS_LOG_PATH), exist_ok=True)
         with open(config.GUESTS_LOG_PATH, "w", encoding="utf-8") as f:
             yaml.safe_dump(log, f, allow_unicode=True, sort_keys=True)
 
 
-def _read_guests() -> list[dict]:
+def _read_guests() -> list[Invite]:
     '''
     Read guest as a list of dict, either from SQL database or from yaml file.
     '''
-    rows = []
     if config.SQL_DB:
         results = SQL_REPO.load(Invite, table_name="guests")
-        if not results:
-            return rows
+        return results
 
-        for row in results:
-            rows.append({
-                "prenom": row.prenom,
-                "nom": row.nom,
-                "sexe": row.sexe,
-                "categorie": row.categorie,
-                "role": row.role,
-                "mail": row.mail,
-                "contact": row.contact,
-                })
     else:
+        rows = []
         if not os.path.exists(config.GUESTS_PATH):
             return rows 
         
@@ -92,35 +91,19 @@ def _read_guests() -> list[dict]:
             reader = csv.DictReader(f)
             for raw in reader:
                 row = {(k or "").strip().lower(): (v or "").strip() for k, v in raw.items()}
-                if row.get("prenom") and row.get("nom"):
-                    rows.append(row)
-    return rows
-
-
-def _invite_to_dict(invite: Invite) -> dict:
-    return {
-        "prenom": invite.prenom,
-        "nom": invite.nom,
-        "sexe": invite.sexe.value,
-        "categorie": invite.categorie,
-        "role": invite.role,
-        "mail": invite.mail,
-        "contact": invite.contact,
-        "token": invite.token,
-        "qr_uuid": invite.qr_uuid,
-        "statut_presence": invite.statut_presence.value,
-        "presence_diffusion": invite.presence_diffusion.value if invite.presence_diffusion else None,
-        "presence_debat": invite.presence_debat.value if invite.presence_debat else None,
-        "checked_in_diffusion": invite.checked_in_diffusion,
-        "checked_in_diffusion_at": invite.checked_in_diffusion_at.isoformat() if invite.checked_in_diffusion_at else None,
-        "checked_in_diffusion_by": invite.checked_in_diffusion_by,
-        "checked_in_debat": invite.checked_in_debat,
-        "checked_in_debat_at": invite.checked_in_debat_at.isoformat() if invite.checked_in_debat_at else None,
-        "checked_in_debat_by": invite.checked_in_debat_by,
-        "created_at": invite.created_at.isoformat(),
-        "confirmation_mail": invite.confirmation_mail,
-    }
-
+                rows.append(
+                    Invite(
+                        prenom=row.get("prenom"),
+                        nom=row.get("nom"),
+                        sexe=row.get("sexe"),
+                        categorie=row.get("categorie"),
+                        role=row.get("role"),
+                        mail=row.get("mail"),
+                        contact=row.get("contact"),
+                        token=""
+                    )
+                )
+        return rows
 
 def _invite_from_dict(data: dict) -> Invite:
     return Invite(
@@ -131,30 +114,26 @@ def _invite_from_dict(data: dict) -> Invite:
         role=data.get("role"),
         mail=data.get("mail"),
         contact=data.get("contact"),
+        accompagnateur=data.get("accompagnateur"),
         token=data["token"],
         qr_uuid=data["qr_uuid"],
         statut_presence=PresenceStatus(data.get("statut_presence") or "en_attente"),
         presence_diffusion=OuiNon(data["presence_diffusion"]) if data.get("presence_diffusion") else None,
-        presence_debat=OuiNon(data["presence_debat"]) if data.get("presence_debat") else None,
         checked_in_diffusion=bool(data.get("checked_in_diffusion", False)),
-        checked_in_diffusion_at=datetime.fromisoformat(data["checked_in_diffusion_at"]) if data.get("checked_in_diffusion_at") else None,
+        checked_in_diffusion_at=datetime.fromisoformat(str(data["checked_in_diffusion_at"])) if data.get("checked_in_diffusion_at") else None,
         checked_in_diffusion_by=data.get("checked_in_diffusion_by"),
-        checked_in_debat=bool(data.get("checked_in_debat", False)),
-        checked_in_debat_at=datetime.fromisoformat(data["checked_in_debat_at"]) if data.get("checked_in_debat_at") else None,
-        checked_in_debat_by=data.get("checked_in_debat_by"),
-        created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else datetime.utcnow(),
+        place_diffusion=data.get("place_diffusion"),
+        created_at=datetime.fromisoformat(str(data["created_at"])) if data.get("created_at") else datetime.utcnow(),
         confirmation_mail=bool(data.get("confirmation_mail", False)),
     )
 
 def qr_code_path(invite: Invite) -> str:
-    filename = f"{slugify(invite.nom)}-{slugify(invite.prenom)}-qrcode.png"
+    filename = f"{invite.token}-qrcode.png"
     return os.path.join(config.QR_OUTPUT_DIR, filename)
 
 def qr_code_url(invite: Invite) -> str:
     """URL web du QR (le mount /static sert le contenu de app/static, cf. app/main.py)."""
-    filename = f"{slugify(invite.nom)}-{slugify(invite.prenom)}-qrcode.png"
-    #relative_dir = os.path.relpath(config.QR_OUTPUT_DIR, "app/static").replace(os.sep, "/")
-    #return f"/static/{relative_dir}/{filename}"
+    filename = f"{invite.token}-qrcode.png"
     return f"/{config.QR_OUTPUT_DIR}/{filename}".replace('app/','')
 
 def _write_qr_file(invite: Invite) -> None:
@@ -178,11 +157,11 @@ def load_guests() -> list[Invite]:
 
         # Clean log des invités qui ne sont plus dans le CSV ou la base de données SQL Server.
         if guests_data:
-            current_keys = {natural_key(row["prenom"], row["nom"]) for row in guests_data}
-            keys_to_remove = [ key for key, entry in log.items() if key not in current_keys ]
+            current_keys = [get_key(row) for row in guests_data]
+            keys_to_remove = [ key for key in log.keys() if key not in current_keys ]
             for key in keys_to_remove:
                 entry = log[key]
-                _delete_qr_file(f"{slugify(entry['nom'])}-{slugify(entry['prenom'])}-qrcode.png")
+                _delete_qr_file(f"{key}-qrcode.png")
                 del log[key]
                 changed = True
         elif log:
@@ -190,45 +169,29 @@ def load_guests() -> list[Invite]:
 
         # Synchronise les invités du CSV ou de la base de données SQL Server avec le log YAML
         for row in guests_data:
-            key = natural_key(row["prenom"], row["nom"])
-            sexe = Sexe.femme if row.get("sexe", "").lower() == "femme" else Sexe.homme
-            categorie = row.get("categorie").lower()
-            role = row.get("role").lower()if row.get("role") else None
-            mail = row.get("mail").lower() if row.get("mail") else None
-            contact = (row.get("contact") or "").strip() or None
-
+            key = get_key(row)
+            
             #Add new guests infos
             if key not in log:
-                invite = Invite(
-                    prenom=row["prenom"],
-                    nom=row["nom"],
-                    sexe=sexe,
-                    categorie=categorie,
-                    role=role,
-                    mail=mail,
-                    contact=contact,
-                    token=generate_invite_token(
-                        row["prenom"], row["nom"], categorie, config.WEDDING_NAME1, config.WEDDING_DATE
-                    ),
-                    qr_uuid=generate_qr_uuid(),
-                )
-                _write_qr_file(invite)
-                log[key] = _invite_to_dict(invite)
+                row.token = key
+                row.qr_uuid=generate_qr_uuid()
+                _write_qr_file(row)
+                log[key] = asdict(row)
                 changed = True
 
             #Update existing guests infos
             else:
                 entry = log[key]
-                if (  entry.get("sexe") != sexe.value
-                or entry.get("categorie") != categorie
-                or entry.get("role") != role
-                or entry.get("mail") != mail
-                or entry.get("contact") != contact):
-                    entry["sexe"] = sexe.value
-                    entry["categorie"] = categorie
-                    entry["role"] = role
-                    entry["mail"] = mail
-                    entry["contact"] = contact
+                if (  entry.get("sexe") != row.sexe
+                or entry.get("categorie") != row.categorie
+                or entry.get("role") != row.role
+                or entry.get("mail") != row.mail
+                or entry.get("contact") != row.contact):
+                    entry["sexe"] = row.sexe
+                    entry["categorie"] = row.categorie
+                    entry["role"] = row.role
+                    entry["mail"] = row.mail
+                    entry["contact"] = row.contact
                     changed = True
 
         output = [_invite_from_dict(data) for data in log.values()]
@@ -240,6 +203,9 @@ def load_guests() -> list[Invite]:
 
 
 def list_guests() -> list[Invite]:
+    '''
+    Trier liste inviter par ordre croisson de (prenom, nom)
+    '''
     return sorted(load_guests(), key=lambda g: (g.prenom, g.nom))
 
 
@@ -266,10 +232,9 @@ def save_guest(invite: Invite) -> None:
         log = _read_log()
         existing_key = next(
             (key for key, entry in log.items() if entry.get("token") == invite.token),
-            None,
-        )
+            None,)
         key = existing_key or invite.token
-        log[key] = _invite_to_dict(invite)
+        log[key] = asdict(invite)
         _write_log(log, [invite])
 
 
@@ -299,40 +264,48 @@ def _organizers_lock() -> FileLock:
 
 
 def _read_organizers() -> dict:
-    if not os.path.exists(config.ORGANIZERS_LOG_PATH):
-        with open(config.ORGANIZERS_LOG_PATH, "w", encoding="utf-8") as f:
-            yaml.dump({}, f, allow_unicode=True, sort_keys=True)
-
-    with open(config.ORGANIZERS_LOG_PATH, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
-
-
+    if config.SQL_DB:
+        organizers = SQL_REPO.load(Organisateur, table_name="Organizers")
+        if organizers:
+            return {org.mail:asdict(org) for org in organizers}
+        else:
+            return {}
+    else:
+        rows = {}
+        if not os.path.exists(config.ORGANIZERS_PATH):
+            return rows 
+        
+        with open(config.ORGANIZERS_PATH, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for raw in reader:
+                row = {(k or "").strip().lower(): (v or "").strip() for k, v in raw.items()}
+                rows.append({raw['mail']:row.get("mail")})
+                
+        return rows
+#
 def _write_organizers(organizers: dict) -> None:
-    os.makedirs(os.path.dirname(config.ORGANIZERS_LOG_PATH), exist_ok=True)
-    with open(config.ORGANIZERS_LOG_PATH, "w", encoding="utf-8") as f:
-        yaml.safe_dump(organizers, f, allow_unicode=True, sort_keys=True)
-
-def _organisateur_to_dict(organisateur: Organisateur) -> dict:
-    return {
-        "prenom": organisateur.prenom,
-        "nom": organisateur.nom,
-        "sexe": organisateur.sexe.value,
-        "categorie": organisateur.categorie,
-        "role": organisateur.role,
-        "mail": organisateur.mail,
-        "contact": organisateur.contact,
-    }
-
+    if config.SQL_DB:
+        table = SQL_REPO.create(Organisateur, table_name="organizers", primary_key="mail")
+        table_content = SQL_REPO.load(Organisateur, table_name="organizers")
+        for key, data in organizers.items(): #insert or delete
+            organisateur = [org for org in table_content if org.mail==key][0] #mail is unique, so no duplicates
+            organisateur.password_hash = data.get("password_hash")
+            SQL_REPO.update(organisateur, table, primary_key='mail') 
+    else:
+        os.makedirs(os.path.dirname(config.ORGANIZERS_LOG_PATH), exist_ok=True)
+        with open(config.ORGANIZERS_LOG_PATH, "w", encoding="utf-8") as f:
+            yaml.safe_dump(organizers, f, allow_unicode=True, sort_keys=True)
 
 def _organisateur_from_dict(data: dict) -> Organisateur:
     return Organisateur(
         prenom=data["prenom"],
         nom=data["nom"],
         sexe=Sexe(data.get("sexe") or "homme"),
+        password_hash=data.get("password_hash"),
         categorie=data.get("categorie"),
         role=data.get("role"),
         mail=data.get("mail"),
-        contact=data.get("contact"),
+        contact=data.get("contact"),   
     )
 
 def get_organizer_password_hash(login: str) -> Optional[str]:
@@ -346,7 +319,7 @@ def create_organizer(login: str, password_hash: str) -> bool:
     """Crée un compte organisateur. Retourne False si le login existe déjà."""
     with _organizers_lock():
         organizers = _read_organizers()
-        if login in organizers:
+        if login in organizers.keys():
             return False
         organizers[login] = {"password_hash": password_hash}
         _write_organizers(organizers)
@@ -358,24 +331,14 @@ def accepted_organizers() -> list[Organisateur]:
     if config.SQL_DB:
         return SQL_REPO.load(Organisateur, table_name="organizers") 
     else:
-        if not os.path.exists(config.ORGANIZERS_PATH):
-            return [] 
-        
         rows = []
-        with open(ORGANIZERS_PATH, newline="", encoding="utf-8") as f:
+        if not os.path.exists(config.ORGANIZERS_PATH):
+            return rows
+        
+        with open(config.ORGANIZERS_PATH, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for data in reader:
-                rows.append( 
-                    Organisateur(
-                                prenom = data['prenom'],
-                                nom = data['nom'],
-                                categorie= data['categorie'],
-                                sexe = data['sexe'],
-                                role = data['role'],
-                                mail = data['mail'],
-                                contact = data['contact'],
-                                )
-                )
+                rows.append(  _organisateur_from_dict(data) )
         return rows
 
 def find_accepted_organizer_by_mail(mail: str) -> Optional[Invite]:
@@ -395,7 +358,7 @@ def set_organizer_password(login: str, password_hash: str) -> None:
         _write_organizers(organizers)
 
 if __name__ =="__main__":
-    print( accepted_organizers() )
-    print(find_accepted_organizer_by_mail("yannhrld@gmail.com"))
-    print(find_accepted_organizer_by_mail("yann656@hotma.com"))
+    b = load_guests()
+    url = qr_code_url( b[0] )
+    path = _write_qr_file(b[0])
     print('ww')

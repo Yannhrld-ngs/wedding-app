@@ -82,6 +82,17 @@
     margin:0 0 28px;
   }
 
+  .error-text{
+    font-size:13px;
+    color:#9a3b3b;
+    background:rgba(154,59,59,0.1);
+    border:1px solid rgba(154,59,59,0.35);
+    border-radius:8px;
+    padding:10px 14px;
+    margin:0 0 20px;
+    text-align:center;
+  }
+
   label{
     display:block;
     font-size:12px;
@@ -161,6 +172,66 @@
     color:var(--ink);
     outline:none;
   }
+
+  .count-form{
+    margin:0 0 24px;
+    padding:16px;
+    border-radius:10px;
+    background:rgba(201,162,75,0.12);
+    border:1px solid rgba(201,162,75,0.4);
+  }
+  .count-form label{
+    margin-top:0;
+  }
+  .count-row{
+    display:flex;
+    gap:10px;
+    align-items:stretch;
+  }
+  .count-row input[type="number"]{
+    flex:1;
+  }
+  .count-row button{
+    flex:0 0 auto;
+    width:auto;
+    white-space:nowrap;
+    font-family:'Jost', sans-serif;
+    font-size:12px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    padding:0 18px;
+    border-radius:8px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--cream);
+    cursor:pointer;
+  }
+  .count-row button:hover{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:#1a1712;
+  }
+  .help-text{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin:8px 0 0;
+  }
+
+  #accompagnateurs{
+    margin-top:12px;
+    padding-top:4px;
+    border-top:1px solid rgba(44,38,32,0.15);
+  }
+  .accompagnateur h3{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:500;
+    font-style:italic;
+    font-size:17px;
+    margin:14px 0 4px;
+  }
+  .accompagnateur .row{
+    grid-template-columns:1fr 1fr 1fr;
+  }
 </style>
 </head>
 <body>
@@ -175,60 +246,116 @@
         <h1>Merci !</h1>
         <p>Vous êtes pré-inscris ! Veuillez confirmer votre inscription via le lien recu par mail.</p>
       </div>
+    {% elif full %}
+      <div class="confirmation">
+        <span class="emoji">😔</span>
+        <h1>Complet !</h1>
+        <p>Il y a malheureusement plus de places disponibles ! Merci de nous suivre sur nos réseaux sociaux pour savoir la prochaine diffusion et l'ouverture de la billetrie associée.</p>
+      </div>
+    {% elif unvalidated %}
+      <div class="confirmation">
+        <span class="emoji">😔</span>
+        <h1>Oups !</h1>
+        <p>Il semblerait que vous n'ayez pas cliqué sur le lien d'action reçu par mail.</p>
+      </div>
     {% elif duplicate %}
       <div class="confirmation">
         <span class="emoji">⚠️</span>
         <h1>Vous êtes déjà inscrit(e)</h1>
         <p>Un code d'accès a déjà été envoyé à cette adresse email. Merci de vérifier votre boîte de réception (et vos spams).</p>
-        <p>Si vous insistez, votre ancien code sera supprimé et un nouveau sera créé.</p>
+        <p>Cliquez ci dessous pour envoyer le code à nouveaux.</p>
         <form method="post" action="/16mesures/invites/inscription">
           <input type="hidden" name="prenom" value="{{ form_data.prenom }}">
           <input type="hidden" name="nom" value="{{ form_data.nom }}">
           <input type="hidden" name="email" value="{{ form_data.email }}">
           <input type="hidden" name="telephone" value="{{ form_data.telephone }}">
           <input type="hidden" name="sexe" value="{{ form_data.sexe }}">
-          <input type="hidden" name="debat" value="{{ form_data.debat }}">
+          <input type="hidden" name="categorie" value="{{ form_data.categorie }}">
+          {% for i in range(form_data.accompagnateur_prenom|length) %}
+          <input type="hidden" name="accompagnateur_prenom" value="{{ form_data.accompagnateur_prenom[i] }}">
+          <input type="hidden" name="accompagnateur_nom" value="{{ form_data.accompagnateur_nom[i] }}">
+          <input type="hidden" name="accompagnateur_sexe" value="{{ form_data.accompagnateur_sexe[i] }}">
+          {% endfor %}
           <input type="hidden" name="force" value="1">
-          <button type="submit" class="button-secondary">Continuer quand même</button>
+          <button type="submit" class="button-secondary">RE ENVOYER CODE</button>
         </form>
       </div>
     {% else %}
       <h1>S'inscrire à une diffusion</h1>
       <p class="intro">Renseignez vos informations pour réserver votre place.</p>
+      {% if error %}
+      <p class="error-text">{{ error }}</p>
+      {% endif %}
 
-      <form method="post" action="/16mesures/invites/inscription">
+      <!--
+        Formulaire unique en method="get" par défaut : "Valider le nombre" recharge la
+        page en réenvoyant TOUS les champs déjà remplis (préservés via form_data, lu
+        depuis la query string), donc rien n'est perdu même si ce champ n'est pas en
+        haut du formulaire. Seul le bouton final "S'inscrire" bascule en POST réel
+        via l'attribut formmethod, pour effectuer l'inscription.
+      -->
+      <form method="get" action="/16mesures/invites/inscription">
         <div class="row">
           <div>
             <label for="prenom">Prénom</label>
-            <input type="text" id="prenom" name="prenom" required>
+            <input type="text" id="prenom" name="prenom" value="{{ form_data.prenom }}">
           </div>
           <div>
             <label for="nom">Nom</label>
-            <input type="text" id="nom" name="nom" required>
+            <input type="text" id="nom" name="nom" value="{{ form_data.nom }}">
           </div>
         </div>
 
         <label for="email">Email</label>
-        <input type="email" id="email" name="email" required>
+        <input type="email" id="email" name="email" value="{{ form_data.email }}">
 
         <label for="telephone">Téléphone (optionnel)</label>
-        <input type="tel" id="telephone" name="telephone">
+        <input type="tel" id="telephone" name="telephone" value="{{ form_data.telephone }}">
 
-        <label for="sexe">Quel est votre sexe ?</label>
-        <select id="sexe" name="sexe" required>
-          <option value="" disabled selected>-- Choisir --</option>
-          <option value="homme">Homme</option>
-          <option value="femme">Femme</option>
+        <label for="sexe">Sexe</label>
+        <select id="sexe" name="sexe">
+          <option value="" {% if not form_data.sexe %}selected{% endif %} disabled>-- Choisir --</option>
+          <option value="homme" {% if form_data.sexe == "homme" %}selected{% endif %}>Homme</option>
+          <option value="femme" {% if form_data.sexe == "femme" %}selected{% endif %}>Femme</option>
         </select>
 
-        <label for="debat">Participez-vous au débat après le film ?</label>
-        <select id="debat" name="debat" required>
-          <option value="" disabled selected>-- Choisir --</option>
-          <option value="oui">Oui</option>
-          <option value="non">Non</option>
+        <label for="categorie">Categorie</label>
+        <select id="categorie" name="categorie">
+          <option value="" {% if not form_data.categorie %}selected{% endif %} disabled>-- Choisir --</option>
+          {% for c in ["spectacteur", "invité", "média", "partenaire", "artiste", "createur de contenus"] %}
+          <option value="{{ c }}" {% if form_data.categorie == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
         </select>
 
-        <button type="submit">S'inscrire</button>
+        <div class="count-form">
+          <label for="nb">Combien de personnes vous accompagnent ? (0 si vous venez seul(e))</label>
+          <div class="count-row">
+            <input type="number" id="nb" name="nb" min="0" max="50" value="{{ nb_accompagnateurs or 0 }}">
+            <button type="submit">Valider le nombre</button>
+          </div>
+          
+        </div>
+
+        {% if nb_accompagnateurs and nb_accompagnateurs > 0 %}
+        <div id="accompagnateurs">
+          {% for i in range(1, nb_accompagnateurs + 1) %}
+          <div class="accompagnateur">
+            <h3>Accompagnateur {{ i }}</h3>
+            <div class="row">
+              <input type="text" name="accompagnateur_prenom" placeholder="Prénom" value="{{ form_data.accompagnateur_prenom[i-1] }}">
+              <input type="text" name="accompagnateur_nom" placeholder="Nom" value="{{ form_data.accompagnateur_nom[i-1] }}">
+              <select name="accompagnateur_sexe">
+                <option value="" {% if not form_data.accompagnateur_sexe[i-1] %}selected{% endif %} disabled>Sexe</option>
+                <option value="homme" {% if form_data.accompagnateur_sexe[i-1] == "homme" %}selected{% endif %}>Homme</option>
+                <option value="femme" {% if form_data.accompagnateur_sexe[i-1] == "femme" %}selected{% endif %}>Femme</option>
+              </select>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+      <button type="submit" formmethod="post">S'inscrire</button>
       </form>
     {% endif %}
   </div>

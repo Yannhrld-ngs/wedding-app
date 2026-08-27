@@ -3,6 +3,5 @@ inputs:
   WEDDING_NAME2: CD
   WEDDING_DATE: "15/09/2026" #dd/mm/yyyy
   WEDDING_HOUR: "19:00" #hh/mn
-  VENUE_NAME: "Cinémathèque de Toulouse (Avant première)"
-  VENUE_CIVIL: 
+  VENUE_NAME: "Avant première - Cinémathèque de Toulouse"
   VENUE_RECEPTION: "69 rue du Taur 31000 Toulouse"

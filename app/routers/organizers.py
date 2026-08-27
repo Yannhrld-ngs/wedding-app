@@ -22,9 +22,9 @@ from app.analytics import (
     compute_presence_analytics,
     compute_transport_analytics,
 )
-from app.config import PHASE_LABELS as CHART_PHASE_LABELS, RESTRICTION_LABELS, TRANSPORT_LABELS
+from app.config import PHASE_LABELS as CHART_PHASE_LABELS
 from app.mailer import send_email
-from app.models import OuiNon, PresenceAfter
+from app.models import OuiNon
 from app.security import (
     verify_password,
     hash_password,
@@ -87,7 +87,7 @@ def request_password_reset_submit(request: Request, email: str = Form(...)):
         reset_link = f"{config.BASE_URL}/16mesures/organisation/reset-password/{token}"
         send_email(
             to=organizer.mail,
-            subject=f"Créer votre mot de passe organisateur — {config.WEDDING_NAME1} & {config.WEDDING_NAME2}",
+            subject=f"Créer votre mot de passe organisateur - Kiradjoke.fr/16mesures",
             body=(
                 f"Bonjour {organizer.prenom} {organizer.nom},\n\n"
                 "Cliquez sur ce lien pour créer (ou réinitialiser) votre mot de passe "
@@ -166,50 +166,36 @@ def dashboard(
     login: str = Depends(get_current_organizer_login),
 ):
     invites = store.list_guests()
-    total = len(invites)
-    #presents_mairie = sum(1 for i in invites if i.presence_mairie == OuiNon.oui)
-    #presents_reception = sum(1 for i in invites if i.presence_reception == OuiNon.oui)
-    #presents_after = sum(1 for i in invites if i.presence_after == PresenceAfter.oui)
-    #confirmed_mairie = sum(1 for i in invites if i.checked_in_mairie)
-    #confirmed_reception = sum(1 for i in invites if i.checked_in_reception)
-    #confirmed_after = sum(1 for i in invites if i.checked_in_after)
+    total = sum(1 for i in invites if i.presence_diffusion == OuiNon.oui)
+    present = sum(1 for i in invites if i.checked_in_diffusion)
 
     organizer = store.find_accepted_organizer_by_mail(login)
-    
+
     return templates.TemplateResponse(
         "organizer_dashboard.html",
         {
             "request": request,
             "invites": invites,
             "total": total,
-            "presents_after": 1,
-            "confirmed_mairie": 1,
-            "confirmed_reception": 1,
-            "confirmed_after": 1,
+            "present": present,
             "organizer_login": login,
             "organizer_name": f"{organizer.prenom} {organizer.nom}" if organizer else login,
             "organizer_role": organizer.role if organizer else None,
-            "phase_labels": None,
-            "restriction_labels": None,
-            "transport_labels": None,
+            "phase_labels": config.PHASE_LABELS,
         },
     )
 
 @router.post("/place/{token}")
 def update_place(
     token: str,
-    place_mairie: str = Form(""),
-    place_reception: str = Form(""),
-    place_after: str = Form(""),
+    place_diffusion: str = Form(""),
     login: str = Depends(get_current_organizer_login),
 ):
     invite = store.get_by_token(token)
     if not invite:
         raise HTTPException(status_code=404, detail="Invité introuvable")
 
-    invite.place_mairie = place_mairie.strip() or None
-    invite.place_reception = place_reception.strip() or None
-    invite.place_after = place_after.strip() or None
+    invite.place_diffusion = place_diffusion.strip() or None
     store.save_guest(invite)
 
     return RedirectResponse(url="/16mesures/organisation/dashboard", status_code=303)
@@ -242,54 +228,43 @@ def choix_des_places_form(request: Request, login: str = Depends(get_current_org
     def as_options(filtered: list) -> list[dict]:
         return [{"token": i.token, "nom": f"{i.prenom} {i.nom}"} for i in filtered]
 
-    invites_mairie = [i for i in invites if i.presence_mairie == OuiNon.oui]
-    invites_reception = [i for i in invites if i.presence_reception == OuiNon.oui]
-    invites_after = [i for i in invites if i.presence_after == PresenceAfter.oui]
+    invites_diffusion = [i for i in invites if i.presence_diffusion == OuiNon.oui]
 
     return templates.TemplateResponse(
         "organizer_choix_des_places.html",
         {
             "request": request,
-            "guests_mairie": as_options(invites_mairie),
-            "guests_reception": as_options(invites_reception),
-            "guests_after": as_options(invites_after),
-            "groups_mairie": _group_places(invites, "place_mairie"),
-            "groups_reception": _group_places(invites, "place_reception"),
-            "groups_after": _group_places(invites, "place_after"),
+            "guests_diffusion": as_options(invites_diffusion),
+            "groups_diffusion": _group_places(invites, "place_diffusion"),
         },
     )
 
 
 @router.post("/choix-des-places")
 def choix_des_places_submit(
-    data_mairie: str = Form("[]"),
-    data_reception: str = Form("[]"),
-    data_after: str = Form("[]"),
+    data_diffusion: str = Form("[]"),
     login: str = Depends(get_current_organizer_login),
 ):
-    raw_by_phase = {"mairie": data_mairie, "reception": data_reception, "after": data_after}
     invites = store.list_guests()
 
-    for phase, raw in raw_by_phase.items():
-        try:
-            groups = json.loads(raw)
-        except (ValueError, TypeError):
-            raise HTTPException(status_code=400, detail="Données invalides")
+    try:
+        groups = json.loads(data_diffusion)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Données invalides")
 
-        place_by_token = {}
-        for group in groups:
-            repere = (group.get("repere") or "").strip()
-            if not repere:
-                continue
-            for i, token in enumerate(group.get("tokens") or []):
-                place_by_token[token] = f"{repere} #{i + 1}"
+    place_by_token = {}
+    for group in groups:
+        repere = (group.get("repere") or "").strip()
+        if not repere:
+            continue
+        for i, token in enumerate(group.get("tokens") or []):
+            place_by_token[token] = f"{repere} #{i + 1}"
 
-        attr = f"place_{phase}"
-        for invite in invites:
-            new_value = place_by_token.get(invite.token)
-            if getattr(invite, attr) != new_value:
-                setattr(invite, attr, new_value)
-                store.save_guest(invite)
+    for invite in invites:
+        new_value = place_by_token.get(invite.token)
+        if invite.place_diffusion != new_value:
+            invite.place_diffusion = new_value
+            store.save_guest(invite)
 
     return RedirectResponse(url="/16mesures/organisation/choix-des-places", status_code=303)
 
@@ -373,11 +348,9 @@ def envoyer_submit(
 
     message = (
         f"Bonjour {invite.prenom} {invite.nom},\n\n"
-        f"Veuillez trouver votre invitation en consultant la page {config.BASE_URL}\n"
-        f"Votre code invité est : {invite.token[-4:].upper()}\n\n"
-        "N'oubliez pas de confirmer votre présence en répondant au sondage.\n\n"
-        f"En espérant vous revoir bientôt, \n{config.WEDDING_NAME1} & {config.WEDDING_NAME2}\n"
-        "Dieu vous garde."
+        f"Vous êtes invité à la diffusion du film 16mesures.\n Vous trouverez votre carte d'accès en consultant la page {config.BASE_URL}/16mesures \n"
+        f"Votre code invité est : {invite.token.upper()}\n\n"
+        f"En espérant vous revoir bientôt"
     )
     contact = invite.contact or ""
 
@@ -401,13 +374,11 @@ def scan_page(request: Request, login: str = Depends(get_current_organizer_login
     )
 
 
-PHASE_LABELS = {"mairie": "la mairie", "reception": "la réception", "after": "la soirée"}
+PHASE_LABELS = {"diffusion": "la diffusion"}
 
 # Places associées à chaque phase de scan (voir Invite.place_*).
 PHASE_PLACES = {
-    "mairie": [("place_mairie", "la mairie")],
-    "reception": [("place_reception", "la réception")],
-    "after": [("place_after", "la soirée")],
+    "diffusion": [("place_diffusion", "la diffusion")],
 }
 
 

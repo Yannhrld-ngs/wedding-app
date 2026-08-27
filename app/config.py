@@ -57,21 +57,11 @@ WEDDING_HOUR = os.getenv("WEDDING_HOUR", default=default_config["inputs"]["WEDDI
 DAYS_BEFORE_CLOSING_POLL = 7
 
 VENUE_NAME = os.getenv("VENUE_NAME", default=default_config["inputs"]["VENUE_NAME"])
-VENUE_CIVIL = os.getenv("VENUE_CIVIL", default=default_config["inputs"]["VENUE_CIVIL"])
 VENUE_RECEPTION = os.getenv("VENUE_RECEPTION", default=default_config["inputs"]["VENUE_RECEPTION"])
 
 PLANNING = [
-    {"heure": WEDDING_HOUR, "moment": "Cérémonie civile"},
-    {"heure": "à confirmer", "moment": "Arrivée des convives"},
-    {"heure": "à confirmer", "moment": "Cocktail de bienvenue"},
-     {"heure": "à confirmer", "moment": "Bénédiction nuptiale"},
-     {"heure": "à confirmer", "moment": "Vin d'honneur, Animations & Séance photo"},
-     {"heure": "à confirmer", "moment": "Soirée - Gala"},
-     {"heure": "à confirmer", "moment": "Soirée - XX"},
-     {"heure": "à confirmer", "moment": "Soirée - XX"},
-     {"heure": "à confirmer", "moment": "Soirée - Coupures Gateaux"},
-     {"heure": "à confirmer", "moment": "Soirée - Présentation Cadeaux"},
-     {"heure": "à confirmer", "moment": "Soirée - XX"},
+    {"heure": WEDDING_HOUR, "moment": "Ouverture des portes"},
+    {"heure": "à confirmer", "moment": "Diffusion du film"},
 ]
 
 # --- Local files  ---
@@ -111,30 +101,13 @@ SMTP_FROM = os.getenv("SMTP_FROM", default=f"no-reply@mariage-{WEDDING_NAME1}-et
 _COLUMNS = [
     "nom_complet",
     "contact",
-    "presence_mairie",
-    "presence_reception",
-    "presence_after",
-    "checked_in_mairie",
-    "checked_in_reception",
-    "checked_in_after",
-    "questionnaire_rempli",
-    "mode_transport",
-    "covoiturage_possible",
-    "navette_souhaitee",
-    "logement",
-    "consomme_alcool",
-    "restriction_alimentaire",
-    "restriction_alimentaire_autre",
-    "chanson_1",
-    "chanson_2",
-    "chanson_3",
+    "presence_diffusion",
+    "checked_in_diffusion",
 ]
-PHASES = ["mairie", "reception", "after"]
+PHASES = ["diffusion"]
 OUI_NON = ['oui', "non"]
 
-PHASE_LABELS = {
-    name: ("Soirée" if name == "after" else name.capitalize()) for name in PHASES
-    }
+PHASE_LABELS = {name: name.capitalize() for name in PHASES}
 OUI_NON_LABELS = {
     name: name.capitalize() for name in OUI_NON
     }
@@ -174,4 +147,4 @@ LOGEMENT_BUCKET_LABELS = {
     "besoin_aide": "Besoin d'aide",
     "pas_concerne": "Pas concerné",
 }
-_BOOL_COLUMNS = {"checked_in_mairie", "checked_in_reception", "checked_in_after", "questionnaire_rempli"}
+_BOOL_COLUMNS = {"checked_in_diffusion"}

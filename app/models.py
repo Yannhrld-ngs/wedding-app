@@ -9,46 +9,7 @@ from typing import Optional
 
 SLUG_SUFFIX_LENGTH = 6
 
-
-def slugify(value: str) -> str:
-    value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
-    value = re.sub(r"[^a-zA-Z0-9]+", "-", value).strip("-").lower()
-    return value or "invite"
-
-
-def natural_key(prenom: str, nom: str) -> str:
-    """Clé stable qui relie une ligne du CSV à son entrée dans le log YAML."""
-    return f"{slugify(nom)}-{slugify(prenom)}"
-
-
-def generate_invite_token(
-    prenom: str, nom: str, categorie: str, wedding_name1: str, wedding_date: str
-) -> str:
-    """Endpoint lisible (nom-prenom) suivi d'un suffixe déterministe : le token
-    reste toujours le même pour un invité donné, même si le log YAML est vidé
-    et régénéré. Le sel n'utilise que des fragments de nom/prénom (pas les
-    valeurs complètes, déjà visibles dans l'URL) combinés à des infos propres
-    au mariage (nom1, date), pour rendre le suffixe plus difficile à deviner
-    qu'un simple hash de nom/prénom/catégorie en clair."""
-    base = f"{slugify(nom)}-{slugify(prenom)}"
-    seed = "|".join(
-        [
-            slugify(nom)[:3],
-            slugify(prenom)[-5:],
-            slugify(categorie),
-            slugify(wedding_name1)[-5:],
-            str(wedding_date),
-        ]
-    )
-    suffix = hashlib.sha256(seed.encode()).hexdigest()[:SLUG_SUFFIX_LENGTH]
-    return f"{base}-{suffix}"
-
-
-def generate_qr_uuid() -> str:
-    """Identifiant encodé dans le QR code, distinct du token de la carte (par sécurité)."""
-    return str(uuid.uuid4())
-
-
+# # #   Usefull object 
 class PresenceStatus(str, enum.Enum):
     en_attente = "en_attente"
     present = "present"
@@ -99,29 +60,25 @@ class Logement(str, enum.Enum):
 class Invite:
     prenom: str
     nom: str
-    categorie: str
     token: str
-    qr_uuid: str
     sexe: Sexe = Sexe.homme
+    qr_uuid: Optional[str] = None
     role: Optional[str] = None
     mail: Optional[str] = None
     contact: Optional[str] = None
-    statut_presence: PresenceStatus = PresenceStatus.en_attente
+    categorie: Optional[str] = None
 
     # Questionnaire
+    accompagnateur: Optional[str] = None
+    statut_presence: PresenceStatus = PresenceStatus.en_attente
     presence_diffusion: Optional[OuiNon] = None #Force to be oui
-    presence_debat: Optional[OuiNon] = None
+    #presence_debat: Optional[OuiNon] = None
 
     # Check-in jour J, 
     checked_in_diffusion: bool = False
     checked_in_diffusion_at: Optional[datetime] = None
     checked_in_diffusion_by: Optional[str] = None
     place_diffusion: Optional[str] = None
-
-    checked_in_debat: bool = False
-    checked_in_debat_at: Optional[datetime] = None
-    checked_in_debat_by: Optional[str] = None
-    place_debat: Optional[str] = None
 
     created_at: datetime = field(default_factory=datetime.utcnow)
     confirmation_mail: bool = False
@@ -138,6 +95,7 @@ class Organisateur:
     categorie: str
     sexe: Sexe = Sexe.homme
     role: Optional[str] = None
+    password_hash: Optional[str]=None
     mail: Optional[str] = None
     contact: Optional[str] = None
     
@@ -145,3 +103,43 @@ class Organisateur:
     def accord(self, masculin: str, feminin: str) -> str:
         """Forme accordée selon le sexe de l'invité (masculin par défaut)."""
         return feminin if self.sexe == Sexe.femme else masculin
+
+# # #   Utilitaries functions
+def slugify(value: str) -> str:
+    value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+    value = re.sub(r"[^a-zA-Z0-9]+", "-", value).strip("-").lower()
+    return value or "invite"
+
+
+def generate_invite_token(
+    prenom: str, nom: str, extra_field1: str, extra_field2: str, extra_field3: str
+) -> str:
+    """
+    Get Token for each invite
+    """
+    base = f"{slugify(nom)}-{slugify(prenom)}"
+    seed = "|".join(
+        [
+            slugify(nom)[:3],
+            slugify(prenom)[-5:],
+            slugify(extra_field1),
+            slugify(extra_field2)[-5:],
+            str(extra_field3),
+        ]
+    )
+    suffix = hashlib.sha256(seed.encode()).hexdigest()[:SLUG_SUFFIX_LENGTH]
+    return suffix
+
+def get_key(invite:Invite) -> str:
+    """Retourne clé associée à un invite"""
+    return generate_invite_token(
+        invite.prenom.lower(),
+        invite.nom.lower(),
+        "16mesures",
+        invite.sexe.lower(),
+        "mesures16"
+        )
+
+def generate_qr_uuid() -> str:
+    """Identifiant encodé dans le QR code, distinct du token de la carte (par sécurité)."""
+    return str(uuid.uuid4())

@@ -144,6 +144,7 @@
   }
 
   .intro{
+    padding-top: 60px;
     text-align:center;
     max-width:620px;
     margin:0 auto;
@@ -194,9 +195,11 @@
   }
 
   /* ---------- INFOS PRATIQUES ---------- */
+  
   .infos{
-    background:var(--off-white);
+    /* background:var(--off-white);*/
   }
+  
   .infos-grid{
     display:grid;
     grid-template-columns:repeat(3, 1fr);
@@ -266,7 +269,7 @@
 
   /* ---------- PROGRAMME ---------- */
   .timeline{
-    margin-top:56px;
+    margin-top:16px;
     max-width:560px;
     margin-left:auto;
     margin-right:auto;
@@ -320,7 +323,7 @@
 
   /* ---------- CTA ---------- */
   .rsvp{
-    background:var(--off-white);
+    /*background:var(--off-white);*/
     text-align:center;
   }
 
@@ -343,7 +346,7 @@
 
   /* ---------- FOOTER ---------- */
   footer{
-    background:var(--white);
+    /*background:var(--white);*/
     color:var(--gold);
     text-align:center;
     padding:64px 24px 48px;
@@ -373,7 +376,7 @@
   <div class="masthead">
     <div class="masthead-inner">
       <span class="line" aria-hidden="true"></span>
-      <h1>Carte d'accès</h1>
+      <h1>Carte d'accès - {{invite.categorie}}</h1>
       <span class="line" aria-hidden="true"></span>
     </div>
   </div>
@@ -388,30 +391,111 @@
 
     <!-- ==== QR code : check-in jour J uniquement (scan à l'accueil) ==== -->
     <div class="qr-section">
-      <p class="eyebrow">Le jour J</p>
-      <h3 style="font-size:22px; margin-top:4px;">Présentez ce QR code à l'accueil</h3>
+      <h3 style="font-size:22px; margin-top:4px;">QR Code à scanner le jour J</h3>
+      <p class="help">
+        Une fois scanné, la place attitrée apparaitra ci dessous.
+      </p>
 
-      <!-- QR code de check-in propre à cet invité, servi depuis app/static/qrcodes/ -->
+      <!-- QR code invité-->
       <div class="qr-box">
-        <img src="{{ qr_code_url }}"
+        <img src="{{ url_qr_invite }}"
              alt="QR code de check-in de {{ invite.prenom }} {{ invite.nom }}">
       </div>
-
       <p class="help">
-        Une fois scanné, votre place apparaitra ci dessous.
-      </p>
+        {{invite.categorie}} - {{ invite.prenom }} {{ invite.nom }} 
+        {% if invite.checked_in_diffusion and invite.place_diffusion %}
+          - <strong> Place : {{ invite.place_diffusion }} </strong> 
+        {% endif %}
+      <br></p>
       
-      {% if invite.check_in_diffusion and invite.place_diffusion %}
-      <p class="help"><strong>Votre place à la mairie :</strong> {{ invite.place_diffusion }}</p>
-      {% endif %}
 
 
+      <!-- QR code accompagnateurs-->
+      {% for accomp in accomagnateurs %}
+        <div class="qr-box">
+          <img src="{{ url_qr_accompagnateurs[accomp.token] }}"
+              alt="QR code de check-in de {{ accomp.prenom }} {{ accomp.nom }}">
+        </div>
+        <p class="help">{{accomp.categorie}} - {{ accomp.prenom }} {{ accomp.nom }}
+        {% if accomp.checked_in_diffusion and accomp.place_diffusion %}
+          <strong> - Place : {{ accomp.place_diffusion }}</strong> 
+        {% endif %}
+        </p>
+      {% endfor %}
     </div>
 
-    <div class="scroll-cue">Découvrir</div>
-  </section>
+    <!-- QR code accompagnateur-->
+
+    <!-- ============ PROGRAMME ============ -->
+    <div class="intro">
+      <span class="emoji">📜</span>
+      <p class="eyebrow">Programme</p>
+    </div>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="time">19h00</div>
+        <div class="rail"><div class="dot"></div><div class="stem"></div></div>
+        <div class="content">
+          <h4>Accueil des invités</h4>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="time">19h30</div>
+        <div class="rail"><div class="dot"></div><div class="stem"></div></div>
+        <div class="content">
+          <h4>Projection du film</h4>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="time">21h30</div>
+        <div class="rail"><div class="dot"></div></div>
+        <div class="content">
+          <h4>Débat</h4>
+        </div>
+      </div>
+    </div>
+  
+    <div class="intro">
+      <span class="emoji">📖</span>
+      <p class="eyebrow">Informations pratiques</p>
+
+      <div class="infos-grid">
+        <div class="info-card">
+          <div class="info-icon" aria-hidden="true">📅</div>
+          <h4>Date</h4>
+          <p>{{ date }}</p>
+        </div>
+
+        <div class="info-card">
+          <div class="info-icon" aria-hidden="true">📍</div>
+          <h4>Lieu</h4>
+          <p>{{ adresse }}</p>
+        </div>
+
+        <div class="info-card">
+          <div class="info-icon" aria-hidden="true">🕐</div>
+          <h4>Horaire</h4>
+          <p>{{ heure }}</p>
+        </div>
+      </div>
+      
+    </div>
+
+  <!-- ============ Calendrier ============ -->
+    <div class="intro">
+      {% if invite.confirmation_mail %}
+        <a class="rsvp-button" href="/16mesures/invites/{{ invite.token }}/calendrier.ics">
+          📅 Ajouter au calendrier
+        </a>
+      {% endif %}
+    </div>
+</section>
 
   <!-- ============ SYNOPSIS ============ -->
+  <div class="scroll-cue">Découvrir</div>
   <section class="photo-block">
     <div>
       <div class="photo-frame">
@@ -458,84 +542,11 @@
     </div>
   </section>
 
-  <!-- ============ INFORMATIONS PRATIQUES ============ -->
-  <section class="infos">
-    <div class="intro">
-      <span class="emoji">📖</span>
-      <p class="eyebrow">Informations pratiques</p>
-
-      <div class="infos-grid">
-        <div class="info-card">
-          <div class="info-icon" aria-hidden="true">📅</div>
-          <h4>Date</h4>
-          <p>{{ date }}</p>
-        </div>
-
-        <div class="info-card">
-          <div class="info-icon" aria-hidden="true">📍</div>
-          <h4>Lieu</h4>
-          <p>{{ adresse }}</p>
-        </div>
-
-        <div class="info-card">
-          <div class="info-icon" aria-hidden="true">🕐</div>
-          <h4>Horaire</h4>
-          <p>{{ heure }}</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ PROGRAMME ============ -->
-  <section>
-    <div class="intro">
-      <span class="emoji">📜</span>
-      <p class="eyebrow">Programme</p>
-    </div>
-
-    <div class="timeline">
-      <div class="timeline-item">
-        <div class="time">19h00</div>
-        <div class="rail"><div class="dot"></div><div class="stem"></div></div>
-        <div class="content">
-          <h4>Accueil des invités</h4>
-        </div>
-      </div>
-
-      <div class="timeline-item">
-        <div class="time">19h30</div>
-        <div class="rail"><div class="dot"></div><div class="stem"></div></div>
-        <div class="content">
-          <h4>Projection du film</h4>
-        </div>
-      </div>
-
-      <div class="timeline-item">
-        <div class="time">21h30</div>
-        <div class="rail"><div class="dot"></div></div>
-        <div class="content">
-          <h4>Débat</h4>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ CTA ============ -->
-  <section class="rsvp" style="max-width:none;">
-    <div class="intro">
-      {% if invite.confirmation_mail %}
-        <a class="rsvp-button" href="/16mesures/invites/{{ invite.token }}/calendrier.ics">
-          📅 Ajouter au calendrier
-        </a>
-      {% endif %}
-    </div>
-  </section>
-
   <!-- ============ FOOTER ============ -->
   <footer>
     <p class="display">16 mesures By Kira Djoke</p>
     <p>{{ lieu }} · {{ date }} · {{ heure }}</p>
-    <p><a href="/">Page d'accueil</a></p>
+    <p><a href="/16mesures">Page d'accueil</a></p>
   </footer>
 
 </body>

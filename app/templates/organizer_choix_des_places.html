@@ -75,26 +75,12 @@
 </div>
 
 <form id="form-places" method="post" action="/16mesures/organisation/choix-des-places">
-  <input type="hidden" id="data-mairie" name="data_mairie" value="[]">
-  <input type="hidden" id="data-reception" name="data_reception" value="[]">
-  <input type="hidden" id="data-after" name="data_after" value="[]">
+  <input type="hidden" id="data-diffusion" name="data_diffusion" value="[]">
 
   <div class="card">
-    <h2>Mairie</h2>
-    <div id="container-mairie"></div>
-    <button type="button" id="add-mairie" class="add-repere-btn">+ Ajouter un repère</button>
-  </div>
-
-  <div class="card">
-    <h2>Réception</h2>
-    <div id="container-reception"></div>
-    <button type="button" id="add-reception" class="add-repere-btn">+ Ajouter un repère</button>
-  </div>
-
-  <div class="card">
-    <h2>Soirée</h2>
-    <div id="container-after"></div>
-    <button type="button" id="add-after" class="add-repere-btn">+ Ajouter un repère</button>
+    <h2>Diffusion</h2>
+    <div id="container-diffusion"></div>
+    <button type="button" id="add-diffusion" class="add-repere-btn">+ Ajouter un repère</button>
   </div>
 
   <p><button type="submit" class="button">Sauvegarder les changements</button></p>
@@ -216,16 +202,8 @@
   }
 
   createPhaseEditor({
-    containerId: "container-mairie", addBtnId: "add-mairie", dataInputId: "data-mairie",
-    guests: {{ guests_mairie | tojson }}, initialGroups: {{ groups_mairie | tojson }},
-  });
-  createPhaseEditor({
-    containerId: "container-reception", addBtnId: "add-reception", dataInputId: "data-reception",
-    guests: {{ guests_reception | tojson }}, initialGroups: {{ groups_reception | tojson }},
-  });
-  createPhaseEditor({
-    containerId: "container-after", addBtnId: "add-after", dataInputId: "data-after",
-    guests: {{ guests_after | tojson }}, initialGroups: {{ groups_after | tojson }},
+    containerId: "container-diffusion", addBtnId: "add-diffusion", dataInputId: "data-diffusion",
+    guests: {{ guests_diffusion | tojson }}, initialGroups: {{ groups_diffusion | tojson }},
   });
 </script>
 {% endblock %}
