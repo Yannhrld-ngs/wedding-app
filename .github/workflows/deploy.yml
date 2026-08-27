@@ -26,6 +26,7 @@ jobs:
               --restart always \
               -p 127.0.0.1:8001:8080 \
               -v ~/kira-app/logs:/app/logs \
+              -v ~/kira-app/inputs:/app/inputs \
               --env-file .env \
               kira-app:latest
             docker image prune -f
