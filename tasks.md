@@ -1,7 +1,6 @@
 ## À faire
 - [] Log file is outside docker so it needed to be corrected. 
 - [] Change brevo domain 
-- [] Database, passage guest organisteur -> change current key
 ## En cours
 
 ## Fait
@@ -19,3 +18,4 @@
 - [x] Implementer bloquer modification du questionnaire une semaine avant.
 - [X] Dashboard Analytique avec clées KPI
 - [X] Add loggin file
+- [X] Database, passage guest organisteur -> change current key

@@ -105,22 +105,21 @@ class SqlRepository(Generic[T]):
                 )
         except Exception as e:
             logger.error(f"Erreur lors de la connexion à la base de données {self.engine.url.database} : {e}")
+            return 0
         return result.rowcount
 
     def delete(self, obj:T, table:Table, primary_key) -> int:
         """
-            delete the row matching primary_key with obj's current values
+            Delete the row matching primary_key.
         """
-        values = asdict(obj)
-        pk_value = values.pop(primary_key)
+        pk_value = getattr(obj, primary_key)
 
         try:
             with self.engine.begin() as conn:
-                result = conn.execute(
-                    table.delete().where(table.c[primary_key] == pk_value).values(**values)
-                )
+                result = conn.execute(table.delete().where(table.c[primary_key] == pk_value))
         except Exception as e:
             logger.error(f"Erreur lors de la connexion à la base de données {self.engine.url.database} : {e}")
+            return 0
         return result.rowcount
 
     def load(self, obj:T, table_name:str) -> list[T]:

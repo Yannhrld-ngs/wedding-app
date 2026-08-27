@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import FastAPI, Request, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -35,6 +37,18 @@ def racine(request: Request):
 @app.get("/16mesures")
 def racine(request: Request):
     return templates.TemplateResponse("16mesures.html", _home_context(request))
+
+
+@app.get("/16mesures/confidentialite")
+def confidentialite(request: Request):
+    return templates.TemplateResponse(
+        "privacy_policy.html",
+        {
+            "request": request,
+            "contact_email": config.SMTP_FROM,
+            "updated_on": date.today().strftime("%d/%m/%Y"),
+        },
+    )
 
 
 @app.post("/16mesures/acces")

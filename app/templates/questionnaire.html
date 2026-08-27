@@ -216,6 +216,9 @@
     color:var(--ink-soft);
     margin:8px 0 0;
   }
+  .help-text a{
+    color:var(--ink);
+  }
 
   #accompagnateurs{
     margin-top:12px;
@@ -356,6 +359,10 @@
         {% endif %}
 
       <button type="submit" formmethod="post">S'inscrire</button>
+      <p class="help-text">
+        En vous inscrivant, vous acceptez notre
+        <a href="/16mesures/confidentialite" target="_blank">politique de confidentialité</a>.
+      </p>
       </form>
     {% endif %}
   </div>

@@ -16,16 +16,16 @@ jobs:
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/wedding-app
-            git pull origin main
-            docker build -t wedding-app:latest .
-            docker stop wedding-app || true
-            docker rm wedding-app || true
+            cd ~/kira-app
+            git pull origin kira
+            docker build -t kira-app:latest .
+            docker stop kira-app || true
+            docker rm kira-app || true
             docker run -d \
-              --name wedding-app \
+              --name kira-app \
               --restart always \
-              -p 127.0.0.1:8000:8000 \
-              -v ~/wedding-app/data:/app/data \
+              -p 127.0.0.1:8001:8080 \
+              -v ~/kira-app/logs:/app/logs \
               --env-file .env \
-              wedding-app:latest
+              kira-app:latest
             docker image prune -f

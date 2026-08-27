@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
-from app import store, config, reset
+from app import store, config
 from app.analytics import (
     chart_alcool,
     chart_ambiance,
@@ -276,7 +276,7 @@ def reinitialiser_confirm(request: Request, login: str = Depends(get_current_org
 
 @router.post("/reinitialiser")
 def reinitialiser_submit(request: Request, login: str = Depends(get_current_organizer_login)):
-    reset._reset_yaml_file(config.GUESTS_LOG_PATH)
+    store.reset_guests()
     return RedirectResponse(url="/16mesures/organisation/dashboard", status_code=303)
 
 

@@ -66,10 +66,6 @@ PLANNING = [
 
 # --- Local files  ---
 QR_OUTPUT_DIR = os.getenv("QR_OUTPUT_DIR", default="app/static/qrcodes")
-GUESTS_PATH = os.getenv("GUESTS_PATH", default="inputs/invites_list.csv")
-GUESTS_LOG_PATH = os.getenv("GUESTS_LOG_PATH", default="data/invites.yaml" )
-ORGANIZERS_PATH = os.getenv("ORGANIZERS_PATH", default="inputs/organisateurs_list.csv")
-ORGANIZERS_LOG_PATH = os.getenv("ORGANIZERS_LOG_PATH", default="data/organizers.yaml")
 
 # Images
 COVER_IMAGE_URL = os.getenv("COVER_IMAGE_URL", default="/static/Images/couverture-invitation.png")
