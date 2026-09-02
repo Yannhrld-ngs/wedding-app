@@ -10,7 +10,8 @@
     <option value="{{ value }}"
       {%- if current == value %} selected
       {%- elif not placeholder and not current and loop.first %} selected
-      {%- endif %}>{{ label }}</option>
+      {%- endif %}>{{ label }}
+    </option>
   {% endfor %}
 </select>
 {% endmacro %}
@@ -19,7 +20,8 @@
 <div class="card">
   <h1>Questionnaire — {{ invite.prenom }} {{ invite.nom }}</h1>
   <p>
-    Les réponses au questionnaires nous permettent de mieux organiser l'évènement.
+    Les réponses au questionnaire nous permettent de mieux organiser l'évènement. 
+    Merci de prendre quelques minutes pour le remplir.
   </p>
 
   <form method="post" action="/invite/{{ invite.token }}/questionnaire#rsvp-id">
@@ -87,6 +89,26 @@
     <label>Pour préserver l'intimité de cette journée, on compte sur vous pour garder vos superbes clichés hors des réseaux sociaux.</label>
     {{ select_field("droit_image", droit_image_labels, invite.droit_image.value if invite.droit_image else none, placeholder=true) }}
     
+
+    <h2>Modalités des cadeaux</h2>
+    <label>
+      Comme les mariés voyagent pour l'occasion, deux options s'offrent à vous pour les gâter : faire livrer votre cadeau directement chez eux, 
+      ou opter pour un format facile à glisser dans la valise du retour (enveloppes, chèques cadeaux etc.)
+    </label>
+    <select name="cadeaux" required>
+      <option value="" disabled selected>-- Choisir --</option>
+      <option value="Oui">C'est noté, je comprends !</option>
+    </select>
+
+    <h2>Accès nominatif</h2>
+    <label>
+      La carte est nominative. Seules les personnes inscrites sur la carte pourront accéder.
+    </label>
+    <select name="informations utiles" required>
+      <option value="" disabled selected>-- Choisir --</option>
+      <option value="Oui">C'est noté, je comprends !</option>
+    </select>
+        
     {% if current_date > last_valid_date %}
       <p style="margin-top: 24px;">
         <span> QUESTIONNAIRE FERME ❌ </span>
