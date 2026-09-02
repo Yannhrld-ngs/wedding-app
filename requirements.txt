@@ -9,8 +9,6 @@ bcrypt==4.0.1
 itsdangerous==2.2.0
 qrcode[pil]==7.4.2
 python-dotenv==1.0.1
-pyyaml==6.0.2
-filelock==3.16.1
 sqlalchemy==2.0.35
 pandas==2.2.3
 altair==6.2.2
