@@ -19,5 +19,4 @@ __pycache__/
 # Folders with sensitive files
 data/
 inputs/
-inputs/config.yaml
 app/static/
