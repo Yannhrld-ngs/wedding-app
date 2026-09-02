@@ -318,7 +318,7 @@
         <select id="role" name="role">
           <option value="" {% if not form_data.role %}selected{% endif %}>-- Aucun rôle particulier --</option>
           {% for r in [
-            "Garçon d'honneur", "Demoiselle d'honneur", "Maître de cérémonie", "Officiant", 
+            "Garçon d'honneur", "Demoiselle d'honneur", "Dame de compagnie", "Maître de cérémonie", "Officiant", 
             "Cuisine", "Décoration", "Groupe musical", "Voiture", "Accueil","Parrain/Marraine", "Temoin"
           ] %}
           <option value="{{ r }}" {% if form_data.role == r %}selected{% endif %}>{{ r }}</option>
