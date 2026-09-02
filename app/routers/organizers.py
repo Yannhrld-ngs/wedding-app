@@ -6,6 +6,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from app.database import SqlRepository  
 
 from app import store, config, reset
 from app.analytics import (
@@ -24,7 +25,15 @@ from app.analytics import (
 )
 from app.config import PHASE_LABELS as CHART_PHASE_LABELS, RESTRICTION_LABELS, TRANSPORT_LABELS
 from app.mailer import send_email
-from app.models import OuiNon, PresenceAfter
+from app.models import (
+    Invite,
+    OuiNon,
+    PresenceAfter,
+    Sexe,
+    generate_invite_token,
+    generate_qr_uuid,
+    natural_key,
+)
 from app.security import (
     verify_password,
     hash_password,
@@ -181,6 +190,7 @@ def dashboard(
         {
             "request": request,
             "invites": invites,
+            "get_by_token":store.get_by_token,
             "total": total,
             "presents_mairie": presents_mairie,
             "presents_reception": presents_reception,
@@ -196,6 +206,163 @@ def dashboard(
             "transport_labels": TRANSPORT_LABELS,
         },
     )
+
+def _make_invite_token(invite: Invite) -> str:
+    suffix = generate_invite_token(
+        invite.prenom, invite.nom, invite.categorie, config.WEDDING_NAME1, config.WEDDING_DATE
+    )
+    return suffix
+
+
+@router.get("/ajouter-invité")
+def invite_add(request: Request, nb: int = 0):
+    nb_accompagnateurs = max(0, min(nb, 50))
+    all_invite = store.list_guests()
+
+    if len(all_invite) > 60:
+            return templates.TemplateResponse(
+        "invite_add.html",
+        {
+            "request": request,
+            "full": True,
+            "nb_accompagnateurs": nb_accompagnateurs,
+        },
+            )
+
+    qp = request.query_params
+
+    def _padded(values: list[str]) -> list[str]:
+        values = list(values)[:nb_accompagnateurs]
+        values += [""] * (nb_accompagnateurs - len(values))
+        return values
+
+    form_data = {
+        "prenom": qp.get("prenom", ""),
+        "nom": qp.get("nom", ""),
+        "email": qp.get("email", ""),
+        "telephone": qp.get("telephone", ""),
+        "sexe": qp.get("sexe", ""),
+        "categorie": qp.get("categorie", ""),
+        "accompagnateur_prenom": _padded(qp.getlist("accompagnateur_prenom")),
+        "accompagnateur_nom": _padded(qp.getlist("accompagnateur_nom")),
+        "accompagnateur_sexe": _padded(qp.getlist("accompagnateur_sexe")),
+    }
+
+    return templates.TemplateResponse(
+        "invite_add.html",
+        {
+            "request": request,
+            "merci": bool(qp.get("merci")),
+            "nb_accompagnateurs": nb_accompagnateurs,
+            "form_data": form_data,
+        },
+    )
+
+@router.post("/ajouter-invité")
+def invite_submit(
+    request: Request,
+    prenom: str = Form(""),
+    nom: str = Form(""),
+    email: str = Form(""),
+    telephone: str = Form(""),
+    sexe: str = Form(""),
+    categorie: str = Form(""),
+    force: str = Form(""),
+    accompagnateur_prenom: list[str] = Form([]),
+    accompagnateur_nom: list[str] = Form([]),
+    accompagnateur_sexe: list[str] = Form([]),
+):
+    prenom = prenom.strip()
+    nom = nom.strip()
+    email = email.strip()
+
+    if not prenom or not nom or not sexe or not categorie:
+        return templates.TemplateResponse(
+            "invite_add.html",
+            {
+                "request": request,
+                "error": "Merci de remplir tous les champs obligatoires.",
+                "nb_accompagnateurs": len(accompagnateur_prenom),
+                "form_data": {
+                    "prenom": prenom,
+                    "nom": nom,
+                    "email": email,
+                    "telephone": telephone,
+                    "sexe": sexe,
+                    "categorie": categorie,
+                    "accompagnateur_prenom": accompagnateur_prenom,
+                    "accompagnateur_nom": accompagnateur_nom,
+                    "accompagnateur_sexe": accompagnateur_sexe,
+                },
+            },
+        )
+
+    existing = store.find_by_email(email)
+    if existing and not force:
+        return templates.TemplateResponse(
+            "invite_add.html",
+            {
+                "request": request,
+                "duplicate": True,
+                "form_data": {
+                    "prenom": prenom,
+                    "nom": nom,
+                    "email": email,
+                    "telephone": telephone,
+                    "sexe": sexe,
+                    "categorie": categorie,
+                    "accompagnateur_prenom": accompagnateur_prenom,
+                    "accompagnateur_nom": accompagnateur_nom,
+                    "accompagnateur_sexe": accompagnateur_sexe,
+                },
+            },
+        )
+
+    if existing and force:
+        store.delete_guest(existing.token)
+
+    invite = Invite(
+        prenom=prenom,
+        nom=nom,
+        token="",
+        qr_uuid=generate_qr_uuid(),
+        sexe=Sexe(sexe),
+        categorie=categorie,
+        mail=email or None,
+        contact=telephone.strip() or None,
+    )
+    invite.token = _make_invite_token(invite)
+    accompagnateur_tokens = []
+    for comp_prenom, comp_nom, comp_sexe in zip(
+        accompagnateur_prenom, accompagnateur_nom, accompagnateur_sexe
+    ):
+        comp_prenom = comp_prenom.strip()
+        comp_nom = comp_nom.strip()
+        if not comp_prenom or not comp_nom:
+            continue
+        companion = Invite(
+            prenom=comp_prenom,
+            nom=comp_nom,
+            token="",
+            qr_uuid=generate_qr_uuid(),
+            sexe=Sexe(comp_sexe) if comp_sexe in ("homme", "femme") else Sexe.homme,
+            categorie=f"accompagnant - {invite.categorie}",
+            mail=None,
+            contact=None,
+        )
+        companion.token = _make_invite_token(companion)
+        store._write_qr_file(companion)
+        store.save_guest(companion)
+        accompagnateur_tokens.append(companion.token)
+
+    if accompagnateur_tokens:
+        invite.accompagnateur = ",".join(accompagnateur_tokens)
+
+    store._write_qr_file(invite)
+    store.save_guest(invite)    
+
+    return RedirectResponse(url="/organisateur/dashboard", status_code=303)
+
 
 @router.post("/place/{token}")
 def update_place(
@@ -303,7 +470,10 @@ def reinitialiser_confirm(request: Request, login: str = Depends(get_current_org
 
 @router.post("/reinitialiser")
 def reinitialiser_submit(request: Request, login: str = Depends(get_current_organizer_login)):
-    reset._reset_yaml_file(config.GUESTS_LOG_PATH)
+    reset._reset_qr_codes(which="all") #reset QR codes
+    SqlRepository(
+        config.engine 
+    ).delete_all(table_name="guests") 
     return RedirectResponse(url="/organisateur/dashboard", status_code=303)
 
 
@@ -375,9 +545,9 @@ def envoyer_submit(
 
     message = (
         f"Bonjour {invite.prenom} {invite.nom},\n\n"
-        f"Veuillez trouver votre invitation en consultant la page {config.BASE_URL}\n"
-        f"Votre code invité est : {invite.token[-4:].upper()}\n\n"
-        "N'oubliez pas de confirmer votre présence en répondant au sondage.\n\n"
+        f"Veuillez trouver votre invitation pour le mariage de {config.WEDDING_NAME1} & {config.WEDDING_NAME2} disponible sur {config.BASE_URL}\n"
+        f"Votre code invité est : {invite.token.upper()}\n"
+        "Afin de valider votre présence, veuillez répondre au sondage à la fin de la carte d'invitation.\n\n"
         f"En espérant vous revoir bientôt, \n{config.WEDDING_NAME1} & {config.WEDDING_NAME2}\n"
         "Dieu vous garde."
     )

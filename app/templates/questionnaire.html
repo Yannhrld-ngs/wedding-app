@@ -17,19 +17,26 @@
 
 {% block content %}
 <div class="card">
-  <h2>Questionnaire — {{ invite.prenom }} {{ invite.nom }}</h2>
-  <p>Merci de répondre à toutes les questions ci-dessous — la réponse ne peut pas être envoyée tant qu'il en manque une.</p>
+  <h1>Questionnaire — {{ invite.prenom }} {{ invite.nom }}</h1>
+  <p>
+    Les réponses au questionnaires nous permettent de mieux organiser l'évènement.
+  </p>
 
   <form method="post" action="/invite/{{ invite.token }}/questionnaire#rsvp-id">
 
     <!-- ---------- Présence ---------- -->
+    <h2>Présence</h2>
     <label>Serez-vous {{ invite.accord("présent", "présente") }} à la mairie ?</label>
     {{ select_field("presence_mairie", oui_non_labels, invite.presence_mairie.value if invite.presence_mairie else none, placeholder=true) }}
 
-    <label>Serez-vous {{ invite.accord("présent", "présente") }} à la réception ?</label>
+    <label>Serez-vous {{ invite.accord("présent", "présente") }} à la bénédiction réligieuse ?</label>
     {{ select_field("presence_reception", oui_non_labels, invite.presence_reception.value if invite.presence_reception else none, placeholder=true) }}
 
+    <label>Serez-vous {{ invite.accord("présent", "présente") }} à la soirée ?</label>
+    {{ select_field("presence_after", presence_after_labels, invite.presence_after.value if invite.presence_after else none, placeholder=true) }}
+
     <!-- ---------- Logistique / déplacement ---------- -->
+    <h2>Transports et déplacements</h2>
     <label>Comment prévoyez-vous de rejoindre la ville de {{ venue_name }} ?</label>
     {{ select_field("mode_transport", transport_labels, invite.mode_transport.value if invite.mode_transport else none, placeholder=true) }}
 
@@ -43,27 +50,14 @@
       {{ select_field("covoiturage_possible", oui_non_labels, invite.covoiturage_possible.value if invite.covoiturage_possible else none, placeholder=true) }}
     </div>
 
-    <label>Pour info, le dernier train quitte la ville autours de 20h. En tenant compte de cela, serez-vous {{ invite.accord("présent", "présente") }} à la soirée ?</label>
-    {{ select_field("presence_after", presence_after_labels, invite.presence_after.value if invite.presence_after else none, placeholder=true) }}
-
-    <div id="chansons-block" style="display:none;">
-      <label>Vous désirez prendre part à la soirée. Veuillez sélectionner un top 3 des musiques que vous aimeriez écouter</label>
-      {% for i in [1, 2, 3] %}
-        <div class="song-field">
-          <input type="text" name="chanson_{{ i }}" id="chanson_{{ i }}" autocomplete="off"
-                 placeholder="(ex : Titre {{ i }} - Artiste {{ i }})"
-                 value="{{ (invite.chanson_1 if i == 1 else invite.chanson_2 if i == 2 else invite.chanson_3) or '' }}">
-          <ul class="song-suggestions" id="chanson_{{ i }}-suggestions"></ul>
-        </div>
-      {% endfor %}
-    </div>
-
     <label>Une navette sera mise à disposition de la gare jusqu'à la mairie/au lieu de réception. Souhaitez-vous en bénéficier ?</label>
     {{ select_field("navette_souhaitee", oui_non_labels, invite.navette_souhaitee.value if invite.navette_souhaitee else none, placeholder=true) }}
-
+  
+    <h2>Hébergement</h2>
     <label>Si vous venez de loin ou comptez dormir aux alentours, avez-vous déjà {{ invite.accord("trouvé", "trouvée") }} un logement ?</label>
     {{ select_field("logement", logement_labels, invite.logement.value if invite.logement else none) }}
 
+    <h2>Repas et boissons</h2>
     <!-- ---------- Repas ---------- -->
     <label>Consommez-vous de l'alcool ?</label>
     {{ select_field("consomme_alcool", oui_non_labels, invite.consomme_alcool.value if invite.consomme_alcool else none, placeholder=true) }}
@@ -76,6 +70,23 @@
       <input type="text" name="restriction_alimentaire_autre" placeholder="Ex : allergie aux fruits de mer etc." value="{{ invite.restriction_alimentaire_autre or '' }}">
     </div>
 
+    <div id="chansons-block" style="display:none;">
+      <h2>Préférence musicale</h2>
+      <label>Vous désirez prendre part à la soirée. Veuillez sélectionner un top 3 des musiques que vous aimeriez écouter</label>
+      {% for i in [1, 2, 3] %}
+        <div class="song-field">
+          <input type="text" name="chanson_{{ i }}" id="chanson_{{ i }}" autocomplete="off"
+                 placeholder="(ex : Titre {{ i }} - Artiste {{ i }})"
+                 value="{{ (invite.chanson_1 if i == 1 else invite.chanson_2 if i == 2 else invite.chanson_3) or '' }}">
+          <ul class="song-suggestions" id="chanson_{{ i }}-suggestions"></ul>
+        </div>
+      {% endfor %}
+    </div>
+    
+    <h2>Droit à l'image et confidentialité</h2>
+    <label>Pour préserver l'intimité de cette journée, on compte sur vous pour garder vos superbes clichés hors des réseaux sociaux.</label>
+    {{ select_field("droit_image", droit_image_labels, invite.droit_image.value if invite.droit_image else none, placeholder=true) }}
+    
     {% if current_date > last_valid_date %}
       <p style="margin-top: 24px;">
         <span> QUESTIONNAIRE FERME ❌ </span>

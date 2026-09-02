@@ -1,8 +1,8 @@
 inputs:
-  WEDDING_NAME1: Lea
-  WEDDING_NAME2: Nathan
-  WEDDING_DATE: 29/08/2026 #dd/mm/yyyy
-  WEDDING_HOUR: "10:00" #hh/mn
-  VENUE_NAME: Nice
-  VENUE_CIVIL: XX rue XX, 6000 Nice
-  VENUE_RECEPTION: XX Avenue XX, 6000  Nice
+  WEDDING_NAME1: X
+  WEDDING_NAME2: Y
+  WEDDING_DATE: 01/12/2026 #dd/mm/yyyy
+  WEDDING_HOUR: "11:00" #hh/mn
+  VENUE_NAME: City
+  VENUE_CIVIL: Place
+  VENUE_RECEPTION: Place

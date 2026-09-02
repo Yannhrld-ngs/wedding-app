@@ -10,7 +10,7 @@ import urllib.parse
 from sqlalchemy import create_engine, text
 
 # --- Logs ---
-LOGS_PATH = "data/logs.log"
+LOGS_PATH = "logs/logs.log"
 os.makedirs(os.path.dirname(LOGS_PATH), exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 # --- Sécurité ---
 SECRET_KEY = os.getenv("SECRET_KEY", default="secret")
 SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", default="wedding_organizer_session")
+SLUG_SUFFIX_LENGTH = 6
 
 # --- Connection à la base de donnée (PostgreSQL — ex. Neon) ---
 SQL_DATABASE = os.getenv("SQL_DATABASE", default=None)
@@ -39,7 +40,7 @@ if SQL_USERNAME and SQL_PASSWORD and SQL_DATABASE and SQL_SERVER:
         f"@{SQL_SERVER}/{SQL_DATABASE}?sslmode=require&channel_binding=require"
     )
     try:
-        engine = create_engine(conn_str, echo=False)
+        engine = create_engine(conn_str, echo=False, pool_pre_ping=True, pool_recycle=1800)
 
         with engine.connect() as conn:
             result = conn.execute(text("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public';"))
@@ -70,24 +71,38 @@ VENUE_RECEPTION = os.getenv("VENUE_RECEPTION", default=default_config["inputs"][
 
 # Planning et accès affichés sur /organisateur/info-pratiques — seule l'heure
 PLANNING = [
-    {"heure": WEDDING_HOUR, "moment": "Cérémonie civile"},
-    {"heure": "à confirmer", "moment": "Arrivée des convives"},
-    {"heure": "à confirmer", "moment": "Cocktail de bienvenue"},
-     {"heure": "à confirmer", "moment": "Bénédiction nuptiale"},
-     {"heure": "à confirmer", "moment": "Vin d'honneur, Animations & Séance photo"},
-     {"heure": "à confirmer", "moment": "Soirée - Gala"},
-     {"heure": "à confirmer", "moment": "Soirée - XX"},
-     {"heure": "à confirmer", "moment": "Soirée - XX"},
-     {"heure": "à confirmer", "moment": "Soirée - Coupures Gateaux"},
-     {"heure": "à confirmer", "moment": "Soirée - Présentation Cadeaux"},
-     {"heure": "à confirmer", "moment": "Soirée - XX"},
+    {"heure": "10:40", "moment": "Arrivée des invités à la mairie"},
+    {"heure": WEDDING_HOUR, "moment": "Début du mariage civil"},
+    {"heure": "11h30", "moment": "Séance photo avec les invités"},
+    {"heure": "12h00", "moment": "Séance photo des mariés uniquement"},
+    {"heure": "13h00", "moment": "Mise en beauté des mariés"},
+    {"heure": "14h30", "moment": "Cocktail de bienvenue"},
+    {"heure": "14h55", "moment":"Installation des invités et de la chorale"},
+    {"heure": "15h00", "moment":"Première prestation chorale"},
+    {"heure": "15h25", "moment":"Prise de parole du modérateur"},   
+    {"heure": "15h30", "moment": "Entrée du marié"},
+    {"heure": "15h40", "moment": "Entrée de la mariée"},
+    {"heure": "15h50", "moment": "Bénédiction pastorale"},
+    {"heure": "16h30", "moment": "Discours et échange des alliances"},
+    {"heure": "16h45", "moment": "Deuxième prestation de la chorale"},
+    {"heure": "17h00", "moment": "Ouverture du vin d'honneur"},
+    {"heure": "17h15", "moment": "Animation 1"},
+    {"heure": "17h45", "moment": "Séances photos avec les invités"},
+    {"heure": "18h15", "moment": "Séances photos des mariés uniquement"},
+    {"heure": "18h30", "moment": "Animation 2 et logistique"},
+    {"heure": "18h50", "moment": "Installation des invités à la soirée"},
+    {"heure": "19h00", "moment":"Prise de parole du modérateur"},  
+    {"heure": "19h05", "moment": "Entrée de la mariée"},
+    {"heure": "19h15", "moment": "Entrée du marié"},
+    {"heure": "19h25", "moment": "Début du repas /  Animations / Discours"},
+    {"heure": "21h00", "moment": "Slow des mariés"},
+    {"heure": "21h15", "moment": "Soirée"},
+    {"heure": "22h00", "moment": "Coupure du gateau"},
 ]
 
 # --- Local files  ---
-GUESTS_PATH = os.getenv("GUESTS_PATH", default="inputs/invites_list.csv")
-QR_OUTPUT_DIR = os.getenv("QR_OUTPUT_DIR", default="app/static/qrcodes")
-GUESTS_LOG_PATH = os.getenv("GUESTS_LOG_PATH", default="data/invites.yaml" )
-ORGANIZERS_PATH = os.getenv("ORGANIZERS_PATH", default="data/organizers.yaml")
+QR_OUTPUT_DIR = os.getenv("QR_OUTPUT_DIR", default="app/static/qrcodes") 
+
 
 # Images
 COVER_IMAGE_URL = os.getenv("COVER_IMAGE_URL", default="/static/Images/couverture-invitation.png")
@@ -167,6 +182,11 @@ LOGEMENT_LABELS = {
     "ne_sait_pas": "Non",
     "toujours_en_recherche": "En recherche",
 }
+
+DROIT_IMAGE_LABELS = {
+    "oui": "Promis, zéro story ni post sur Facebook, TikTok, Snap ou WhatsApp !",
+}
+
 LOGEMENT_BUCKET_LABELS = {
     "trouve": "Logement trouvé",
     "besoin_aide": "Besoin d'aide",

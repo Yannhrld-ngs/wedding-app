@@ -10,6 +10,7 @@ from app.config import (
     PRESENCE_AFTER_LABELS,
     RESTRICTION_LABELS,
     TRANSPORT_LABELS,
+    DROIT_IMAGE_LABELS
 )
 from app.models import (
     Invite,
@@ -35,12 +36,20 @@ def get_invite_or_404(token: str) -> Invite:
 @router.get("/{token}")
 def carte_invitation(token: str, request: Request):
     invite = get_invite_or_404(token)
+    accompagnateurs = [
+        accomp
+        for accomp in (store.get_by_token(tok) for tok in (invite.accompagnateur or "").split(",") if tok)
+        if accomp is not None
+        ]
     today = datetime.now()
     return templates.TemplateResponse(
         "invite_card_1.html",
         {
             "request": request,
             "invite": invite,
+            "url_qr_invite": store.qr_code_url(invite),
+            "accomagnateurs": accompagnateurs,
+            "url_qr_accompagnateurs": {accomp.token : store.qr_code_url(accomp) for accomp in accompagnateurs} ,
             "current_date":today,
             "last_valid_date":datetime.strptime(f"{config.WEDDING_DATE} {config.WEDDING_HOUR}", "%d/%m/%Y %H:%M")-timedelta(days=config.DAYS_BEFORE_CLOSING_POLL),
             "wedding_name1": config.WEDDING_NAME1,
@@ -51,7 +60,6 @@ def carte_invitation(token: str, request: Request):
             "venue_reception": config.VENUE_RECEPTION,
             "cover_image_url": config.COVER_IMAGE_URL,
             "wedding_colors_url":config.WEDDING_COLORS_URL,
-            "qr_code_url": store.qr_code_url(invite),
         },
     )
 
@@ -73,6 +81,7 @@ def questionnaire_form(token: str, request: Request):
             "transport_labels": TRANSPORT_LABELS,
             "logement_labels": LOGEMENT_LABELS,
             "restriction_labels": RESTRICTION_LABELS,
+            "droit_image_labels": DROIT_IMAGE_LABELS,
         },
     )
 
@@ -102,6 +111,7 @@ def questionnaire_submit(
     chanson_1: str = Form(""),
     chanson_2: str = Form(""),
     chanson_3: str = Form(""),
+    droit_image: str = Form(...),
 ):
     invite = get_invite_or_404(token)
 
@@ -140,6 +150,8 @@ def questionnaire_submit(
         invite.chanson_2 = None
         invite.chanson_3 = None
 
+    invite.droit_image = OuiNon(droit_image)
+
     invite.statut_presence = (
         PresenceStatus.present
         if OuiNon.oui in (invite.presence_mairie, invite.presence_reception)
@@ -152,6 +164,14 @@ def questionnaire_submit(
 
     return RedirectResponse(url=f"/invite/{token}?merci=1", status_code=303)
 
+
+@router.get("/{token}/confidentialite")
+def confidentialite(token:str, request: Request) :
+    contact = "yann656@hotmail.com"
+    return templates.TemplateResponse( 
+        "invite_confidentialité.html",
+        { "request": request,"contact_email":contact}
+        )
 
 @router.get("/{token}/calendrier.ics")
 def download_calendrier_is():

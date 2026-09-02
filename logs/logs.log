@@ -1,0 +1,11 @@
+2026-09-02 08:34:24,431 [ERROR] app.config: Erreur lors de la connexion à la base de données wedding-app-db : Les tables suivantes sont manquantes dans la base de données wedding-app-db: guests
+2026-09-02 08:34:30,362 [ERROR] config: Erreur lors de la connexion à la base de données wedding-app-db : Les tables suivantes sont manquantes dans la base de données wedding-app-db: guests
+2026-09-02 08:37:08,119 [INFO] httpx: HTTP Request: POST http://testserver/invite/tok-1/questionnaire "HTTP/1.1 303 See Other"
+2026-09-02 08:37:29,083 [INFO] httpx: HTTP Request: GET http://testserver/invite/anything/confidentialite "HTTP/1.1 200 OK"
+2026-09-02 08:54:46,614 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/dashboard "HTTP/1.1 200 OK"
+2026-09-02 09:05:29,761 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/dashboard "HTTP/1.1 200 OK"
+2026-09-02 10:04:19,480 [INFO] app.reset: app/static/qrcodes\5d6199-qrcode.png a bien été supprimé
+2026-09-02 10:04:19,486 [INFO] app.reset: app/static/qrcodes\753d5f-qrcode.png a bien été supprimé
+2026-09-02 10:04:19,491 [INFO] app.reset: app/static/qrcodes\914654-qrcode.png a bien été supprimé
+2026-09-02 10:04:19,496 [INFO] app.reset: app/static/qrcodes\9d21c9-qrcode.png a bien été supprimé
+2026-09-02 10:04:19,502 [INFO] app.reset: app/static/qrcodes\f5ecb2-qrcode.png a bien été supprimé

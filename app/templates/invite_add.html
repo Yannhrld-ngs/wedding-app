@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ajouter un invité</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#f6f0e4;
+    --cream-soft: rgba(246,240,228,0.92);
+    --ink:#2c2620;
+    --ink-soft: rgba(44,38,32,0.72);
+    --gold:#c9a24b;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0;
+    padding:0;
+    min-height:100%;
+    font-family:'Jost', sans-serif;
+    color:var(--ink);
+    background:#faf6f1;
+  }
+
+  .page{
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:48px 24px;
+  }
+
+  .back-link{
+    position:fixed;
+    top:20px;
+    left:24px;
+    font-size:12px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--cream);
+    text-decoration:none;
+    padding:8px 16px;
+    border:1px solid rgba(246,240,228,0.5);
+    border-radius:999px;
+    background:rgba(26,23,18,0.35);
+    transition:background 0.2s ease, border-color 0.2s ease;
+  }
+  .back-link:hover{
+    background:rgba(246,240,228,0.15);
+    border-color:var(--cream);
+  }
+
+  .card{
+    width:100%;
+    max-width:460px;
+    background:var(--cream-soft);
+    color:var(--ink);
+    border-radius:16px;
+    padding:40px 36px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.4);
+  }
+
+  h1{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:500;
+    font-style:italic;
+    font-size:32px;
+    margin:0 0 8px;
+    text-align:center;
+  }
+
+  .card > p.intro{
+    font-size:14px;
+    color:var(--ink-soft);
+    text-align:center;
+    margin:0 0 28px;
+  }
+
+  .error-text{
+    font-size:13px;
+    color:#9a3b3b;
+    background:rgba(154,59,59,0.1);
+    border:1px solid rgba(154,59,59,0.35);
+    border-radius:8px;
+    padding:10px 14px;
+    margin:0 0 20px;
+    text-align:center;
+  }
+
+  label{
+    display:block;
+    font-size:12px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    margin:16px 0 6px;
+  }
+
+  input, select{
+    width:100%;
+    font-family:'Jost', sans-serif;
+    font-size:14px;
+    padding:10px 14px;
+    border-radius:8px;
+    border:1px solid rgba(44,38,32,0.25);
+    background:#fff;
+    color:var(--ink);
+  }
+
+  input:focus-visible, select:focus-visible{
+    outline:2px solid var(--gold);
+    outline-offset:1px;
+  }
+
+  .row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+
+  button[type="submit"]{
+    width:100%;
+    margin-top:28px;
+    font-family:'Jost', sans-serif;
+    font-size:14px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:14px;
+    border-radius:999px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--cream);
+    cursor:pointer;
+    transition:background 0.2s ease, border-color 0.2s ease;
+  }
+  button[type="submit"]:hover, button[type="submit"]:focus-visible{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:#1a1712;
+    outline:none;
+  }
+
+  .confirmation{
+    text-align:center;
+  }
+  .confirmation .emoji{ font-size:36px; display:block; margin-bottom:12px; }
+  .confirmation p{ color:var(--ink-soft); font-size:15px; margin-bottom:10px; }
+
+  .button-secondary{
+    display:inline-block;
+    width:100%;
+    margin-top:20px;
+    font-family:'Jost', sans-serif;
+    font-size:13px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    padding:12px;
+    border-radius:999px;
+    border:1px solid var(--ink-soft);
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:border-color 0.2s ease, color 0.2s ease;
+  }
+  .button-secondary:hover, .button-secondary:focus-visible{
+    border-color:var(--ink);
+    color:var(--ink);
+    outline:none;
+  }
+
+  .count-form{
+    margin:0 0 24px;
+    padding:16px;
+    border-radius:10px;
+    background:rgba(201,162,75,0.12);
+    border:1px solid rgba(201,162,75,0.4);
+  }
+  .count-form label{
+    margin-top:0;
+  }
+  .count-row{
+    display:flex;
+    gap:10px;
+    align-items:stretch;
+  }
+  .count-row input[type="number"]{
+    flex:1;
+  }
+  .count-row button{
+    flex:0 0 auto;
+    width:auto;
+    white-space:nowrap;
+    font-family:'Jost', sans-serif;
+    font-size:12px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    padding:0 18px;
+    border-radius:8px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--cream);
+    cursor:pointer;
+  }
+  .count-row button:hover{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:#1a1712;
+  }
+  .help-text{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin:8px 0 0;
+  }
+  .help-text a{
+    color:var(--ink);
+  }
+
+  #accompagnateurs{
+    margin-top:12px;
+    padding-top:4px;
+    border-top:1px solid rgba(44,38,32,0.15);
+  }
+  .accompagnateur h3{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:500;
+    font-style:italic;
+    font-size:17px;
+    margin:14px 0 4px;
+  }
+  .accompagnateur .row{
+    grid-template-columns:1fr 1fr 1fr;
+  }
+</style>
+</head>
+<body>
+
+<a class="back-link" href="/organisateur/dashboard">← Retour</a>
+
+<div class="page">
+  <div class="card">
+    {% if merci %}
+      <div class="confirmation">
+        <h1>Inscription confirmée !</h1>
+      </div>
+    {% elif full %}
+      <div class="confirmation">
+        <span class="emoji">😔</span>
+        <h1>Complet !</h1>
+        <p>Il y a malheureusement plus de places disponibles ! </p>
+      </div>
+    {% elif duplicate %}
+      <div class="confirmation">
+        <span class="emoji">⚠️</span>
+        <h1>Invité déjà inscrit(e)</h1>
+        <p>Un(e) invité(e) est déjà enregistré(e) avec cet email. Voulez-vous remplacer sa fiche ?</p>
+        <form method="post" action="/organisateur/ajouter-invité">
+          <input type="hidden" name="prenom" value="{{ form_data.prenom }}">
+          <input type="hidden" name="nom" value="{{ form_data.nom }}">
+          <input type="hidden" name="email" value="{{ form_data.email }}">
+          <input type="hidden" name="telephone" value="{{ form_data.telephone }}">
+          <input type="hidden" name="sexe" value="{{ form_data.sexe }}">
+          <input type="hidden" name="categorie" value="{{ form_data.categorie }}">
+          {% for v in form_data.accompagnateur_prenom %}<input type="hidden" name="accompagnateur_prenom" value="{{ v }}">{% endfor %}
+          {% for v in form_data.accompagnateur_nom %}<input type="hidden" name="accompagnateur_nom" value="{{ v }}">{% endfor %}
+          {% for v in form_data.accompagnateur_sexe %}<input type="hidden" name="accompagnateur_sexe" value="{{ v }}">{% endfor %}
+          <input type="hidden" name="force" value="1">
+          <button type="submit">Remplacer la fiche existante</button>
+        </form>
+        <a class="button-secondary" href="/organisateur/ajouter-invité">Annuler</a>
+      </div>
+    {% else %}
+      <h1>Ajouter un(e) invité</h1>
+      <p class="intro">Renseignez les informations.</p>
+      {% if error %}
+      <p class="error-text">{{ error }}</p>
+      {% endif %}
+
+      <form method="get" action="/organisateur/ajouter-invité">
+        <div class="row">
+          <div>
+            <label for="prenom">Prénom</label>
+            <input type="text" id="prenom" name="prenom" value="{{ form_data.prenom }}">
+          </div>
+          <div>
+            <label for="nom">Nom</label>
+            <input type="text" id="nom" name="nom" value="{{ form_data.nom }}">
+          </div>
+        </div>
+
+        <label for="email">Email (optionnel)</label>
+        <input type="email" id="email" name="email" value="{{ form_data.email }}">
+
+        <label for="telephone">Téléphone (optionnel)</label>
+        <input type="tel" id="telephone" name="telephone" value="{{ form_data.telephone }}">
+
+        <label for="sexe">Sexe</label>
+        <select id="sexe" name="sexe">
+          <option value="" {% if not form_data.sexe %}selected{% endif %} disabled>-- Choisir --</option>
+          <option value="homme" {% if form_data.sexe == "homme" %}selected{% endif %}>Homme</option>
+          <option value="femme" {% if form_data.sexe == "femme" %}selected{% endif %}>Femme</option>
+        </select>
+
+        <label for="categorie">Categorie</label>
+        <select id="categorie" name="categorie">
+          <option value="" {% if not form_data.categorie %}selected{% endif %} disabled>-- Choisir --</option>
+          {% for c in ["Amis", "Famille", "Parrain/Marraine", "Temoin"] %}
+          <option value="{{ c }}" {% if form_data.categorie == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+
+        <div class="count-form">
+          <label for="nb">Combien de personnes accompagnent ? (0 si vous venez seul(e))</label>
+          <div class="count-row">
+            <input type="number" id="nb" name="nb" min="0" max="50" value="{{ nb_accompagnateurs or 0 }}">
+            <button type="submit">Valider le nombre</button>
+          </div>
+          
+        </div>
+
+        {% if nb_accompagnateurs and nb_accompagnateurs > 0 %}
+        <div id="accompagnateurs">
+          {% for i in range(1, nb_accompagnateurs + 1) %}
+          <div class="accompagnateur">
+            <h3>Accompagnant {{ i }}</h3>
+            <div class="row">
+              <input type="text" name="accompagnateur_prenom" placeholder="Prénom" value="{{ form_data.accompagnateur_prenom[i-1] }}">
+              <input type="text" name="accompagnateur_nom" placeholder="Nom" value="{{ form_data.accompagnateur_nom[i-1] }}">
+              <select name="accompagnateur_sexe">
+                <option value="" {% if not form_data.accompagnateur_sexe[i-1] %}selected{% endif %} disabled>Sexe</option>
+                <option value="homme" {% if form_data.accompagnateur_sexe[i-1] == "homme" %}selected{% endif %}>Homme</option>
+                <option value="femme" {% if form_data.accompagnateur_sexe[i-1] == "femme" %}selected{% endif %}>Femme</option>
+              </select>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+      <button type="submit" formmethod="post">Ajouter</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+</body>
+</html>

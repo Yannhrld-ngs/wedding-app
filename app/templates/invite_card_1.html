@@ -546,17 +546,18 @@
       <p class="eyebrow">Le jour J</p>
       <h3 style="font-size:22px; margin-top:4px;">Présentez ce QR code à l'accueil</h3>
 
-      <!-- QR code de check-in propre à cet invité, servi depuis app/static/qrcodes/ -->
+      <!-- QR code de check-in propre à cet invité -->
       <div class="qr-box">
-        <img src="{{ qr_code_url }}"
+        <img src="{{ url_qr_invite }}"
              alt="QR code de check-in de {{ invite.prenom }} {{ invite.nom }}">
-      </div>
+      </div> 
       <p class="help">
-        Une fois scanné, votre place apparaitra ci dessous.
-      </p>
-      
+        {{invite.nom}} {{invite.prenom}}
+      </p> 
+      <p class="help"> Une fois scanné, la place qui vous est attribué apparaitra ci dessous. </p>
       {% if invite.checked_in_mairie and invite.place_mairie %}
       <p class="help"><strong>Votre place à la mairie :</strong> {{ invite.place_mairie }}</p>
+      {% else %}
       {% endif %}
       
       {% if invite.checked_in_reception and invite.place_reception %}
@@ -566,7 +567,32 @@
       {% if invite.checked_in_after and invite.place_after %}
         <p class="help"><strong>Votre place à la soirée :</strong> {{ invite.place_after }}</p>
       {% endif %}
+  
+      <!-- QR codes des accompagnateurs -->
+      {% for accomp in accomagnateurs %}
+        <div class="qr-box">
+          <img src="{{  url_qr_accompagnateurs[accomp.token]  }}"
+              alt="QR code de check-in de {{ accomp.prenom }} {{ accomp.nom }}">
+        </div>
+        <p class="help">
+          {{accomp.nom}} {{accomp.prenom}} 
+        </p>
+        <p class="help"> Une fois scanné, votre place apparaitra ci dessous. </p>
+        {% if accomp.checked_in_mairie and accomp.place_mairie %}
+        <p class="help"><strong>Votre place à la mairie :</strong> {{ accomp.place_mairie }}</p>
+        {% endif %}
+        
+        {% if accomp.checked_in_reception and accomp.place_reception %}
+          <p class="help"><strong>Votre place à la réception :</strong> {{ accomp.place_reception }}</p>
+        {% endif %}
+        
+        {% if accomp.checked_in_after and accomp.place_after %}
+          <p class="help"><strong>Votre place à la soirée :</strong> {{ invite.place_after }}</p>
+        {% endif %}
+    {% endfor %}
     </div>
+   </div> ²
+
   </section>
 
   <!-- ============ DEROULE DE LA CEREMONIE ============ -->
@@ -579,11 +605,11 @@
 
     <div class="timeline">
       <div class="timeline-item">
-        <div class="time">11h00</div>
+        <div class="time">10h40</div>
         <div class="rail"><div class="dot"></div><div class="stem"></div></div>
         <div class="content">
           <h4>Mariage civil</h4>
-          <p>Un moment simple et sincère, pour dire "oui" devant l'officier de l'état civil. <strong> Présence facultative.</strong></p>
+          <p>Un moment simple et sincère, pour dire "oui" devant l'officier de l'état civil.</p>
         </div>
       </div>
       <div class="timeline-item">
@@ -595,7 +621,7 @@
         </div>
       </div>
       <div class="timeline-item">
-        <div class="time">15h15</div>
+        <div class="time">15h00</div>
         <div class="rail"><div class="dot"></div><div class="stem"></div></div>
         <div class="content">
           <h4>Bénédiction Nuptiale</h4>
@@ -603,7 +629,7 @@
         </div>
       </div>
       <div class="timeline-item">
-        <div class="time">16h30</div>
+        <div class="time">17h00</div>
         <div class="rail"><div class="dot"></div><div class="stem"></div></div>
         <div class="content">
           <h4>Vin d'honneur, Photo Souvenirs & Animation</h4>
@@ -611,11 +637,11 @@
         </div>
       </div>
       <div class="timeline-item">
-        <div class="time">19h00</div>
+        <div class="time">18h30</div>
         <div class="rail"><div class="dot"></div></div>
         <div class="content">
           <h4>Soirée de clôture</h4>
-          <p>Une parenthèse festive, élégante et gourmande, placée sous le signe de la convivialité et de la célébration.<strong>Présence Facultative.</strong></p>
+          <p>Une parenthèse festive, élégante et gourmande, placée sous le signe de la convivialité et de la célébration.</p>
         </div>
       </div>
     </div>
@@ -640,10 +666,10 @@
       {% endif %}
 
       {% if invite.presence_mairie or invite.presence_reception or invite.presence_after %} <!--Check first if exist-->
-        {% if invite.presence_mairie.value.lower() == "oui" or invite.presence_reception.value.lower() == "oui" or invite.presence_after.value.lower() == "oui" %}
+        {% if invite.presence_mairie.lower() == "oui" or invite.presence_reception.lower() == "oui" or invite.presence_after.lower() == "oui" %}
             <a class="rsvp-button" href="/invite/{{ invite.token }}/calendrier.ics">
               📅 Ajouter au calendrier
-            </a>
+            </a>.
         {% endif %}
       {% endif %}
       
@@ -661,10 +687,9 @@
   <footer>
     <p class="display">Avec joie et impatience</p>
     <p>{{ wedding_name1 }} &amp; {{ wedding_name2 }} · {{ wedding_date }} · {{ venue_name }}</p>
-    
+    <p><a href="/invite/{{ invite.token }}/confidentialite">Politique de Confidentialité</a></p>
     <p><a href="/">Page d'Acceuil</a></p>
   </footer>
 
 </body>
 </html>
-

@@ -22,10 +22,11 @@ jobs:
             docker stop wedding-app || true
             docker rm wedding-app || true
             docker run -d \
-              --name wedding-app \
+              --name kira-app \
               --restart always \
-              -p 127.0.0.1:8000:8000 \
-              -v ~/wedding-app/data:/app/data \
+              -p 127.0.0.1:8001:8080 \
+              -v ~/kira-app/logs:/app/logs \
+              -v ~/kira-app/inputs:/app/inputs \
               --env-file .env \
-              wedding-app:latest
+              kira-app:latest
             docker image prune -f

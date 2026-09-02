@@ -3,11 +3,12 @@ import re
 import unicodedata
 import uuid
 import enum
+from app.config import SLUG_SUFFIX_LENGTH
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
-SLUG_SUFFIX_LENGTH = 4
+
 
 
 def slugify(value: str) -> str:
@@ -41,7 +42,7 @@ def generate_invite_token(
         ]
     )
     suffix = hashlib.sha256(seed.encode()).hexdigest()[:SLUG_SUFFIX_LENGTH]
-    return f"{base}-{suffix}"
+    return suffix
 
 
 def generate_qr_uuid() -> str:
@@ -107,7 +108,8 @@ class Invite:
     mail: Optional[str] = None
     contact: Optional[str] = None
     statut_presence: PresenceStatus = PresenceStatus.en_attente
-
+    accompagnateur: Optional[str] = None
+    
     # Questionnaire
     presence_mairie: Optional[OuiNon] = None
     presence_reception: Optional[OuiNon] = None
@@ -129,6 +131,9 @@ class Invite:
     questionnaire_rempli: bool = False
     questionnaire_rempli_le: Optional[datetime] = None
 
+    # Droit image 
+    droit_image: Optional[OuiNon] = None
+
     # Check-in jour J, un par phase (le même QR peut être scanné 3 fois)
     checked_in_mairie: bool = False
     checked_in_mairie_at: Optional[datetime] = None
@@ -147,6 +152,21 @@ class Invite:
 
     created_at: datetime = field(default_factory=datetime.utcnow)
 
+    def accord(self, masculin: str, feminin: str) -> str:
+        """Forme accordée selon le sexe de l'invité (masculin par défaut)."""
+        return feminin if self.sexe == Sexe.femme else masculin
+
+@dataclass
+class Organisateur:
+    prenom: str
+    nom: str
+    categorie: str
+    sexe: Sexe = Sexe.homme
+    role: Optional[str] = None
+    password_hash: Optional[str]=None
+    mail: Optional[str] = None
+    contact: Optional[str] = None
+    
     def accord(self, masculin: str, feminin: str) -> str:
         """Forme accordée selon le sexe de l'invité (masculin par défaut)."""
         return feminin if self.sexe == Sexe.femme else masculin
