@@ -34,3 +34,5 @@ jobs:
               --env-file .env \
               kira-app:latest
             docker image prune -f
+
+            
