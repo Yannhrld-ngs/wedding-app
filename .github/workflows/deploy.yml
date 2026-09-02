@@ -17,9 +17,16 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/wedding-app
+            # Garde le contenu actuel de inputs/ (celui déjà sur la machine)
+            cp -r inputs /tmp/inputs_backup
+ 
             git fetch origin main
             git reset --hard origin/main
             git clean -fd
+
+            # Restaurer le contenu de inputs/ depuis la sauvegarde
+            cp -r /tmp/inputs_backup/* inputs/
+
             docker build -t wedding-app:latest .
             docker stop wedding-app || true
             docker rm wedding-app || true

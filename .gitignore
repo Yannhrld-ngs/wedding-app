@@ -18,5 +18,4 @@ __pycache__/
 
 # Folders with sensitive files
 data/
-inputs/
 app/static/

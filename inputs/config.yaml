@@ -1,0 +1,8 @@
+inputs:
+  WEDDING_NAME1: X
+  WEDDING_NAME2: Y
+  WEDDING_DATE: 01/12/2026 #dd/mm/yyyy
+  WEDDING_HOUR: "11:00" #hh/mn
+  VENUE_NAME: City
+  VENUE_CIVIL: Place
+  VENUE_RECEPTION: Place
