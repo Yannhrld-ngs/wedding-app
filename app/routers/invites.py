@@ -25,7 +25,7 @@ def inscription_form(request: Request, nb: int = 0):
     nb_accompagnateurs = max(0, min(nb, 50))
     all_invite = store.list_guests()
 
-    if len(all_invite) > 98:
+    if len(all_invite) > 10:
             return templates.TemplateResponse(
         "questionnaire.html",
         {

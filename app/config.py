@@ -40,7 +40,7 @@ if SQL_USERNAME and SQL_PASSWORD and SQL_DATABASE and SQL_SERVER:
         f"@{SQL_SERVER}/{SQL_DATABASE}?sslmode=require&channel_binding=require"
     )
     try:
-        engine = create_engine(conn_str, echo=False)
+        engine = create_engine(conn_str, echo=False,pool_pre_ping=True, pool_recycle=1800)
     except Exception as e:
         logger.error(f"Erreur lors de la connexion à la base de données {SQL_DATABASE} : {e}")
     SQL_DB = True

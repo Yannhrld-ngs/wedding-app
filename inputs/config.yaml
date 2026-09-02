@@ -1,6 +1,6 @@
 inputs:
-  WEDDING_NAME1: AB
-  WEDDING_NAME2: CD
+  WEDDING_NAME1: ""
+  WEDDING_NAME2: ""
   WEDDING_DATE: "15/09/2026" #dd/mm/yyyy
   WEDDING_HOUR: "19:00" #hh/mn
   VENUE_NAME: "Avant première - Cinémathèque de Toulouse"

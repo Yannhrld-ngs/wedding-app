@@ -17,7 +17,11 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/kira-app
-            git pull origin kira
+
+            git fetch origin kira
+            git reset --hard origin/kira
+            git clean -fd
+
             docker build -t kira-app:latest .
             docker stop kira-app || true
             docker rm kira-app || true
