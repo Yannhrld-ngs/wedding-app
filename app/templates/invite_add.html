@@ -308,7 +308,7 @@
         <label for="categorie">Categorie</label>
         <select id="categorie" name="categorie">
           <option value="" {% if not form_data.categorie %}selected{% endif %} disabled>-- Choisir --</option>
-          {% for c in ["Amis", "Famille", "Parrain/Marraine", "Temoin"] %}
+          {% for c in ["Amis", "Autorité réligieuse", "Famille", "Parrain/Marraine", "Temoin"] %}
           <option value="{{ c }}" {% if form_data.categorie == c %}selected{% endif %}>{{ c }}</option>
           {% endfor %}
         </select>
