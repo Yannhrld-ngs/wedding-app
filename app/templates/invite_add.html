@@ -265,6 +265,7 @@
           <input type="hidden" name="telephone" value="{{ form_data.telephone }}">
           <input type="hidden" name="sexe" value="{{ form_data.sexe }}">
           <input type="hidden" name="categorie" value="{{ form_data.categorie }}">
+          <input type="hidden" name="role" value="{{ form_data.role }}">
           {% for v in form_data.accompagnateur_prenom %}<input type="hidden" name="accompagnateur_prenom" value="{{ v }}">{% endfor %}
           {% for v in form_data.accompagnateur_nom %}<input type="hidden" name="accompagnateur_nom" value="{{ v }}">{% endfor %}
           {% for v in form_data.accompagnateur_sexe %}<input type="hidden" name="accompagnateur_sexe" value="{{ v }}">{% endfor %}
@@ -310,6 +311,17 @@
           <option value="" {% if not form_data.categorie %}selected{% endif %} disabled>-- Choisir --</option>
           {% for c in ["Amis", "Autorité réligieuse", "Famille", "Parrain/Marraine", "Temoin"] %}
           <option value="{{ c }}" {% if form_data.categorie == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+
+        <label for="role">Rôle (optionnel)</label>
+        <select id="role" name="role">
+          <option value="" {% if not form_data.role %}selected{% endif %}>-- Aucun rôle particulier --</option>
+          {% for r in [
+            "Garçon d'honneur", "Demoiselle d'honneur", "Maître de cérémonie", "Officiant", 
+            "Cuisine", "Décoration", "Groupe musical", "Voiture", "Accueil"
+          ] %}
+          <option value="{{ r }}" {% if form_data.role == r %}selected{% endif %}>{{ r }}</option>
           {% endfor %}
         </select>
 

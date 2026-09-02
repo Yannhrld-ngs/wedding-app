@@ -9,3 +9,5 @@
 2026-09-02 10:04:19,491 [INFO] app.reset: app/static/qrcodes\914654-qrcode.png a bien été supprimé
 2026-09-02 10:04:19,496 [INFO] app.reset: app/static/qrcodes\9d21c9-qrcode.png a bien été supprimé
 2026-09-02 10:04:19,502 [INFO] app.reset: app/static/qrcodes\f5ecb2-qrcode.png a bien été supprimé
+2026-09-02 18:10:08,105 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/ajouter-invit%C3%A9 "HTTP/1.1 200 OK"
+2026-09-02 18:10:08,173 [INFO] httpx: HTTP Request: POST http://testserver/organisateur/ajouter-invit%C3%A9 "HTTP/1.1 303 See Other"
