@@ -17,7 +17,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/wedding-app
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
+            git clean -fd
             docker build -t wedding-app:latest .
             docker stop wedding-app || true
             docker rm wedding-app || true
