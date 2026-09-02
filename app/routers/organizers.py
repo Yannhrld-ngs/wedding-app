@@ -551,7 +551,7 @@ def envoyer_submit(
         f"En espérant vous revoir bientôt, \n{config.WEDDING_NAME1} & {config.WEDDING_NAME2}\n"
         "Dieu vous garde."
     )
-    contact = invite.contact or ""
+    contact = invite.contact.replace(" ", "").replace("+", "") or ""
 
     if canal == "whatsapp":
         url = f"https://wa.me/{contact}?text={quote(message)}"
