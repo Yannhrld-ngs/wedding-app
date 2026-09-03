@@ -32,8 +32,12 @@ def qr_code_url(invite: Invite) -> str:
 
 def _write_qr_file(invite: Invite) -> None:
     os.makedirs(config.QR_OUTPUT_DIR, exist_ok=True)
-    img = qrcode.make(invite.qr_uuid)
-    img.save(qr_code_path(invite))
+    path = qr_code_path(invite)
+    if os.path.exists(path):
+        return
+    else:
+        img = qrcode.make(invite.qr_uuid)
+        img.save(path)
 
 def _delete_qr_file(filename: str) -> None:
     full_path = os.path.join(config.QR_OUTPUT_DIR, filename)
@@ -138,3 +142,11 @@ def set_organizer_password(login: str, password_hash: str) -> None:
     organizer.password_hash = password_hash
     table = SQL_REPO.create(Organisateur, table_name=ORGANIZERS_TABLE, primary_key="mail")
     SQL_REPO.update(organizer, table, primary_key="mail")
+
+
+if __name__ == "__main__":
+    # Test rapide du stockage
+    print("Invités :")
+    inv = load_guests()
+    #_write_qr_file(inv[0])
+ 

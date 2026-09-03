@@ -175,6 +175,11 @@ def dashboard(
     login: str = Depends(get_current_organizer_login),
 ):
     invites = store.list_guests()
+    #actualize QR after false delete
+    for inv in invites:
+        if not os.path.exists(store.qr_code_path(inv)):
+            _write_qr_file(inv) 
+            
     total = len(invites)
     presents_mairie = sum(1 for i in invites if i.presence_mairie == OuiNon.oui)
     presents_reception = sum(1 for i in invites if i.presence_reception == OuiNon.oui)

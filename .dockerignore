@@ -4,9 +4,6 @@ venv/
 __pycache__/
 *.pyc
 
-# Base de données locale
-*.db
-
 # Git
 .git/
 
