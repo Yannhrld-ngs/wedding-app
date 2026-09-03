@@ -62,9 +62,11 @@
 <div style="display:flex; justify-content:space-between; align-items:center; max-width: 1200px;">
   <h2>Tableau de bord — {{ organizer_name }}{% if organizer_role %} ({{ organizer_role.upper() }}){% endif %}</h2>
   <a href="/organisateur/logout">Déconnexion</a> 
+  <!-- 
   {% if organizer_role =="admin" %}
     <a href="/organisateur/reinitialiser" class="reset-action" id="resetAction" style="margin-left: 10px">Réinitialiser</a>
   {% endif %}
+  -->
   </div>      
 </div>
 
