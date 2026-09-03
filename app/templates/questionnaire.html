@@ -32,7 +32,7 @@
     <label>Serez-vous {{ invite.accord("présent", "présente") }} à la mairie ?</label>
     {{ select_field("presence_mairie", oui_non_labels, invite.presence_mairie.value if invite.presence_mairie else none, placeholder=true) }}
 
-    <label>Serez-vous {{ invite.accord("présent", "présente") }} à la bénédiction réligieuse ?</label>
+    <label>Serez-vous {{ invite.accord("présent", "présente") }} à la bénédiction religieuse ?</label>
     {{ select_field("presence_reception", oui_non_labels, invite.presence_reception.value if invite.presence_reception else none, placeholder=true) }}
 
     <label>Serez-vous {{ invite.accord("présent", "présente") }} à la soirée ?</label>

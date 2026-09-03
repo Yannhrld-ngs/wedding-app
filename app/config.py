@@ -166,7 +166,7 @@ RESTRICTION_LABELS = {
     "halal": "Halal",
     "vegetarien": "Végétarien",
     "vegetalien": "Vegan",
-    "autre": "Autres",
+    "autre": "Autre",
     }
 TRANSPORT_LABELS = {
     "pas_concerne": "Pas concerné(e)",

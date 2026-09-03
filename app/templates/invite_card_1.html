@@ -554,7 +554,7 @@
       <p class="help">
         {{invite.nom}} {{invite.prenom}}
       </p> 
-      <p class="help"> Une fois scanné, la place qui vous est attribué apparaitra ci dessous. </p>
+      <p class="help"> Une fois scanné, la place qui vous est attribuée apparaitra ci dessous. </p>
       {% if invite.checked_in_mairie and invite.place_mairie %}
       <p class="help"><strong>Votre place à la mairie :</strong> {{ invite.place_mairie }}</p>
       {% else %}
@@ -577,7 +577,7 @@
         <p class="help">
           {{accomp.nom}} {{accomp.prenom}} 
         </p>
-        <p class="help"> Une fois scanné, votre place apparaitra ci dessous. </p>
+        <p class="help"> Une fois scanné, la place qui vous est attribuée apparaitra ci dessous. </p>
         {% if accomp.checked_in_mairie and accomp.place_mairie %}
         <p class="help"><strong>Votre place à la mairie :</strong> {{ accomp.place_mairie }}</p>
         {% endif %}
@@ -587,11 +587,11 @@
         {% endif %}
         
         {% if accomp.checked_in_after and accomp.place_after %}
-          <p class="help"><strong>Votre place à la soirée :</strong> {{ invite.place_after }}</p>
+          <p class="help"><strong>Votre place à la soirée :</strong> {{ accomp.place_after }}</p>
         {% endif %}
     {% endfor %}
     </div>
-   </div> ²
+   </div>
 
   </section>
 
@@ -632,7 +632,7 @@
         <div class="time">17h00</div>
         <div class="rail"><div class="dot"></div><div class="stem"></div></div>
         <div class="content">
-          <h4>Vin d'honneur, Photo Souvenirs & Animation</h4>
+          <h4>Vin d'honneur, Photos Souvenirs & Animation</h4>
           <p>Un vin d'honneur savoureux et festif, ponctué d'animations surprises et de photos souvenirs pour graver ce moment dans les mémoires.</p>
         </div>
       </div>
@@ -661,7 +661,7 @@
         <p> Merci d'avoir répondu 🙂</p>
       {% else %}
       <p>
-        Merci de répondre au questionnaire en ligne. Celà nous aidera à mieux organiser le mariage et à préparer votre accueil.
+        Merci de répondre au questionnaire en ligne. Cela nous aidera à mieux organiser le mariage et à préparer votre accueil.
       </p>
       {% endif %}
 

@@ -251,7 +251,7 @@
       <div class="confirmation">
         <span class="emoji">😔</span>
         <h1>Complet !</h1>
-        <p>Il y a malheureusement plus de places disponibles ! </p>
+        <p>Il n'y a malheureusement plus de places disponibles ! </p>
       </div>
     {% elif duplicate %}
       <div class="confirmation">
@@ -309,7 +309,7 @@
         <label for="categorie">Categorie</label>
         <select id="categorie" name="categorie">
           <option value="" {% if not form_data.categorie %}selected{% endif %} disabled>-- Choisir --</option>
-          {% for c in ["Amis", "Famille", "Autorité réligieuse", "Collegue", "Connaissance"] %}
+          {% for c in ["Amis", "Famille", "Autorité réligieuse", "Collègue", "Connaissance"] %}
           <option value="{{ c }}" {% if form_data.categorie == c %}selected{% endif %}>{{ c }}</option>
           {% endfor %}
         </select>
