@@ -27,6 +27,7 @@ jobs:
             docker rm kira-app || true
             docker run -d \
               --name kira-app \
+              --memory="400m" \
               --restart always \
               -p 127.0.0.1:8001:8080 \
               -v ~/kira-app/logs:/app/logs \
