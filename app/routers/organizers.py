@@ -179,7 +179,7 @@ def dashboard(
     #actualize QR after false delete
     for inv in invites:
         if not os.path.exists(store.qr_code_path(inv)):
-            _write_qr_file(inv) 
+            store._write_qr_file(inv) 
 
     total = len(invites)
     presents_mairie = sum(1 for i in invites if i.presence_mairie == OuiNon.oui)
