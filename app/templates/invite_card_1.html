@@ -552,7 +552,7 @@
              alt="QR code de check-in de {{ invite.prenom }} {{ invite.nom }}">
       </div> 
       <p class="help">
-        {{invite.nom}} {{invite.prenom}}
+        {{invite.prenom}} {{invite.nom}}
       </p> 
       <p class="help"> Une fois scanné, la place qui vous est attribuée apparaitra ci dessous. </p>
       {% if invite.checked_in_mairie and invite.place_mairie %}
@@ -575,7 +575,7 @@
               alt="QR code de check-in de {{ accomp.prenom }} {{ accomp.nom }}">
         </div>
         <p class="help">
-          {{accomp.nom}} {{accomp.prenom}} 
+          {{accomp.prenom}} {{accomp.nom}}
         </p>
         <p class="help"> Une fois scanné, la place qui vous est attribuée apparaitra ci dessous. </p>
         {% if accomp.checked_in_mairie and accomp.place_mairie %}
