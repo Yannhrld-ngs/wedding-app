@@ -18,10 +18,11 @@
 
 {% block content %}
 <div class="card">
-  <h1>Questionnaire — {{ invite.prenom }} {{ invite.nom }}</h1>
+  <h1>Questionnaire et consentement— {{ invite.prenom }} {{ invite.nom }}</h1>
   <p>
-    Les réponses au questionnaire nous permettent de mieux organiser l'évènement. 
-    Merci de prendre quelques minutes pour le remplir.
+    Quelques minutes pour nous aider à tout préparer ! <br>
+    Vos réponses nous facilitent la logistique, et vos validations nous confirment le respect de nos choix pour cette journée. <br>
+    Merci d'avance !
   </p>
 
   <form method="post" action="/invite/{{ invite.token }}/questionnaire#rsvp-id">
@@ -72,7 +73,7 @@
       <input type="text" name="restriction_alimentaire_autre" placeholder="Ex : allergie aux fruits de mer etc." value="{{ invite.restriction_alimentaire_autre or '' }}">
     </div>
 
-    <div id="chansons-block" style="display:none;">
+    <div id="hidden-after" style="display:none;">
       <h2>Préférence musicale</h2>
       <label>Vous désirez prendre part à la soirée. Veuillez sélectionner un top 3 des musiques que vous aimeriez écouter</label>
       {% for i in [1, 2, 3] %}
@@ -85,6 +86,15 @@
       {% endfor %}
     </div>
     
+    <div id="hidden-after-voisinage" style="display:none;">
+      <h2>Respect du voisinage</h2>
+      <label>Le lieu de reception est entouré d'habitations, on compte sur vous pour veiller à la tranquillité du quartier.</label>
+      <select name="nuisance-sonore" required>
+        <option value="" disabled selected>-- Choisir --</option>
+        <option value="Oui">Compris, je ferai attention !</option>
+      </select>
+    </div>
+
     <h2>Droit à l'image et confidentialité</h2>
     <label>Pour préserver l'intimité de cette journée, on compte sur vous pour garder vos superbes clichés hors des réseaux sociaux.</label>
     {{ select_field("droit_image", droit_image_labels, invite.droit_image.value if invite.droit_image else none, placeholder=true) }}
@@ -150,10 +160,15 @@
 <script>
   (function () {
     const presenceAfterSelect = document.querySelector('select[name="presence_after"]');
-    const chansonsBlock = document.getElementById("chansons-block");
+    const chansonsBlock = document.getElementById("hidden-after");
+    const voisinageBlock = document.getElementById("hidden-after-voisinage");
+    const voisinageSelect = document.querySelector('select[name="nuisance-sonore"]');
 
     function updateChansonsVisibility() {
-      chansonsBlock.style.display = presenceAfterSelect.value === "oui" ? "block" : "none";
+      const show = presenceAfterSelect.value === "oui";
+      chansonsBlock.style.display = show ? "block" : "none";
+      voisinageBlock.style.display = show ? "block" : "none";
+      voisinageSelect.required = show;
     }
     presenceAfterSelect.addEventListener("change", updateChansonsVisibility);
     updateChansonsVisibility();

@@ -32,6 +32,7 @@ jobs:
             docker rm wedding-app || true
             docker run -d \
               --name wedding-app \
+              --memory="400m" \
               --restart always \
               -p 127.0.0.1:8000:8000 \
               -v ~/wedding-app/logs:/app/logs \
