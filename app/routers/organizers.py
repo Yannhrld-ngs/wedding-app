@@ -225,7 +225,7 @@ def invite_add(request: Request, nb: int = 0):
     nb_accompagnateurs = max(0, min(nb, 50))
     all_invite = store.list_guests()
 
-    if len(all_invite) > 60:
+    if len(all_invite) > 65:
             return templates.TemplateResponse(
         "invite_add.html",
         {
