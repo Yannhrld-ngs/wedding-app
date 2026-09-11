@@ -76,7 +76,9 @@
   {% endif %}
   <a class="button" href="/organisateur/scan">📷 Scanner un QR code</a></p>
   <a class="button" href="/organisateur/statistiques-detaillees">📊 Statistiques détaillées</a></p>
-  <a class="button" href="/organisateur/choix-des-places">🪑 Choix des places</a></p>
+  {% if organizer_role =="admin" %}
+    <a class="button" href="/organisateur/choix-des-places">🪑 Choix des places</a></p>
+  {% endif %}
   <a class="button" href="/organisateur/info-pratiques">ℹ️ Informations pratiques</a></p>
 </div>
 
@@ -124,9 +126,9 @@
         <td>
           <button class="toggle-btn" type="button" data-target="detail-{{ loop.index }}">▸</button>
         </td>
-
+        
         <td>{{ invite.prenom }} {{ invite.nom }}</td>
-        <td>{{ invite.sexe.value | capitalize }}</td>
+        <td>{{ invite.sexe | capitalize }}</td>
         <td>{{ invite.categorie or "—" }}</td>
         <td>{{ invite.role or "—" }}</td>
         <td><code>{{ invite.token | upper }}</code></td>
