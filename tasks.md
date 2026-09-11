@@ -3,6 +3,7 @@
 - [] Change brevo domain 
 ## En cours
 
+
 ## Fait
 - [X] Modification invit: Ajout couleurs
 - [X] Passage en MSSQL 
@@ -18,3 +19,5 @@
 - [x] Implementer bloquer modification du questionnaire une semaine avant.
 - [X] Dashboard Analytique avec clées KPI
 - [X] Add loggin file
+- [X] Mode de transport label en orientation 90 degre
+- [X] List people drinking alcool

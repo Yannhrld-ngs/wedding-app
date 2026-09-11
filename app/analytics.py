@@ -102,13 +102,11 @@ def compute_alimentaire_analytics(invites: list[Invite]) -> dict:
         {"label": RESTRICTION_LABELS.get(key, key), "count": int(count)} for key, count in counts.items()
     ]
 
+    alcool_consumer = _name_records( df[df["consomme_alcool"] == "oui"] )
     alcool_counts = df["consomme_alcool"].value_counts()
     alcool_histogram = [
         {"label": CONSOMME_ALCOOL_LABELS.get(key, key), "count": int(count)} for key, count in alcool_counts.items()
     ]
-
-    autres_df = df[(df["restriction_alimentaire"] == "autre") & df["restriction_alimentaire_autre"].fillna("").ne("")]
-    autres = _name_records(autres_df, "restriction_alimentaire_autre", "detail")
 
     crosstab = []
     for key, group in df.groupby("restriction_alimentaire"):
@@ -117,8 +115,21 @@ def compute_alimentaire_analytics(invites: list[Invite]) -> dict:
         en_attente = len(group) - oui - non
         crosstab.append({"label": RESTRICTION_LABELS.get(key, key), "oui": oui, "non": non, "en_attente": en_attente})
 
-    return {"histogram": histogram, "autres": autres, "crosstab": crosstab, "alcool_histogram": alcool_histogram}
+    output = {"histogram": histogram, "crosstab": crosstab, "alcool_histogram": alcool_histogram, "alcool_consumer": alcool_consumer}
+    
+    restrictions  = df[df["restriction_alimentaire"]!="aucune"].restriction_alimentaire.unique()
+    output["restrictions"] = restrictions.tolist()
 
+    for restriction in restrictions: 
+        if restriction == "autre":
+            output[restriction] = _name_records(
+                df[(df["restriction_alimentaire"] == "autre") & df["restriction_alimentaire_autre"].fillna("").ne("")],
+                "restriction_alimentaire_autre", 
+                "detail")
+        else:
+            output[restriction] = _name_records(df[df["restriction_alimentaire"] == restriction])
+   
+    return output
 
 def compute_transport_analytics(invites: list[Invite]) -> dict:
     df = _to_dataframe(invites)
@@ -190,7 +201,7 @@ _ATTENTE_COLOR = "#C1694A"
 _RETARD_COLOR = "#96492F"
 _ALIM_COLOR = "#96492F"
 
-def _bar_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str = _ALIM_COLOR, horizontal: bool = False):
+def _bar_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str = _ALIM_COLOR, horizontal: bool = False, xlabel_angle=0):
     """Barres simples, horizon ou vertical"""
     
     hover = alt.selection_point(on="pointerover", fields=[x], empty=False)
@@ -205,12 +216,12 @@ def _bar_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str = _ALIM_
 
     if horizontal:
         return base.encode(
-            y=alt.Y(f"{x}:N", sort="-x", title=None, axis=alt.Axis(labelAngle=0)),
+            y=alt.Y(f"{x}:N", sort="-x", title=None, axis=alt.Axis(labelAngle=xlabel_angle)),
             x=alt.X(f"{y}:Q", title="Invités", axis=alt.Axis(format='d', tickMinStep=1)),
         ).properties(title=title, width="container", height=max(120, 28 * len(df)), autosize=autosize)
     else:
         return base.encode(
-            x=alt.X(f"{x}:N", sort="-y", title=None, axis=alt.Axis(labelAngle=0)),
+            x=alt.X(f"{x}:N", sort="-y", title=None, axis=alt.Axis(labelAngle=xlabel_angle)),
             y=alt.Y(f"{y}:Q", title="Invités", axis=alt.Axis(format='d', tickMinStep=1)),
         ).properties(title=title, width="container", height=max(120, 28 * len(df)), autosize=autosize)
 
@@ -269,7 +280,7 @@ def chart_alcool(alimentaire: dict) -> alt.Chart:
 
 def chart_transport(transport: dict) -> alt.Chart:
     df = pd.DataFrame(transport["transport_histogram"])
-    return _bar_chart(df, "label", "count", "Répartition des modes de transport", color=_ALIM_COLOR)
+    return _bar_chart(df, "label", "count", "Répartition des modes de transport", color=_ALIM_COLOR, xlabel_angle=-30)
 
 
 def chart_logement(logement: dict) -> alt.Chart:
@@ -303,3 +314,9 @@ def chart_ambiance(ambiance: dict) -> alt.Chart:
         )
     )
 
+
+if __name__ == "__main__":
+    from app.store import load_guests
+    invites = load_guests()
+    compute_alimentaire_analytics(invites)
+    print("OK")
