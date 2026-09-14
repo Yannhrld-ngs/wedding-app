@@ -63,7 +63,7 @@ WEDDING_NAME1 = os.getenv("WEDDING_NAME1", default=default_config["inputs"]["WED
 WEDDING_NAME2 = os.getenv("WEDDING_NAME2", default=default_config["inputs"]["WEDDING_NAME2"])
 WEDDING_DATE = os.getenv("WEDDING_DATE", default=default_config["inputs"]["WEDDING_DATE"])
 WEDDING_HOUR = os.getenv("WEDDING_HOUR", default=default_config["inputs"]["WEDDING_HOUR"])
-DAYS_BEFORE_CLOSING_POLL = 21
+DAYS_BEFORE_CLOSING_POLL = 28
 
 VENUE_NAME = os.getenv("VENUE_NAME", default=default_config["inputs"]["VENUE_NAME"])
 VENUE_CIVIL = os.getenv("VENUE_CIVIL", default=default_config["inputs"]["VENUE_CIVIL"])
@@ -72,7 +72,7 @@ VENUE_RECEPTION = os.getenv("VENUE_RECEPTION", default=default_config["inputs"][
 # Planning et accès affichés sur /organisateur/info-pratiques — seule l'heure
 PLANNING = [
     {"heure": "10:40", "moment": "Arrivée des invités à la mairie"},
-    {"heure": WEDDING_HOUR, "moment": "Début du mariage civil"},
+    {"heure": "11:00", "moment": "Début du mariage civil"},
     {"heure": "11h30", "moment": "Séance photo avec les invités"},
     {"heure": "12h00", "moment": "Séance photo des mariés uniquement"},
     {"heure": "13h00", "moment": "Mise en beauté des mariés"},
@@ -82,18 +82,17 @@ PLANNING = [
     {"heure": "15h25", "moment":"Prise de parole du modérateur"},   
     {"heure": "15h30", "moment": "Entrée du marié"},
     {"heure": "15h40", "moment": "Entrée de la mariée"},
-    {"heure": "15h50", "moment": "Bénédiction pastorale"},
+    {"heure": "15h50", "moment": "Prédication"},
     {"heure": "16h30", "moment": "Discours et échange des alliances"},
     {"heure": "16h45", "moment": "Deuxième prestation de la chorale"},
     {"heure": "17h00", "moment": "Ouverture du vin d'honneur"},
     {"heure": "17h15", "moment": "Animation 1"},
     {"heure": "17h45", "moment": "Séances photos avec les invités"},
     {"heure": "18h15", "moment": "Séances photos des mariés uniquement"},
-    {"heure": "18h30", "moment": "Animation 2 et logistique"},
+    {"heure": "18h30", "moment": "Aniversaire et logistique"},
     {"heure": "18h50", "moment": "Installation des invités à la soirée"},
     {"heure": "19h00", "moment":"Prise de parole du modérateur"},  
-    {"heure": "19h05", "moment": "Entrée de la mariée"},
-    {"heure": "19h15", "moment": "Entrée du marié"},
+    {"heure": "19h05", "moment": "Entrée des mariés"},
     {"heure": "19h25", "moment": "Début du repas /  Animations / Discours"},
     {"heure": "21h00", "moment": "Slow des mariés"},
     {"heure": "21h15", "moment": "Soirée"},
