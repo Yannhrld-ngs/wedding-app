@@ -65,6 +65,7 @@ WEDDING_DATE = os.getenv("WEDDING_DATE", default=default_config["inputs"]["WEDDI
 WEDDING_HOUR = os.getenv("WEDDING_HOUR", default=default_config["inputs"]["WEDDING_HOUR"])
 DAYS_BEFORE_CLOSING_POLL = 17
 
+
 VENUE_NAME = os.getenv("VENUE_NAME", default=default_config["inputs"]["VENUE_NAME"])
 VENUE_CIVIL = os.getenv("VENUE_CIVIL", default=default_config["inputs"]["VENUE_CIVIL"])
 VENUE_RECEPTION = os.getenv("VENUE_RECEPTION", default=default_config["inputs"]["VENUE_RECEPTION"])
