@@ -176,3 +176,11 @@ class Organisateur:
 class QuizCreator:
     id: str = "quiz_creator"
     data:dict = field(default_factory=lambda: {"categories": []})
+
+
+@dataclass
+class RepereNotes:
+    """Notes libres par repère (ex. "Table sans alcool"), stockées par phase
+    puis par nom de repère : {"mairie": {"Table 1": "..."}, "reception": {...}}."""
+    id: str = "repere_notes"
+    data: dict = field(default_factory=dict)

@@ -5,14 +5,17 @@
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <h1>Répartition — {{ phase_label }}</h1>
-    <a href="/organisateur/dashboard">← Retour</a>
+    <a href="/organisateur/choix-des-places">← Retour</a>
   </div>
 </div>
 
 {% if groups %}
   {% for g in groups %}
     <div class="card">
-      <h2>Nom du repère : {{ g.repere }}</h2>
+      <h2>Nom du repère : {{ g.repere }} - {{ g.noms | length }} personne(s)</h2>
+      {% if g.note %}
+        <p style="font-style: italic; color: #7a5c45;">📝 {{ g.note }}</p>
+      {% endif %}
       {% if g.noms %}
         <ul>
           {% for nom in g.noms %}

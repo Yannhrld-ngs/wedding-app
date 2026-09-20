@@ -27,6 +27,23 @@
     padding: 8px 12px;
     cursor: pointer;
   }
+  .note-repere-btn {
+    flex-shrink: 0;
+    background: #e0e8dc;
+    color: #45543a;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+  .note-repere-btn.has-note {
+    background: var(--sage, #7C8B6F);
+    color: #fff;
+  }
+  .note-repere-input {
+    width: 100%;
+    margin-top: 8px;
+  }
   .guest-checklist {
     list-style: none;
     margin: 12px 0 0;
@@ -69,46 +86,66 @@
     gap: 12px;
     flex-wrap: wrap; /* stacks on very narrow screens */
   }
+  .edit-phase-card {
+    display: none;
+  }
+  .edit-phase-card.active {
+    display: block;
+  }
+  .phase-toggle-btn.active {
+    background: var(--sage, #7C8B6F);
+    color: #fff;
+  }
 </style>
 
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center;">
-    <h1>Choix des places</h1>
+    <h1>Afficher répartition des places</h1>
     <a href="/organisateur/dashboard">← Retour</a>
   </div>
-  <p>Sauvegardez les changements tout en bas pour les rendre effectifs.</p>
   <div class="repartition-row"> 
-    <a class="button" href="/organisateur/choix-des-places/repartition/mairie">🏛️ Mairie</a></p>
-    <a class="button" href="/organisateur/choix-des-places/repartition/reception">🥂 Réception</a></p>
-    <a class="button" href="/organisateur/choix-des-places/repartition/after">🎉 Soirée</a></p>
+    <a class="button" href="/organisateur/choix-des-places/repartition/mairie">Mairie</a></p>
+    <a class="button" href="/organisateur/choix-des-places/repartition/reception">Réception</a></p>
+    <a class="button" href="/organisateur/choix-des-places/repartition/after">Soirée</a></p>
   </div> 
 </div>
 
-<form id="form-places" method="post" action="/organisateur/choix-des-places">
-  <input type="hidden" id="data-mairie" name="data_mairie" value="[]">
-  <input type="hidden" id="data-reception" name="data_reception" value="[]">
-  <input type="hidden" id="data-after" name="data_after" value="[]">
-  
-  <div class="card">
-    <h2>Mairie</h2>
-    <div id="container-mairie"></div>
-    <button type="button" id="add-mairie" class="add-repere-btn">+ Ajouter un repère</button>
+<div class="card">
+  <h1>Modifier répartition des places</h1>
+  <p>Cliquez sur une rubrique puis sauvegardez à la fin de sa modification pour rendre les changements effectifs.</p>
+  <div class="repartition-row">
+    <button type="button" class="button phase-toggle-btn" data-target="edit-mairie">Mairie</button>
+    <button type="button" class="button phase-toggle-btn" data-target="edit-reception">Réception</button>
+    <button type="button" class="button phase-toggle-btn" data-target="edit-after">Soirée</button>
   </div>
 
-  <div class="card">
-    <h2>Réception</h2>
-    <div id="container-reception"></div>
-    <button type="button" id="add-reception" class="add-repere-btn">+ Ajouter un repère</button>
-  </div>
+  <form id="form-places" method="post" action="/organisateur/choix-des-places">
+    <input type="hidden" id="data-mairie" name="data_mairie" value="[]">
+    <input type="hidden" id="data-reception" name="data_reception" value="[]">
+    <input type="hidden" id="data-after" name="data_after" value="[]">
 
-  <div class="card">
-    <h2>Soirée</h2>
-    <div id="container-after"></div>
-    <button type="button" id="add-after" class="add-repere-btn">+ Ajouter un repère</button>
-  </div>
+    <div class="card edit-phase-card" id="edit-mairie">
+      <h2>Mairie</h2>
+      <div id="container-mairie"></div>
+      <button type="button" id="add-mairie" class="add-repere-btn">+ Ajouter un repère</button>
+      <p><button type="submit" class="button">Sauvegarder les changements</button></p>
+    </div>
 
-  <p><button type="submit" class="button">Sauvegarder les changements</button></p>
-</form>
+    <div class="card edit-phase-card" id="edit-reception">
+      <h2>Réception</h2>
+      <div id="container-reception"></div>
+      <button type="button" id="add-reception" class="add-repere-btn">+ Ajouter un repère</button>
+      <p><button type="submit" class="button">Sauvegarder les changements</button></p>
+    </div>
+
+    <div class="card edit-phase-card" id="edit-after">
+      <h2>Soirée</h2>
+      <div id="container-after"></div>
+      <button type="button" id="add-after" class="add-repere-btn">+ Ajouter un repère</button>
+      <p><button type="submit" class="button">Sauvegarder les changements</button></p>
+    </div>
+  </form>
+</div>
 
 <script>
   function createPhaseEditor(config) {
@@ -119,7 +156,11 @@
 
     function updateAll() {
       const payload = blocks.map(function (block) {
-        return { repere: block.nameInput.value.trim(), tokens: block.tokensOrder.slice() };
+        return {
+          repere: block.nameInput.value.trim(),
+          tokens: block.tokensOrder.slice(),
+          note: block.noteInput.value.trim(),
+        };
       });
 
       const assignedBlock = {};
@@ -155,7 +196,7 @@
       });
     }
 
-    function addBlock(repereName, tokens) {
+    function addBlock(repereName, tokens, note) {
       const el = document.createElement("div");
       el.className = "repere-block";
 
@@ -167,6 +208,30 @@
       nameInput.placeholder = 'Ex : Table 1';
       nameInput.value = repereName || "";
       nameInput.addEventListener("input", updateAll);
+
+      const noteBtn = document.createElement("button");
+      noteBtn.type = "button";
+      noteBtn.className = "note-repere-btn";
+      noteBtn.textContent = "📝 Note";
+
+      const noteInput = document.createElement("input");
+      noteInput.type = "text";
+      noteInput.className = "note-repere-input";
+      noteInput.placeholder = "Ex : Table sans alcool";
+      noteInput.value = note || "";
+      noteInput.style.display = note ? "" : "none";
+      noteInput.addEventListener("input", updateAll);
+
+      function refreshNoteBtn() {
+        noteBtn.classList.toggle("has-note", !!noteInput.value.trim());
+      }
+      refreshNoteBtn();
+      noteInput.addEventListener("input", refreshNoteBtn);
+
+      noteBtn.addEventListener("click", function () {
+        noteInput.style.display = noteInput.style.display === "none" ? "" : "none";
+        if (noteInput.style.display !== "none") noteInput.focus();
+      });
 
       const removeBtn = document.createElement("button");
       removeBtn.type = "button";
@@ -180,13 +245,15 @@
       });
 
       header.appendChild(nameInput);
+      header.appendChild(noteBtn);
       header.appendChild(removeBtn);
       el.appendChild(header);
+      el.appendChild(noteInput);
 
       const list = document.createElement("ul");
       list.className = "guest-checklist";
 
-      const block = { nameInput: nameInput, tokensOrder: (tokens || []).slice(), checkboxes: {}, previewEls: {}, listItems: {} };
+      const block = { nameInput: nameInput, noteInput: noteInput, tokensOrder: (tokens || []).slice(), checkboxes: {}, previewEls: {}, listItems: {} };
 
       guests.forEach(function (guest) {
         const li = document.createElement("li");
@@ -231,8 +298,8 @@
       updateAll();
     });
 
-    (config.initialGroups && config.initialGroups.length ? config.initialGroups : [{ repere: "", tokens: [] }])
-      .forEach(function (g) { addBlock(g.repere, g.tokens); });
+    (config.initialGroups && config.initialGroups.length ? config.initialGroups : [{ repere: "", tokens: [], note: "" }])
+      .forEach(function (g) { addBlock(g.repere, g.tokens, g.note); });
     updateAll();
 
     document.getElementById("form-places").addEventListener("submit", updateAll);
@@ -249,6 +316,18 @@
   createPhaseEditor({
     containerId: "container-after", addBtnId: "add-after", dataInputId: "data-after",
     guests: {{ guests_after | tojson }}, initialGroups: {{ groups_after | tojson }},
+  });
+
+  document.querySelectorAll(".phase-toggle-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const target = document.getElementById(btn.dataset.target);
+      document.querySelectorAll(".edit-phase-card").forEach(function (card) {
+        card.classList.toggle("active", card === target);
+      });
+      document.querySelectorAll(".phase-toggle-btn").forEach(function (b) {
+        b.classList.toggle("active", b === btn);
+      });
+    });
   });
 </script>
 {% endblock %}

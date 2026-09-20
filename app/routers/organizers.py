@@ -419,9 +419,14 @@ def _group_places(invites: list, place_attr: str) -> list[dict]:
 @router.get("/choix-des-places")
 def choix_des_places_form(request: Request, login: str = Depends(get_current_organizer_login)):
     invites = store.list_guests()
+    notes = store.get_repere_notes()
 
     def as_options(filtered: list) -> list[dict]:
         return [{"token": i.token, "nom": f"{i.prenom} {i.nom}"} for i in filtered]
+
+    def with_notes(groups: list[dict], phase: str) -> list[dict]:
+        phase_notes = notes.get(phase, {})
+        return [dict(g, note=phase_notes.get(g["repere"], "")) for g in groups]
 
     invites_mairie = [i for i in invites if i.presence_mairie == OuiNon.oui]
     invites_reception = [i for i in invites if i.presence_reception == OuiNon.oui]
@@ -434,9 +439,9 @@ def choix_des_places_form(request: Request, login: str = Depends(get_current_org
             "guests_mairie": as_options(invites_mairie),
             "guests_reception": as_options(invites_reception),
             "guests_after": as_options(invites_after),
-            "groups_mairie": _group_places(invites, "place_mairie"),
-            "groups_reception": _group_places(invites, "place_reception"),
-            "groups_after": _group_places(invites, "place_after"),
+            "groups_mairie": with_notes(_group_places(invites, "place_mairie"), "mairie"),
+            "groups_reception": with_notes(_group_places(invites, "place_reception"), "reception"),
+            "groups_after": with_notes(_group_places(invites, "place_after"), "after"),
         },
     )
 
@@ -448,10 +453,15 @@ def repartition(phase: str, request: Request, login: str = Depends(get_current_o
 
     invites = store.list_guests()
     token_to_nom = {i.token: f"{i.prenom} {i.nom}" for i in invites}
+    phase_notes = store.get_repere_notes().get(phase, {})
 
     raw_groups = _group_places(invites, f"place_{phase}")
     groups = [
-        {"repere": g["repere"], "noms": [token_to_nom.get(t, t) for t in g["tokens"]]}
+        {
+            "repere": g["repere"],
+            "noms": [token_to_nom.get(t, t) for t in g["tokens"]],
+            "note": phase_notes.get(g["repere"], ""),
+        }
         for g in raw_groups
     ]
 
@@ -485,6 +495,7 @@ def choix_des_places_submit(
 ):
     raw_by_phase = {"mairie": data_mairie, "reception": data_reception, "after": data_after}
     invites = store.list_guests()
+    notes_by_phase = {}
 
     for phase, raw in raw_by_phase.items():
         try:
@@ -493,12 +504,17 @@ def choix_des_places_submit(
             raise HTTPException(status_code=400, detail="Données invalides")
 
         place_by_token = {}
+        phase_notes = {}
         for group in groups:
             repere = (group.get("repere") or "").strip()
             if not repere:
                 continue
+            note = (group.get("note") or "").strip()
+            if note:
+                phase_notes[repere] = note
             for i, token in enumerate(group.get("tokens") or []):
                 place_by_token[token] = f"{repere} #{i + 1}"
+        notes_by_phase[phase] = phase_notes
 
         attr = f"place_{phase}"
         for invite in invites:
@@ -506,6 +522,8 @@ def choix_des_places_submit(
             if getattr(invite, attr) != new_value:
                 setattr(invite, attr, new_value)
                 store.save_guest(invite)
+
+    store.save_repere_notes(notes_by_phase)
 
     return RedirectResponse(url="/organisateur/choix-des-places", status_code=303)
 

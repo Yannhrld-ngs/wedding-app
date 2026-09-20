@@ -11,13 +11,14 @@ import qrcode
 
 from app import config
 from app.database import SqlRepository
-from app.models import Invite, Organisateur
+from app.models import Invite, Organisateur, RepereNotes
 
 logger = logging.getLogger(__name__)
 SQL_REPO = SqlRepository(config.engine)
 
 GUESTS_TABLE = "guests"
 ORGANIZERS_TABLE = "organizers"
+REPERE_NOTES_TABLE = "repere_notes"
 
 
 # ---------- Invités ----------
@@ -142,6 +143,28 @@ def set_organizer_password(login: str, password_hash: str) -> None:
     organizer.password_hash = password_hash
     table = SQL_REPO.create(Organisateur, table_name=ORGANIZERS_TABLE, primary_key="mail")
     SQL_REPO.update(organizer, table, primary_key="mail")
+
+
+# ---------- Notes de repères ----------
+def get_repere_notes() -> dict:
+    """Notes libres par phase puis par nom de repère : {"mairie": {"Table 1": "..."}}."""
+    table = SQL_REPO.create(RepereNotes(), table_name=REPERE_NOTES_TABLE, primary_key="id")
+    rows = SQL_REPO.load(RepereNotes, table_name=REPERE_NOTES_TABLE)
+    if not rows:
+        default = RepereNotes()
+        SQL_REPO.insert(default, table)
+        return default.data
+    return rows[0].data
+
+
+def save_repere_notes(data: dict) -> None:
+    table = SQL_REPO.create(RepereNotes(), table_name=REPERE_NOTES_TABLE, primary_key="id")
+    rows = SQL_REPO.load(RepereNotes, table_name=REPERE_NOTES_TABLE)
+    obj = RepereNotes(data=data)
+    if rows:
+        SQL_REPO.update(obj, table, primary_key="id")
+    else:
+        SQL_REPO.insert(obj, table)
 
 
 #if __name__ == "__main__":
