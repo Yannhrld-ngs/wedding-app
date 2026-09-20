@@ -64,6 +64,11 @@
     padding: 8px 14px;
     cursor: pointer;
   }
+  .repartition-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap; /* stacks on very narrow screens */
+  }
 </style>
 
 <div class="card">
@@ -71,14 +76,19 @@
     <h1>Choix des places</h1>
     <a href="/organisateur/dashboard">← Retour</a>
   </div>
-  <p> N'oubliez pas de sauvegarder les changements.</p>
+  <p>Sauvegardez les changements tout en bas pour les rendre effectifs.</p>
+  <div class="repartition-row"> 
+    <a class="button" href="/organisateur/choix-des-places/repartition/mairie">🏛️ Mairie</a></p>
+    <a class="button" href="/organisateur/choix-des-places/repartition/reception">🥂 Réception</a></p>
+    <a class="button" href="/organisateur/choix-des-places/repartition/after">🎉 Soirée</a></p>
+  </div> 
 </div>
 
 <form id="form-places" method="post" action="/organisateur/choix-des-places">
   <input type="hidden" id="data-mairie" name="data_mairie" value="[]">
   <input type="hidden" id="data-reception" name="data_reception" value="[]">
   <input type="hidden" id="data-after" name="data_after" value="[]">
-
+  
   <div class="card">
     <h2>Mairie</h2>
     <div id="container-mairie"></div>
@@ -111,12 +121,24 @@
       const payload = blocks.map(function (block) {
         return { repere: block.nameInput.value.trim(), tokens: block.tokensOrder.slice() };
       });
+
+      const assignedBlock = {};
+      blocks.forEach(function (block) {
+        block.tokensOrder.forEach(function (token) {
+          assignedBlock[token] = block;
+        });
+      });
+
       blocks.forEach(function (block) {
         const repereName = block.nameInput.value.trim();
         guests.forEach(function (guest) {
           const idx = block.tokensOrder.indexOf(guest.token);
           const preview = block.previewEls[guest.token];
           preview.textContent = idx === -1 || !repereName ? "" : "→ " + repereName + " #" + (idx + 1);
+
+          const li = block.listItems[guest.token];
+          const takenElsewhere = assignedBlock[guest.token] && assignedBlock[guest.token] !== block;
+          li.style.display = takenElsewhere ? "none" : "";
         });
       });
       dataInput.value = JSON.stringify(payload);
@@ -164,7 +186,7 @@
       const list = document.createElement("ul");
       list.className = "guest-checklist";
 
-      const block = { nameInput: nameInput, tokensOrder: (tokens || []).slice(), checkboxes: {}, previewEls: {} };
+      const block = { nameInput: nameInput, tokensOrder: (tokens || []).slice(), checkboxes: {}, previewEls: {}, listItems: {} };
 
       guests.forEach(function (guest) {
         const li = document.createElement("li");
@@ -196,6 +218,7 @@
 
         block.checkboxes[guest.token] = checkbox;
         block.previewEls[guest.token] = preview;
+        block.listItems[guest.token] = li;
       });
 
       el.appendChild(list);

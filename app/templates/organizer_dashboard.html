@@ -80,6 +80,9 @@
     <a class="button" href="/organisateur/choix-des-places">🪑 Choix des places</a></p>
   {% endif %}
   <a class="button" href="/organisateur/info-pratiques">ℹ️ Informations pratiques</a></p>
+  {% if organizer_role in ["admin", "MC"] %}
+    <a class="button" href="/organisateur/animation/quiz">🎮 Quiz</a></p>
+  {% endif %}
 </div>
 
 <p><br></p>

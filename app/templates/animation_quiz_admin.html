@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Quiz{% endblock %}
+{% block content %}
+
+<style>
+  .categorie-block {
+    background: #faf8f5;
+    border: 1px solid #e7e1d6;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+  .categorie-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .categorie-header h2 { margin: 0; }
+  .remove-btn {
+    flex-shrink: 0;
+    background: #f0d7d7;
+    color: #a13b3b;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .question-block {
+    border-left: 2px solid #e8e0d2;
+    padding: 10px 0 10px 14px;
+    margin: 12px 0;
+  }
+  .question-block ul { margin: 6px 0 0; padding-left: 18px; }
+  .question-meta { font-size: 12.5px; color: #7a5c45; margin: 4px 0 0; }
+  .add-form {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed #e7e1d6;
+  }
+  .add-form label { display: block; font-size: 12.5px; color: #7a5c45; margin: 8px 0 3px; }
+  .add-form input[type="text"], .add-form input[type="url"] {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid #e7e1d6;
+    border-radius: 6px;
+  }
+  .reponse-radio-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .add-form .reponse-radio-row input[type="radio"] {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+  }
+  .add-form .reponse-radio-row input[type="text"] {
+    flex: 1 1 0%;
+    width: auto;
+    min-width: 0;
+  }
+  .add-btn {
+    margin-top: 12px;
+    background: #e8e0d2;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+</style>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Quiz</h1>
+    <a href="/organisateur/dashboard">← Retour</a>
+  </div>
+  <p>Creer une catégorie de questions, ajouter s y les questions sans oublier de cocher la bonne réponse.</p>
+</div>
+
+<!-- ==================== Existing categories ==================== -->
+{% for cat in quiz.get("categories") %}
+<div class="categorie-block">
+  <div class="categorie-header">
+    <h2>{{ cat.get("nom") }}</h2>
+    <form method="post" action="/organisateur/animation/quiz/supprimer-categorie/{{ cat.get('id') }}" style="margin:0;">
+      <button type="submit" class="remove-btn" onclick="return confirm('Supprimer cette catégorie et toutes ses questions ?')">✕ Supprimer la catégorie</button>
+    </form>
+  </div>
+
+  {% for q in cat.get("questions") %}
+  <div class="question-block">
+    <p><strong>{{ q.get("enonce") }}</strong></p>
+    <ul>
+      {% for r in q.get("reponses") %}
+      <li>{{ r.get("texte") }}{% if r.get("id") in q.get("correct") %} — <em>bonne réponse</em>{% endif %}</li>
+      {% endfor %}
+    </ul>
+    {% if q.get("contenu") %}
+    <p class="question-meta">Média : {{ q.get("contenu") }}</p>
+    {% endif %}
+    <form method="post" action="/organisateur/animation/quiz/{{ cat.get('id') }}/supprimer-question/{{ q.get('id') }}" style="margin-top:6px;">
+      <button type="submit" class="remove-btn" onclick="return confirm('Supprimer cette question ?')">✕ Supprimer la question</button>
+    </form>
+  </div>
+  {% endfor %}
+
+  <form method="post" action="/organisateur/animation/quiz/ajouter-question/{{ cat.get('id') }}" class="add-form">
+    <label for="enonce-{{ cat.get('id') }}">Énoncé de la question</label>
+    <input type="text" id="enonce-{{ cat.get('id')  }}" name="enonce" required>
+
+    <label>Réponses possibles (cochez la bonne réponse)</label>
+    {% for lettre in ["a", "b", "c", "d"] %}
+    <div class="reponse-radio-row">
+      <input type="radio" name="correct" value="{{ lettre }}" {% if lettre == "a" %}required{% endif %}>
+      <input type="text" name="reponse_{{ lettre }}" placeholder="Réponse {{ lettre|upper }}{% if lettre in ['c', 'd'] %} (optionnel){% endif %}" {% if lettre in ['a', 'b'] %}required{% endif %}>
+    </div>
+    {% endfor %}
+
+    <label for="contenu-{{ cat.get('id') }}">Contenu — URL image ou vidéo (optionnel)</label>
+    <input type="url" id="contenu-{{ cat.get('id') }}" name="contenu" placeholder="https://...">
+
+    <button type="submit" class="add-btn">+ Ajouter la question</button>
+  </form>
+</div>
+
+{% endfor %}
+
+<!-- ==================== Nouvelle catégorie ==================== -->
+<div class="card">
+  <h2>Nouvelle catégorie</h2>
+  <form method="post" action="/organisateur/animation/quiz/ajouter-categorie">
+    <input type="text" name="nom" placeholder="Nom de la catégorie (ex : Enfance des mariés)" required>
+    <button type="submit" class="add-btn">+ Ajouter la catégorie</button>
+  </form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Répartition — {{ phase_label }}{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Répartition — {{ phase_label }}</h1>
+    <a href="/organisateur/dashboard">← Retour</a>
+  </div>
+</div>
+
+{% if groups %}
+  {% for g in groups %}
+    <div class="card">
+      <h2>Nom du repère : {{ g.repere }}</h2>
+      {% if g.noms %}
+        <ul>
+          {% for nom in g.noms %}
+            <li>{{ nom }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>Aucune personne dans ce repère.</p>
+      {% endif %}
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="card">
+    <p>Aucun repère n'a encore été créé pour {{ phase_label }}.</p>
+  </div>
+{% endif %}
+
+{% if sans_repere %}
+  <div class="card">
+    <h2>Sans repère</h2>
+    <ul>
+      {% for nom in sans_repere %}
+        <li>{{ nom }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+{% endblock %}

@@ -9,9 +9,9 @@ import datetime
 import typing
 from typing import Any, Generic, Optional, Type, TypeVar
 from dataclasses import asdict
-import sqlalchemy as sa
-from sqlalchemy import Boolean, DateTime, Float, Integer, String 
+from sqlalchemy import Boolean, DateTime, Date, Float, Integer, String
 from sqlalchemy import Column, MetaData, Table, select, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine import Engine
 
 import logging
@@ -25,7 +25,8 @@ _TYPE_MAP: dict[type, Any] = {
     float: Float,
     bool: Boolean,
     datetime.datetime: DateTime,
-    datetime.date: sa.Date,
+    datetime.date: Date,
+    dict: JSONB,
 }
 
 T = TypeVar("T")
@@ -90,7 +91,6 @@ class SqlRepository(Generic[T]):
             logger.error(f"Erreur lors de la connexion à la base de données {self.engine.url.database} : {e}")
             return False
 
-
     def update(self, obj:T, table:Table, primary_key) -> int:
         """
             Update the row matching primary_key with obj's current values
@@ -144,9 +144,15 @@ if __name__ == "__main__":
     db = SqlRepository(engine)
     #inv =  Invite(prenom="x", nom="y", categorie="ax", token="xyz", qr_uuid="tes")
     #org =  Invite(prenom="org", nom="irg", mail="xzz", contact="00", categorie="ax", token="xyz", qr_uuid="tes")
-    #data = db.load(Invite, table_name="guests") 
-
-    table = db.create(Invite, table_name="guests", primary_key="token")
-    table = db.create(Organisateur, table_name="organizers", primary_key="mail")
+    #table = db.create(Invite, table_name="guests", primary_key="token")
+    #table = db.create(Organisateur, table_name="organizers", primary_key="mail")
     #check = db.insert(inv, table)
+    #data = db.load(Invite, table_name="guests") 
     #db.update(inv, table, primary_key="token") 
+    from models import QuizCreator
+    QC = QuizCreator()
+    #table = db.create(QC, table_name="animation_quiz", primary_key="id")
+    data = db.load(QC, table_name="animation_quiz") 
+    #tableupdate now
+    print('xoxo')
+

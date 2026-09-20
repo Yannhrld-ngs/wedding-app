@@ -144,9 +144,6 @@ def set_organizer_password(login: str, password_hash: str) -> None:
     SQL_REPO.update(organizer, table, primary_key="mail")
 
 
-if __name__ == "__main__":
-    # Test rapide du stockage
-    print("Invités :")
-    inv = load_guests()
-    #_write_qr_file(inv[0])
- 
+#if __name__ == "__main__":
+    # Test
+    #  

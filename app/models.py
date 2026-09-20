@@ -170,3 +170,9 @@ class Organisateur:
     def accord(self, masculin: str, feminin: str) -> str:
         """Forme accordée selon le sexe de l'invité (masculin par défaut)."""
         return feminin if self.sexe == Sexe.femme else masculin
+
+
+@dataclass
+class QuizCreator:
+    id: str = "quiz_creator"
+    data:dict = field(default_factory=lambda: {"categories": []})

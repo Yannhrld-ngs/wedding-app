@@ -1,6 +1,9 @@
 ## À faire
 - [] Log file is outside docker so it needed to be corrected. 
 - [] Change brevo domain 
+- [] Ajout plateforme pour les jeux. Dans la rubrique organisateur, offrir le choix des questions
+- [] Que se soit live, que seul l'organisateur ait le controle. 
+- [] Dans l'espace organisateur, pour les MC authoriser un access
 ## En cours
 
 

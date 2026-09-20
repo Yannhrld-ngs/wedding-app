@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from app.database import SqlRepository  
-
+from uuid import uuid4
 from app import store, config, reset
 from app.analytics import (
     chart_alcool,
@@ -28,6 +28,7 @@ from app.config import PHASE_LABELS as CHART_PHASE_LABELS, RESTRICTION_LABELS, T
 from app.mailer import send_email
 from app.models import (
     Invite,
+    QuizCreator,
     OuiNon,
     PresenceAfter,
     Sexe,
@@ -440,6 +441,41 @@ def choix_des_places_form(request: Request, login: str = Depends(get_current_org
     )
 
 
+@router.get("/choix-des-places/repartition/{phase}")
+def repartition(phase: str, request: Request, login: str = Depends(get_current_organizer_login)):
+    if phase not in config.PHASES:
+        raise HTTPException(status_code=404, detail="Phase inconnue")
+
+    invites = store.list_guests()
+    token_to_nom = {i.token: f"{i.prenom} {i.nom}" for i in invites}
+
+    raw_groups = _group_places(invites, f"place_{phase}")
+    groups = [
+        {"repere": g["repere"], "noms": [token_to_nom.get(t, t) for t in g["tokens"]]}
+        for g in raw_groups
+    ]
+
+    presence_attr = "presence_after" if phase == "after" else f"presence_{phase}"
+    expected_value = PresenceAfter.oui if phase == "after" else OuiNon.oui
+    placed_tokens = {t for g in raw_groups for t in g["tokens"]}
+    sans_repere = [
+        f"{i.prenom} {i.nom}"
+        for i in invites
+        if getattr(i, presence_attr) == expected_value and i.token not in placed_tokens
+    ]
+
+    return templates.TemplateResponse(
+        "invite_repartition.html",
+        {
+            "request": request,
+            "phase": phase,
+            "phase_label": CHART_PHASE_LABELS[phase],
+            "groups": groups,
+            "sans_repere": sans_repere,
+        },
+    )
+
+
 @router.post("/choix-des-places")
 def choix_des_places_submit(
     data_mairie: str = Form("[]"),
@@ -473,11 +509,9 @@ def choix_des_places_submit(
 
     return RedirectResponse(url="/organisateur/choix-des-places", status_code=303)
 
-
 @router.get("/reinitialiser")
 def reinitialiser_confirm(request: Request, login: str = Depends(get_current_organizer_login)):
     return templates.TemplateResponse("organizer_reinit_poll.html", {"request": request})
-
 
 @router.post("/reinitialiser")
 def reinitialiser_submit(request: Request, login: str = Depends(get_current_organizer_login)):
@@ -486,7 +520,6 @@ def reinitialiser_submit(request: Request, login: str = Depends(get_current_orga
         config.engine 
     ).delete_all(table_name="guests") 
     return RedirectResponse(url="/organisateur/dashboard", status_code=303)
-
 
 @router.get("/info-pratiques")
 def info_pratiques(request: Request, login: str = Depends(get_current_organizer_login)):
@@ -498,7 +531,6 @@ def info_pratiques(request: Request, login: str = Depends(get_current_organizer_
             "organizers": store.accepted_organizers(),
         },
     )
-
 
 @router.get("/statistiques-detaillees")
 def statistiques_detaillees(request: Request, login: str = Depends(get_current_organizer_login)):
@@ -629,3 +661,98 @@ def scan_checkin(
         message += f" — Votre place à {label} est : {getattr(invite, attr) or 'non attribuée'}"
 
     return JSONResponse({"success": True, "message": message})
+
+# ---------- Animation 1: Quiz Creation ----------
+@router.get("/animation/quiz")
+def animation_quiz(request: Request):
+    db = SqlRepository(config.engine)
+    table = db.create(obj=QuizCreator(), table_name="animation_quiz", primary_key="id")
+    data = db.load(QuizCreator, table_name="animation_quiz")
+    return templates.TemplateResponse(
+        "animation_quiz_admin.html",
+        {
+            "request": request,
+            "quiz": data[0].data,
+        }
+    )
+
+@router.post("/animation/quiz/ajouter-categorie")
+def animation_quiz_add_categorie(request: Request, nom: str = Form(...)):
+    #SQL query for inserting a new category
+    db = SqlRepository(config.engine)
+    table = db.create(obj=QuizCreator(), table_name="animation_quiz", primary_key="id")
+    data = db.load(QuizCreator, table_name="animation_quiz")
+    quiz = data[0].data
+    quiz["categories"].append(
+        {
+            "id": str(uuid4()), 
+            "nom": nom, 
+            "questions": []
+        }
+        )
+    db.update(data[0], table=table, primary_key="id")
+    return RedirectResponse(url="/organisateur/animation/quiz", status_code=303)
+
+@router.post("/animation/quiz/ajouter-question/{cat_id}")
+def animation_quiz_add_question(
+    request: Request,
+    cat_id: str,
+    enonce: str = Form(...),
+    correct: list[str] = Form(...),
+    reponse_a: str = Form(...),
+    reponse_b: str = Form(...),
+    reponse_c: str = Form(""),
+    reponse_d: str = Form(""),
+    contenu: str = Form(None)
+):
+    #SQL query for inserting a new question in a category
+    db = SqlRepository(config.engine)
+    table = db.create(obj=QuizCreator(), table_name="animation_quiz", primary_key="id")
+    data = db.load(QuizCreator, table_name="animation_quiz")
+    quiz = data[0].data
+
+    reponses = [{"id": "a", "texte": reponse_a}, {"id": "b", "texte": reponse_b}]
+    if reponse_c:
+        reponses.append({"id": "c", "texte": reponse_c})
+    if reponse_d:
+        reponses.append({"id": "d", "texte": reponse_d})
+
+    for cat in quiz["categories"]: #search a cat id and add question to the right one
+        if cat["id"] == str(cat_id):
+            cat["questions"].append(
+                {
+                    "id": str(len(cat["questions"]) + 1), 
+                    "enonce": enonce, 
+                    "reponses": reponses,
+                    "correct": correct,
+                    "contenu": contenu
+                }
+            )
+            break
+    db.update(data[0], table=table, primary_key="id")
+    return RedirectResponse(url="/organisateur/animation/quiz", status_code=303)
+
+@router.post("/animation/quiz/supprimer-categorie/{cat_id}")
+def animation_quiz_delete_categorie(request: Request, cat_id: str):
+    #SQL query for deleting a category by id
+    db = SqlRepository(config.engine)
+    table = db.create(obj=QuizCreator(), table_name="animation_quiz", primary_key="id")
+    data = db.load(QuizCreator, table_name="animation_quiz")
+    quiz = data[0].data
+    quiz["categories"] = [cat for cat in quiz["categories"] if cat["id"] != str(cat_id)]
+    db.update(data[0], table=table, primary_key="id")
+    return RedirectResponse(url="/organisateur/animation/quiz", status_code=303)
+
+@router.post("/animation/quiz/{cat_id}/supprimer-question/{question_id}")
+def animation_quiz_delete_question(request: Request, cat_id: str, question_id: str):
+    #SQL query for deleting a question by id
+    db = SqlRepository(config.engine)
+    table = db.create(obj=QuizCreator(), table_name="animation_quiz", primary_key="id")
+    data = db.load(QuizCreator, table_name="animation_quiz")
+    quiz = data[0].data
+    for cat in quiz["categories"]:
+        if cat["id"] == str(cat_id):
+            cat["questions"] = [q for q in cat["questions"] if q["id"] != str(question_id)]
+            break
+    db.update(data[0], table=table, primary_key="id")
+    return RedirectResponse(url="/organisateur/animation/quiz", status_code=303)
