@@ -51,13 +51,32 @@
     }
     table { width: 100%; border-collapse: collapse; margin-top: 16px; }
     th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
-    .badge { padding: 3px 10px; border-radius: 12px; font-size: 13px; }
+    .badge { padding: 3px 6px; border-radius: 12px; font-size: 13px; display: inline-block;width: fit-content;}
     .badge-ok { background: #d7f0d8; color: #2c6b2f; }
     .badge-pending { background: #f0e6d7; color: #8a6b2f; }
     .badge-no { background: #f0d7d7; color: #a13b3b; }
     .stats { display: flex; gap: 16px; margin-bottom: 20px; }
     .stat { flex: 1; text-align: center; background: #fff; border-radius: 10px; padding: 16px; }
     .stat .value { font-size: 28px; color: #7a5c45; }
+
+    .back-link{
+    top:20px;
+    left:24px;
+    font-size:12px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--cream);
+    text-decoration:none;
+    padding:8px 16px;
+    border:1px solid rgba(0,0,0,0.15);
+    border-radius:999px;
+    background:rgba(26,23,18,0.35);
+    transition:background 0.2s ease, border-color 0.2s ease;
+  }
+  .back-link:hover{
+    background:rgba(0,0,0,0.15);
+    border-color:var(--cream);
+  }
   </style>
 </head>
 <body>

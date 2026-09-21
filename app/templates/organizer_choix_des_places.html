@@ -12,11 +12,14 @@
   }
   .repere-header {
     display: flex;
+    flex-wrap: wrap;
+    row-gap: 8px;
     gap: 8px;
     align-items: center;
   }
   .repere-header input[type="text"] {
     margin-top: 0;
+    flex: 1 1 160px;
   }
   .remove-repere-btn {
     flex-shrink: 0;
@@ -24,7 +27,9 @@
     color: #a13b3b;
     border: none;
     border-radius: 6px;
-    padding: 8px 12px;
+    padding: 10px 16px;
+    font-size: 15px;
+    min-height: 44px;
     cursor: pointer;
   }
   .note-repere-btn {
@@ -33,7 +38,9 @@
     color: #45543a;
     border: none;
     border-radius: 6px;
-    padding: 8px 12px;
+    padding: 10px 16px;
+    font-size: 15px;
+    min-height: 44px;
     cursor: pointer;
   }
   .note-repere-btn.has-note {
@@ -55,19 +62,23 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 4px 0;
-    font-size: 14px;
+    padding: 6px 0;
+    font-size: 15px;
   }
   .guest-checklist label {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     font-weight: normal;
     margin: 0;
+    cursor: pointer;
   }
   .guest-checklist input[type="checkbox"] {
-    width: auto;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
     margin: 0;
+    cursor: pointer;
   }
   .place-preview {
     font-size: 12px;
@@ -78,7 +89,9 @@
     background: #e8e0d2;
     border: none;
     border-radius: 6px;
-    padding: 8px 14px;
+    padding: 10px 18px;
+    font-size: 15px;
+    min-height: 44px;
     cursor: pointer;
   }
   .repartition-row {
@@ -101,7 +114,7 @@
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <h1>Afficher répartition des places</h1>
-    <a href="/organisateur/dashboard">← Retour</a>
+    <a class="back-link" href="/organisateur/dashboard">← Retour</a>
   </div>
   <div class="repartition-row"> 
     <a class="button" href="/organisateur/choix-des-places/repartition/mairie">Mairie</a></p>

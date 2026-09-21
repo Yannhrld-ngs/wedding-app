@@ -1,9 +1,7 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ajouter un invité</title>
+{% extends "base.html" %}
+{% block title %}Ajouter un invité{% endblock %}
+{% block content %}
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
@@ -16,15 +14,10 @@
     --gold:#c9a24b;
   }
 
-  *{ box-sizing:border-box; }
-
   html,body{
-    margin:0;
-    padding:0;
     min-height:100%;
     font-family:'Jost', sans-serif;
     color:var(--ink);
-    background:#faf6f1;
   }
 
   .page{
@@ -34,26 +27,6 @@
     align-items:center;
     justify-content:center;
     padding:48px 24px;
-  }
-
-  .back-link{
-    position:fixed;
-    top:20px;
-    left:24px;
-    font-size:12px;
-    letter-spacing:0.06em;
-    text-transform:uppercase;
-    color:var(--cream);
-    text-decoration:none;
-    padding:8px 16px;
-    border:1px solid rgba(246,240,228,0.5);
-    border-radius:999px;
-    background:rgba(26,23,18,0.35);
-    transition:background 0.2s ease, border-color 0.2s ease;
-  }
-  .back-link:hover{
-    background:rgba(246,240,228,0.15);
-    border-color:var(--cream);
   }
 
   .card{
@@ -211,14 +184,6 @@
     border-color:var(--gold);
     color:#1a1712;
   }
-  .help-text{
-    font-size:12px;
-    color:var(--ink-soft);
-    margin:8px 0 0;
-  }
-  .help-text a{
-    color:var(--ink);
-  }
 
   #accompagnateurs{
     margin-top:12px;
@@ -236,8 +201,6 @@
     grid-template-columns:1fr 1fr 1fr;
   }
 </style>
-</head>
-<body>
 
 <a class="back-link" href="/organisateur/dashboard">← Retour</a>
 
@@ -318,7 +281,7 @@
         <select id="role" name="role">
           <option value="" {% if not form_data.role %}selected{% endif %}>-- Aucun rôle particulier --</option>
           {% for r in [
-            "Garçon d'honneur", "Demoiselle d'honneur", "Dame de compagnie", "Maître de cérémonie", "Officiant", 
+            "Garçon d'honneur", "Demoiselle d'honneur", "Dame de compagnie", "Maître de cérémonie", "Officiant",
             "Cuisine", "Décoration", "Groupe musical", "Voiture","Media", "Accueil","Parrain/Marraine", "Temoin"
           ] %}
           <option value="{{ r }}" {% if form_data.role == r %}selected{% endif %}>{{ r }}</option>
@@ -331,7 +294,7 @@
             <input type="number" id="nb" name="nb" min="0" max="50" value="{{ nb_accompagnateurs or 0 }}">
             <button type="submit">Valider le nombre</button>
           </div>
-          
+
         </div>
 
         {% if nb_accompagnateurs and nb_accompagnateurs > 0 %}
@@ -359,5 +322,4 @@
   </div>
 </div>
 
-</body>
-</html>
+{% endblock %}

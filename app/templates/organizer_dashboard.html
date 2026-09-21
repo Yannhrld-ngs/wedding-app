@@ -16,7 +16,7 @@
     --sage-dark: #5E6B54;
     --paper: #FFFDFA;
   }
-  .dashboard-table th, 
+  .dashboard-table th,
   .dashboard-table td { border-bottom: none; font-size: 13px;padding: 7px 15px; margin-top: 5px}
   .dashboard-table tr:nth-child(even) { background: #faf8f5; font-size: 10px;}
   .dashboard-table tr.search-hidden,
@@ -24,20 +24,45 @@
     display: none;
   }
 
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .toggle-btn {
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 16px;
+    border: none;
+    background: var(--sand);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
   .button-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
   }
 
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 6px;
+    max-width: 1200px;
+    margin-left: 20px;
+  }
+
   .search-box {
-    width: 35%;
-    max-width: 200px;
+    width: 100%;
+    max-width: 260px;
     padding: 10px 10px;
-    font-size: 13px;
+    font-size: 15px;
     border: 1px solid #ccc;
     border-radius: 8px;
     margin-bottom: 3px;
     margin-left: 20px;
+    box-sizing: border-box;
   }
 
   .send-btn,
@@ -47,22 +72,38 @@
     color: var(--umber);
     text-decoration: none;
     border: none;
-    padding: 4px 8px;
-    font-size: 13px;
+    padding: 8px 12px;
+    font-size: 14px;
     border-radius: 10px;
     cursor: pointer;
+    min-height: 36px;
   }
 
   .send-btn:hover,
   .page-btn:hover {
     background: var(--terracotta-dark);
   }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    row-gap: 6px;
+    column-gap: 16px;
+    padding: 8px 0;
+  }
+
+  @media (max-width: 480px) {
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 
-<div style="display:flex; justify-content:space-between; align-items:center; max-width: 1200px;">
-  <h2>Tableau de bord — {{ organizer_name }}{% if organizer_role %} ({{ organizer_role.upper() }}){% endif %}</h2>
-  <a href="/organisateur/logout">Déconnexion</a> 
-  <!-- 
+<div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:space-between; align-items:center; max-width: 1200px;">
+  <h1 style="width:100%;">Tableau de bord</h1>
+  <h2>{{ organizer_name }}{% if organizer_role %} ({{ organizer_role.upper() }}){% endif %}</h2>
+  <a class="back-link" href="/organisateur/logout">Déconnexion</a>
+    <!-- 
   {% if organizer_role =="admin" %}
     <a href="/organisateur/reinitialiser" class="reset-action" id="resetAction" style="margin-left: 10px">Réinitialiser</a>
   {% endif %}
@@ -72,12 +113,12 @@
 
 <div class="button-row" style="max-width: 1200px;  margin-left: 20px;">
   {% if organizer_role =="admin" %}
-    <a class="button" href="/organisateur/ajouter-invité">➕ Ajouter un invité</a></p>
+    <a class="button" href="/organisateur/ajouter-invité">➕ Ajouter invités</a></p>
   {% endif %}
-  <a class="button" href="/organisateur/scan">📷 Scanner un QR code</a></p>
+  <a class="button" href="/organisateur/scan">📷 Scanner QR codes</a></p>
   <a class="button" href="/organisateur/statistiques-detaillees">📊 Statistiques détaillées</a></p>
   {% if organizer_role =="admin" %}
-    <a class="button" href="/organisateur/choix-des-places">🪑 Choix des places</a></p>
+    <a class="button" href="/organisateur/choix-des-places">🪑 Places</a></p>
   {% endif %}
   <a class="button" href="/organisateur/info-pratiques">ℹ️ Informations pratiques</a></p>
   {% if organizer_role in ["admin", "MC"] %}
@@ -87,15 +128,15 @@
 
 <p><br></p>
 
-<div class="stats" style="display: grid; gap: 6px; max-width: 1200px;  margin-left: 20px; margin-bottom:5px;">
+<div class="stats" style="margin-bottom:5px;">
   <div class="stat"><div class="value">{{ total }}</div>Invités</div>
 </div>
-<div class="stats" style="gap: 6px; max-width: 1200px;  margin-left: 20px;margin-bottom:5px;">
+<div class="stats" style="margin-bottom:5px;">
   <div class="stat"><div class="value">{{ presents_mairie }}</div>Présence attendue - Mairie</div>
   <div class="stat"><div class="value">{{ presents_reception }}</div>Présence attendue - Réception</div>
   <div class="stat"><div class="value">{{ presents_after }}</div>Présence attendue - Soirée</div>
 </div>
-<div class="stats" style="gap: 6px; max-width: 1200px;  margin-left: 20px;margin-bottom:15px;">
+<div class="stats" style="margin-bottom:15px;">
   <div class="stat"><div class="value">{{ confirmed_mairie }}</div>Présence confirmée - Mairie</div>
   <div class="stat"><div class="value">{{ confirmed_reception }}</div>Présence confirmée - Réception</div>
   <div class="stat"><div class="value">{{ confirmed_after }}</div>Présence confirmée - Soirée</div>
@@ -103,6 +144,7 @@
 
 <input type="text" id="search" class="search-box" placeholder="Rechercher un invité...">
 <div>
+  <div class="table-scroll">
   <table class="dashboard-table" id="inviteTable">
     <thead>
       <tr>
@@ -145,7 +187,7 @@
       <tr class="detail-row" id="detail-{{ loop.index }}" style="display: none;">
         <td></td>
         <td colspan="5">
-          <div style="display: grid; grid-template-columns: max-content 1fr; row-gap: 6px; column-gap: 16px; padding: 8px 0;">
+          <div class="detail-grid">
             
           <strong>Accompagnant(s):</strong>
           <span>
@@ -215,9 +257,10 @@
     {% endfor %}
     </tbody>
   </table>
+  </div>
 
   <!--Pagination-->
-  <div style="display: flex; gap: 12px; align-items: center; margin-top: 16px;">
+  <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 16px;">
     <button id="prevBtn" class="page-btn">← Précédent</button>
     <span id="pageInfo"></span>
     <button id="nextBtn" class="page-btn">Suivant →</button>

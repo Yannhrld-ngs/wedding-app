@@ -130,7 +130,7 @@
       <p><strong>Attention ! Le sondage se cloturera dans {{(current_date-last_valid_date).days | abs}} jours </strong></p>
     {% endif %}
   </form>
-  <p><a href="/invite/{{ invite.token }}">← Retour à l'invitation</a></p>
+  <p><a class="back-link"href="/invite/{{ invite.token }}">← Retour à l'invitation</a></p>
 </div>
 
 <style>
