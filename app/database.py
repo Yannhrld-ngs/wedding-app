@@ -149,10 +149,8 @@ if __name__ == "__main__":
     #check = db.insert(inv, table)
     #data = db.load(Invite, table_name="guests") 
     #db.update(inv, table, primary_key="token") 
-    from models import QuizCreator
-    QC = QuizCreator()
-    #table = db.create(QC, table_name="animation_quiz", primary_key="id")
-    data = db.load(QC, table_name="animation_quiz") 
-    #tableupdate now
+    from models import PlanningEvent
+    data = db.load(PlanningEvent, table_name="detailed_planning")
+
     print('xoxo')
 

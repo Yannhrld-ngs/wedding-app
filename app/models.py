@@ -173,10 +173,31 @@ class Organisateur:
 
 
 @dataclass
+class PlanningEvent:
+    done:int
+    heure: str
+    moment: str
+    responsable: str
+    notes: Optional[str] = None
+
+@dataclass
+class PlanningPhoto:
+    lieu:str
+    catégorie: str
+    invités: str
+    notes: Optional[str] = None
+    
+@dataclass
+class PlaylistMusicale:
+    nom:str
+    lien: str
+    notes: Optional[str] = None
+    
+
+@dataclass
 class QuizCreator:
     id: str = "quiz_creator"
     data:dict = field(default_factory=lambda: {"categories": []})
-
 
 @dataclass
 class RepereNotes:

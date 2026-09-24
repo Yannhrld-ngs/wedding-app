@@ -11,3 +11,272 @@
 2026-09-02 10:04:19,502 [INFO] app.reset: app/static/qrcodes\f5ecb2-qrcode.png a bien été supprimé
 2026-09-02 18:10:08,105 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/ajouter-invit%C3%A9 "HTTP/1.1 200 OK"
 2026-09-02 18:10:08,173 [INFO] httpx: HTTP Request: POST http://testserver/organisateur/ajouter-invit%C3%A9 "HTTP/1.1 303 See Other"
+2026-09-23 17:25:15,939 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Arrivée des invités à la mairie) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '10:40', 'moment': 'Arrivée des invités à la mairie', 'responsable': 'Accueil', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,010 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Début du mariage civil) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '11:00', 'moment': 'Début du mariage civil', 'responsable': '---', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,075 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Séance photo avec les invités) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '11h30', 'moment': 'Séance photo avec les invités', 'responsable': '----', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,138 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Séance photo des mariés uniquement) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '12h00', 'moment': 'Séance photo des mariés uniquement', 'responsable': '----', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,202 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Mise en beauté des mariés) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '13h00', 'moment': 'Mise en beauté des mariés', 'responsable': '----', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,267 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Cocktail de bienvenue) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '14h30', 'moment': 'Cocktail de bienvenue', 'responsable': 'Accueil', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,332 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Installation des invités et de la chorale) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '14h55', 'moment': 'Installation des invités et de la chorale', 'responsable': 'Accueil', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,394 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Première prestation chorale) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '15h00', 'moment': 'Première prestation chorale', 'responsable': 'Chorale', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,471 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Prière d'ouverture) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '15h25', 'moment': "Prière d'ouverture", 'responsable': 'Christian LAWARD', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,535 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Entrée du marié) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '15h30', 'moment': 'Entrée du marié', 'responsable': '----', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,597 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Entrée de la mariée) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '15h40', 'moment': 'Entrée de la mariée', 'responsable': '----', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,661 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Prédication) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '15h50', 'moment': 'Prédication', 'responsable': 'Pasteur FRANCIS BOWENGE', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,726 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Discours et échange des alliances) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '16h30', 'moment': 'Discours et échange des alliances', 'responsable': 'Pasteur FRANCIS BOWENGE', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,787 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Deuxième prestation de la chorale) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '16h45', 'moment': 'Deuxième prestation de la chorale', 'responsable': 'Chorale', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,856 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Ouverture du vin d'honneur) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '17h00', 'moment': "Ouverture du vin d'honneur", 'responsable': 'Les Mariés', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:25:16,924 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Discours des mariés) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '17h15', 'moment': 'Discours des mariés', 'responsable': 'Les Mariés', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:01,545 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Arrivée des invités à la mairie) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '10:40', 'moment': 'Arrivée des invités à la mairie', 'responsable': 'Accueil', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:01,608 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Début du mariage civil) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '11:00', 'moment': 'Début du mariage civil', 'responsable': '---', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:01,672 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Séance photo avec les invités) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '11h30', 'moment': 'Séance photo avec les invités', 'responsable': '----', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:01,735 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Séance photo des mariés uniquement) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '12h00', 'moment': 'Séance photo des mariés uniquement', 'responsable': '----', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:01,796 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Mise en beauté des mariés) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '13h00', 'moment': 'Mise en beauté des mariés', 'responsable': '----', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:01,858 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Cocktail de bienvenue) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '14h30', 'moment': 'Cocktail de bienvenue', 'responsable': 'Accueil', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:01,920 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Installation des invités et de la chorale) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '14h55', 'moment': 'Installation des invités et de la chorale', 'responsable': 'Accueil', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:01,982 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Première prestation chorale) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '15h00', 'moment': 'Première prestation chorale', 'responsable': 'Chorale', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:02,047 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Prière d'ouverture) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '15h25', 'moment': "Prière d'ouverture", 'responsable': 'Christian LAWARD', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:02,110 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Entrée du marié) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '15h30', 'moment': 'Entrée du marié', 'responsable': '----', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:02,170 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Entrée de la mariée) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '15h40', 'moment': 'Entrée de la mariée', 'responsable': '----', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:02,235 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Prédication) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '15h50', 'moment': 'Prédication', 'responsable': 'Pasteur FRANCIS BOWENGE', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:02,303 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Discours et échange des alliances) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '16h30', 'moment': 'Discours et échange des alliances', 'responsable': 'Pasteur FRANCIS BOWENGE', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:02,369 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Deuxième prestation de la chorale) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '16h45', 'moment': 'Deuxième prestation de la chorale', 'responsable': 'Chorale', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:02,436 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Ouverture du vin d'honneur) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '17h00', 'moment': "Ouverture du vin d'honneur", 'responsable': 'Les Mariés', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:02,506 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Discours des mariés) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '17h15', 'moment': 'Discours des mariés', 'responsable': 'Les Mariés', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:02,576 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Séances photos avec les mariés) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '18h00', 'moment': 'Séances photos avec les mariés', 'responsable': 'Protocole', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:02,641 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Séances photos des mariés uniquement) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '18h15', 'moment': 'Séances photos des mariés uniquement', 'responsable': '----', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:02,705 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Aniversaire et logistique) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '18h30', 'moment': 'Aniversaire et logistique', 'responsable': 'Decoration', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 17:26:02,774 [ERROR] __main__: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(Installation des invités à la soirée) already exists.
+
+[SQL: INSERT INTO public.detailled_planing (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '18h50', 'moment': 'Installation des invités à la soirée', 'responsable': 'Accueil', 'notes': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-23 19:11:16,042 [ERROR] app.database: Erreur lors de la connexion à la base de données wedding-app-db : asdict() should be called on dataclass instances
+2026-09-23 19:14:16,389 [ERROR] app.database: Erreur lors de la connexion à la base de données wedding-app-db : asdict() should be called on dataclass instances
+2026-09-23 19:14:49,951 [ERROR] app.database: Erreur lors de la connexion à la base de données wedding-app-db : asdict() should be called on dataclass instances
+2026-09-23 19:19:27,029 [ERROR] app.database: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "detailled_planing_pkey"
+DETAIL:  Key (moment)=(test) already exists.
+
+[SQL: INSERT INTO public.detailed_planning (done, heure, moment, responsable, notes) VALUES (%(done)s, %(heure)s, %(moment)s, %(responsable)s, %(notes)s)]
+[parameters: {'done': 0, 'heure': '08:00', 'moment': 'test', 'responsable': 'xx', 'notes': 'xx'}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-09-24 19:44:02,154 [ERROR] app.database: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UndefinedFunction) operator does not exist: character varying = text[]
+LINE 1: ...','','',''] WHERE public.detailed_planning.moment = ARRAY['A...
+                                                             ^
+HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+[SQL: UPDATE public.detailed_planning SET done=%(done)s, heure=%(heure)s, responsable=%(responsable)s, notes=%(notes)s WHERE public.detailed_planning.moment = %(moment_1)s]
+[parameters: {'done': 0, 'heure': ['10:40', '11:00', '11:30', '12:00', '13:00', '14:30', '14:55', '15:00', '15:25', '15:30', '15:40', '15:50', '16:30', '16:45', '17:00', '17:15', '18:00', '18:15', '18:30', '18:50', '19:00', '19:05', '19:15', '19:45', '20:15', '20:30', '21:00', '21:20', '21:40', '22:00'], 'responsable': ['Accueil', '', '', '', '', 'Accueil', 'Accueil', 'Chorale', 'Christian LAWARD', '', '', 'Pasteur FRANCIS BOWENGE', 'Pasteur FRANCIS BOWENGE', 'Choral ... (42 characters truncated) ... ', '', 'Decoration', 'Accueil', 'MC', 'MC', 'Maman LOMBI', 'MC', 'MC', 'MC', 'Simplice NSASI', 'MC; William Takam', 'MC; William Takam', 'Les mariés'], 'notes': ['xx', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''], 'moment_1': ['Arrivée des invités à la mairie', 'Début du mariage civil', 'Séance photo avec les invités', 'Séance photo des mariés uniquement', 'Mise en beauté d ... (617 characters truncated) ... tés', 'Animation musicale live, Cadeaux aux mariés', 'Un tour au Continent', "Un tour en terre d'Ebrunie", 'Lancer du bouquet et cadeaux aux invités']}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-09-24 19:44:09,267 [ERROR] app.database: Erreur lors de la connexion à la base de données wedding-app-db : (psycopg2.errors.UndefinedFunction) operator does not exist: character varying = text[]
+LINE 1: ...','','',''] WHERE public.detailed_planning.moment = ARRAY['A...
+                                                             ^
+HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+[SQL: UPDATE public.detailed_planning SET done=%(done)s, heure=%(heure)s, responsable=%(responsable)s, notes=%(notes)s WHERE public.detailed_planning.moment = %(moment_1)s]
+[parameters: {'done': 0, 'heure': ['10:40', '11:00', '11:30', '12:00', '13:00', '14:30', '14:55', '15:00', '15:25', '15:30', '15:40', '15:50', '16:30', '16:45', '17:00', '17:15', '18:00', '18:15', '18:30', '18:50', '19:00', '19:05', '19:15', '19:45', '20:15', '20:30', '21:00', '21:20', '21:40', '22:00'], 'responsable': ['Accueil', '', '', '', '', 'Accueil', 'Accueil', 'Chorale', 'Christian LAWARD', '', '', 'Pasteur FRANCIS BOWENGE', 'Pasteur FRANCIS BOWENGE', 'Choral ... (42 characters truncated) ... ', '', 'Decoration', 'Accueil', 'MC', 'MC', 'Maman LOMBI', 'MC', 'MC', 'MC', 'Simplice NSASI', 'MC; William Takam', 'MC; William Takam', 'Les mariés'], 'notes': ['xx', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''], 'moment_1': ['Arrivée des invités à la mairie', 'Début du mariage civil', 'Séance photo avec les invités', 'Séance photo des mariés uniquement', 'Mise en beauté d ... (617 characters truncated) ... tés', 'Animation musicale live, Cadeaux aux mariés', 'Un tour au Continent', "Un tour en terre d'Ebrunie", 'Lancer du bouquet et cadeaux aux invités']}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-09-24 19:52:43,252 [ERROR] asyncio: Task exception was never retrieved
+future: <Task finished name='Task-1' coro=<Server.serve() done, defined at C:\Users\Yann-Harold NGUESSAN\Documents\wed-organizer\.venv\Lib\site-packages\uvicorn\server.py:67> exception=KeyboardInterrupt()>
+Traceback (most recent call last):
+  File "C:\Users\Yann-Harold NGUESSAN\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\Yann-Harold NGUESSAN\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Yann-Harold NGUESSAN\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 640, in run_until_complete
+    self.run_forever()
+  File "C:\Users\Yann-Harold NGUESSAN\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 607, in run_forever
+    self._run_once()
+  File "C:\Users\Yann-Harold NGUESSAN\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 1922, in _run_once
+    handle._run()
+  File "C:\Users\Yann-Harold NGUESSAN\AppData\Local\Programs\Python\Python311\Lib\asyncio\events.py", line 80, in _run
+    self._context.run(self._callback, *self._args)
+  File "C:\Users\Yann-Harold NGUESSAN\Documents\wed-organizer\.venv\Lib\site-packages\uvicorn\server.py", line 68, in serve
+    with self.capture_signals():
+  File "C:\Users\Yann-Harold NGUESSAN\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 144, in __exit__
+    next(self.gen)
+  File "C:\Users\Yann-Harold NGUESSAN\Documents\wed-organizer\.venv\Lib\site-packages\uvicorn\server.py", line 328, in capture_signals
+    signal.raise_signal(captured_signal)
+  File "C:\Users\Yann-Harold NGUESSAN\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py", line 157, in _on_sigint
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+2026-09-24 19:52:43,264 [ERROR] asyncio: Task was destroyed but it is pending!
+task: <Task cancelling name='Task-2' coro=<LifespanOn.main() running at C:\Users\Yann-Harold NGUESSAN\Documents\wed-organizer\.venv\Lib\site-packages\uvicorn\lifespan\on.py:86> wait_for=<Future cancelled> cb=[gather.<locals>._done_callback() at C:\Users\Yann-Harold NGUESSAN\AppData\Local\Programs\Python\Python311\Lib\asyncio\tasks.py:754]>

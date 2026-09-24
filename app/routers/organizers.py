@@ -29,6 +29,7 @@ from app.mailer import send_email
 from app.models import (
     Invite,
     QuizCreator,
+    PlanningEvent,
     OuiNon,
     PresenceAfter,
     Sexe,
@@ -541,14 +542,46 @@ def reinitialiser_submit(request: Request, login: str = Depends(get_current_orga
 
 @router.get("/info-pratiques")
 def info_pratiques(request: Request, login: str = Depends(get_current_organizer_login)):
+    db = SqlRepository(config.engine)
+    data = db.load(PlanningEvent, table_name="detailed_planning") 
+    planning = [d.__dict__ for d in data]
     return templates.TemplateResponse(
         "organizer_info_pratiques.html",
         {
             "request": request,
-            "planning": config.PLANNING,
+            "planning": sorted(planning, key=lambda x: x['heure']),
             "organizers": store.accepted_organizers(),
         },
     )
+
+
+@router.post("/info-pratiques/planning-detaillé")
+def detailed_planning(
+    heure: str = Form(""),
+    moment: str = Form(""),
+    responsable: str = Form(""),
+    notes: str = Form(""),
+    add: str | None = Form(None),
+    delete: str | None = Form(None),
+    checkbox: str | None = Form(None),
+):
+    db = SqlRepository(config.engine)
+    table = db.create(obj=PlanningEvent, table_name="detailed_planning", primary_key="moment")
+    data = db.load(PlanningEvent, table_name="detailed_planning")
+    
+    if delete is not None:
+        to_delete = next((e for e in data if e.moment == delete), None)
+        db.delete(to_delete, table, primary_key="moment")
+    
+    if add: 
+        to_add = PlanningEvent(done=0, heure=heure, moment=moment, responsable=responsable, notes=notes)
+        db.insert(to_add, table=table)
+
+    if checkbox: 
+        to_check = next((e for e in data if e.moment == checkbox), None)
+        to_check.done = 1 if to_check.done == 0 else 0
+        db.update(to_check, table=table, primary_key="moment")
+    return RedirectResponse(url="/organisateur/info-pratiques", status_code=303)
 
 @router.get("/statistiques-detaillees")
 def statistiques_detaillees(request: Request, login: str = Depends(get_current_organizer_login)):

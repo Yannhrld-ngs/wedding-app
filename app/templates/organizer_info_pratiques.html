@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Informations pratiques{% endblock %}
 {% block content %}
+<head>
+  <meta charset="utf-8">
+  <title>My table</title>
+  <style>
+    tfoot td { background: #fafafa; }
+    tfoot input[type="text"] { width: 100%; box-sizing: border-box; }
+    .save { margin-top: 0.8rem; padding: 0.3rem 0.9rem; }
+  </style>
+</head>
 
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -11,14 +20,77 @@
 
 <div class="card">
   <h2>Planning détaillé</h2>
+  <form method="post" action="/organisateur/info-pratiques/planning-detaillé">
+    <table>
+      <thead>
+        <tr>
+            {% for h in planning[0].keys() %}
+              {% if h == "done" %}
+                <th> </th> 
+              {% else %}
+                <th>{{ h|capitalize }}</th>
+              {% endif %}
+            {% endfor %}
+            <th> </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for etape in planning %}
+          <tr> 
+            <td class="center">
+              <button type="submit" name="checkbox" value="{{ etape.moment }}"
+                      title="{{ 'Marque comme non fait' if etape.done else 'Marquer comme fait' }}" class="tick" formnovalidate>
+                {{ "☑" if etape.done else "☐" }}
+              </button>
+            </td>
+            <td>{{ etape.heure }}</td>
+            <td>{{ etape.moment }}</td>
+            <td>{{ etape.responsable if etape.responsable else "—"}}</td>
+            <td>{{ etape.notes if etape.notes else "—" }}</td>
+            <td class="center">
+              <button type="submit" name="delete" class="delete" value="{{ etape.moment }}" title="Supprimer" formnovalidate>❌</button>
+            </td>
+          </tr>
+
+        {% endfor %}
+      </tbody>
+        <!-- New-row line with the + button -->
+        <tfoot>
+          <tr>
+            <td> <input type="checkbox" name="done" value="0"> </td>
+            <td> <input type="text" name="heure" placeholder="Ex: 15:00" required></td>
+            <td> <input type="text" name="moment" placeholder="Moment" required></td>
+            <td> <input type="text" name="responsable" placeholder="Responsable"></td>
+            <td> <input type="text" name="notes" placeholder="Notes"></td>
+            <td class="center">
+              <button type="submit" name="add", value="1" title="Ajouter" class="save" formnovalidate>➕</button>
+            </td>
+          </tr>
+        </tfoot>
+    </table>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Le Planning Photos</h2>
   <table>
     <thead>
-      <tr><th>Heure</th><th>Moment</th></tr>
+      <tr><th>Lieu</th><th>Catégorie</th><th>Invités</th></tr>
     </thead>
     <tbody>
-      {% for etape in planning %}
-        <tr><td>{{ etape.heure }}</td><td>{{ etape.moment }}</td></tr>
-      {% endfor %}
+      <tr></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Playlist musicale</h2>
+  <table>
+    <thead>
+      <tr><th>Nom</th><th>Lien</th></tr>
+    </thead>
+    <tbody>
+      <tr></tr>
     </tbody>
   </table>
 </div>
