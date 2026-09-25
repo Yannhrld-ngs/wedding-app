@@ -69,7 +69,7 @@ def questionnaire_form(token: str, request: Request):
     invite = get_invite_or_404(token)
     today = datetime.now()
     return templates.TemplateResponse(
-        "questionnaire.html",
+        "invite_questionnaire.html",
         {
             "request": request,
             "invite": invite,

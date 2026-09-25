@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Animation{% endblock %}
+{% block content %}
+
+<style>
+  .button-row {
+    display: flex;
+    justify-content: center; 
+    gap: 1rem;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto;          
+  }
+
+  .button-icon {
+    display: inline-flex;
+    flex-direction: column;  
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    text-align: center;
+    min-width: 140px;
+    padding: 1rem;
+  }
+
+  .button-icon .icon  { font-size: 2rem; line-height: 1; }
+  .button-icon .label { font-size: 0.95rem; }
+
+</style>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+  <h1>Animations</h1>
+  <a class="back-link" href="/organisateur/dashboard">← Retour</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="button-row" style="max-width: 1200px; margin-left: 20px;">
+    <a class="button button-icon" href="/organisateur/animation/un-mot-aux-mariés">
+      <span class="icon">🎙️</span>
+      <span class="label">Un mot aux mariés</span>
+    </a>
+    <a class="button button-icon" href="/organisateur/animation/quiz">
+      <span class="icon">📋</span>
+      <span class="label">Le Quiz</span>
+    </a>
+  </div>
+</div>
+
+{% endblock %}

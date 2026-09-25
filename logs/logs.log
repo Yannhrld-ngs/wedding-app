@@ -280,3 +280,10 @@ Traceback (most recent call last):
 KeyboardInterrupt
 2026-09-24 19:52:43,264 [ERROR] asyncio: Task was destroyed but it is pending!
 task: <Task cancelling name='Task-2' coro=<LifespanOn.main() running at C:\Users\Yann-Harold NGUESSAN\Documents\wed-organizer\.venv\Lib\site-packages\uvicorn\lifespan\on.py:86> wait_for=<Future cancelled> cb=[gather.<locals>._done_callback() at C:\Users\Yann-Harold NGUESSAN\AppData\Local\Programs\Python\Python311\Lib\asyncio\tasks.py:754]>
+2026-09-25 16:19:04,788 [ERROR] app.mailer: [échec envoi email via l'API Brevo] À : yannhrld@gmail.com
+(401)
+Reason: Unauthorized
+HTTP response headers: HTTPHeaderDict({'Date': 'Fri, 25 Sep 2026 14:19:04 GMT', 'Content-Type': 'application/json', 'Content-Length': '260', 'Connection': 'keep-alive', 'access-control-allow-credentials': 'true', 'sib-request-id': '40c3d8ce-50ba-901b-986c-8231f717bf98', 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'PUT, POST, GET, DELETE, PATCH, OPTIONS', 'x-envoy-upstream-service-time': '6', 'server': 'cloudflare', 'cf-cache-status': 'DYNAMIC', 'Cf-Apo-Via': 'origin,noget', 'CF-RAY': 'a40aa96a5f84fe97-AMS'})
+HTTP response body: {"message":"We have detected you are using an unrecognised IP address 2a02:8428:44d9:4a01:a9ca:6fb0:bec3:a199. If you performed this action make sure to add the new IP address in this link: https://app.brevo.com/security/authorised_ips","code":"unauthorized"}
+
+

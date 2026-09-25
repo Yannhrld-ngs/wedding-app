@@ -551,6 +551,7 @@ def info_pratiques(request: Request, login: str = Depends(get_current_organizer_
             "request": request,
             "planning": sorted(planning, key=lambda x: x['heure']),
             "organizers": store.accepted_organizers(),
+            "current_organizer": store.find_accepted_organizer_by_mail(login),
         },
     )
 
@@ -604,7 +605,7 @@ def statistiques_detaillees(request: Request, login: str = Depends(get_current_o
     }
 
     return templates.TemplateResponse(
-        "analytics.html",
+        "organizer_analytics.html",
         {
             "request": request,
             "presence": presence,
@@ -713,7 +714,11 @@ def scan_checkin(
 
     return JSONResponse({"success": True, "message": message})
 
-# ---------- Animation 1: Quiz Creation ----------
+@router.get("/animation")
+def animation_home(request: Request):
+    return templates.TemplateResponse("animation.html", {"request":request})
+
+# ---------- Animation : Le Quiz ----------
 @router.get("/animation/quiz")
 def animation_quiz(request: Request):
     db = SqlRepository(config.engine)

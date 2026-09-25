@@ -1,4 +1,4 @@
-"""Proxy de recherche de morceaux via l'iTunes Search API (autocomplétion questionnaire.html)."""
+"""Proxy de recherche de morceaux via l'iTunes Search API (autocomplétion invite_questionnaire.html)."""
 import json
 import logging
 import time
