@@ -127,7 +127,9 @@
         <th>Rôle</th>
         <th>Code invité</th>
         <th>Présence</th>
-        <th>Envoyer une invitation</th>
+        {% if organizer_role == "admin" %}
+          <th>Envoyer une invitation</th>
+        {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -150,9 +152,11 @@
         <td>{{ invite.role or "—" }}</td>
         <td><code>{{ invite.token | upper }}</code></td>
         <td>{{ presence_tags | join(", ") if presence_tags else "Non" }}</td>
-        <td>
-          <a class="send-btn" href="/organisateur/envoyer/{{ invite.token }}">Envoyer ▾</a>
-        </td>
+        {% if organizer_role == "admin" %}
+          <td>
+            <a class="send-btn" href="/organisateur/envoyer/{{ invite.token }}">Envoyer ▾</a>
+          </td>
+        {% endif %}
       </tr>
       
       <!--Seoncdary information-->
