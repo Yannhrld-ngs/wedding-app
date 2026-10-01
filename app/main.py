@@ -28,7 +28,7 @@ def _home_context(request: Request, **extra):
 
 @app.get("/")
 def racine(request: Request):
-    return templates.TemplateResponse("home.html", _home_context(request))
+    return templates.TemplateResponse(request, "home.html", _home_context(request))
 
 
 @app.post("/guest-access")
@@ -38,7 +38,7 @@ def guest_access(request: Request, guest_code: str = Form(...)):
         return RedirectResponse(url=f"/invite/{invite.token}", status_code=303)
 
     return templates.TemplateResponse(
-        "home.html",
+        request, "home.html",
         _home_context(request, GUEST_CODE_ERROR="Code non reconnu."),
         status_code=404,
     )

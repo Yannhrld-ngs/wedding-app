@@ -19,7 +19,7 @@ jobs:
             cd ~/wedding-app
             # Garde le contenu actuel de inputs/ (celui déjà sur la machine)
             cp -r inputs /tmp/inputs_backup
- 
+
             git fetch origin main
             git reset --hard origin/main
             git clean -fd

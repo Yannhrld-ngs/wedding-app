@@ -2,7 +2,7 @@ import json
 import re
 import os
 from datetime import datetime
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import RedirectResponse, JSONResponse
@@ -28,8 +28,12 @@ from app.config import PHASE_LABELS as CHART_PHASE_LABELS, RESTRICTION_LABELS, T
 from app.mailer import send_email
 from app.models import (
     Invite,
+    Prestataire,
     QuizCreator,
     PlanningEvent,
+    PlanningDiscours,
+    PlanningPhoto,
+    MOMENTS_MARIAGE,
     OuiNon,
     PresenceAfter,
     Sexe,
@@ -53,7 +57,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/login")
 def login_form(request: Request):
-    return templates.TemplateResponse("organizer_login.html", {"request": request})
+    return templates.TemplateResponse(request, "organizer_login.html", {"request": request})
 
 
 @router.post("/login")
@@ -65,7 +69,7 @@ def login_submit(
     password_hash = store.get_organizer_password_hash(login)
     if not password_hash or not verify_password(password, password_hash):
         return templates.TemplateResponse(
-            "organizer_login.html",
+            request, "organizer_login.html",
             {"request": request, "erreur": "Identifiants invalides"},
             status_code=401,
         )
@@ -87,7 +91,7 @@ def logout():
 
 @router.get("/request-password-reset")
 def request_password_reset_form(request: Request):
-    return templates.TemplateResponse("organizer_request_password_reset.html", {"request": request})
+    return templates.TemplateResponse(request, "organizer_request_password_reset.html", {"request": request})
 
 
 @router.post("/request-password-reset")
@@ -109,7 +113,7 @@ def request_password_reset_submit(request: Request, email: str = Form(...)):
         )
 
         return templates.TemplateResponse(
-            "organizer_request_password_reset.html",
+            request, "organizer_request_password_reset.html",
             {
                 "request": request,
                 "confirmation": "Un lien vient de vous être envoyé sur l'adresse email renseignée."
@@ -118,7 +122,7 @@ def request_password_reset_submit(request: Request, email: str = Form(...)):
         )
     else:
         return templates.TemplateResponse(
-            "organizer_request_password_reset.html",
+            request, "organizer_request_password_reset.html",
             {
                 "request": request,
                 "confirmation": "Vous ne figurez pas parmi les organisateurs.",
@@ -131,13 +135,13 @@ def reset_password_form(token: str, request: Request):
 
     if not is_mail_valid:
         return templates.TemplateResponse(
-            "organizer_reset_password.html",
+            request, "organizer_reset_password.html",
             {"request": request, "invalide": True},
             status_code=400,
         )
 
     return templates.TemplateResponse(
-        "organizer_reset_password.html",
+        request, "organizer_reset_password.html",
         {"request": request, "token": token, "invalide": False},
     )
 
@@ -152,14 +156,14 @@ def reset_password_submit(
     email = read_password_reset_token(token)
     if not email:
         return templates.TemplateResponse(
-            "organizer_reset_password.html",
+            request, "organizer_reset_password.html",
             {"request": request, "invalide": True},
             status_code=400,
         )
 
     if password != password_confirmation:
         return templates.TemplateResponse(
-            "organizer_reset_password.html",
+            request, "organizer_reset_password.html",
             {
                 "request": request,
                 "token": token,
@@ -194,7 +198,7 @@ def dashboard(
     organizer = store.find_accepted_organizer_by_mail(login)
 
     return templates.TemplateResponse(
-        "organizer_dashboard.html",
+        request, "organizer_dashboard.html",
         {
             "request": request,
             "invites": invites,
@@ -229,7 +233,7 @@ def invite_add(request: Request, nb: int = 0):
 
     if len(all_invite) > 65:
             return templates.TemplateResponse(
-        "invite_add.html",
+        request, "invite_add.html",
         {
             "request": request,
             "full": True,
@@ -258,7 +262,7 @@ def invite_add(request: Request, nb: int = 0):
     }
 
     return templates.TemplateResponse(
-        "invite_add.html",
+        request, "invite_add.html",
         {
             "request": request,
             "merci": bool(qp.get("merci")),
@@ -288,7 +292,7 @@ def invite_submit(
 
     if not prenom or not nom or not sexe or not categorie:
         return templates.TemplateResponse(
-            "invite_add.html",
+            request, "invite_add.html",
             {
                 "request": request,
                 "error": "Merci de remplir tous les champs obligatoires.",
@@ -311,7 +315,7 @@ def invite_submit(
     existing = store.find_by_email(email)
     if existing and not force:
         return templates.TemplateResponse(
-            "invite_add.html",
+            request, "invite_add.html",
             {
                 "request": request,
                 "duplicate": True,
@@ -434,7 +438,7 @@ def choix_des_places_form(request: Request, login: str = Depends(get_current_org
     invites_after = [i for i in invites if i.presence_after == PresenceAfter.oui]
 
     return templates.TemplateResponse(
-        "organizer_choix_des_places.html",
+        request, "organizer_choix_des_places.html",
         {
             "request": request,
             "guests_mairie": as_options(invites_mairie),
@@ -476,7 +480,7 @@ def repartition(phase: str, request: Request, login: str = Depends(get_current_o
     ]
 
     return templates.TemplateResponse(
-        "invite_repartition.html",
+        request, "invite_repartition.html",
         {
             "request": request,
             "phase": phase,
@@ -530,7 +534,7 @@ def choix_des_places_submit(
 
 @router.get("/reinitialiser")
 def reinitialiser_confirm(request: Request, login: str = Depends(get_current_organizer_login)):
-    return templates.TemplateResponse("organizer_reinit_poll.html", {"request": request})
+    return templates.TemplateResponse(request, "organizer_reinit_poll.html", {"request": request})
 
 @router.post("/reinitialiser")
 def reinitialiser_submit(request: Request, login: str = Depends(get_current_organizer_login)):
@@ -540,16 +544,66 @@ def reinitialiser_submit(request: Request, login: str = Depends(get_current_orga
     ).delete_all(table_name="guests") 
     return RedirectResponse(url="/organisateur/dashboard", status_code=303)
 
+# "Planning discours" and "Planning photos" share the same shape: a moment of the
+# day (fixed list), a category typed by the organizer, and several guests added
+# one by one. "choix"/"personnes" are the model's field names for those.
+PLANNINGS_INVITES = {
+    "discours": {"model": PlanningDiscours, "table": "planning_discours", "choix": "moment", "personnes": "orateurs"},
+    "photos": {"model": PlanningPhoto, "table": "planning_photos", "choix": "lieu", "personnes": "invites"},
+}
+
+
+def _split_noms(value: str | None) -> list[str]:
+    return [n for n in (value or "").split(", ") if n]
+
+
 @router.get("/info-pratiques")
 def info_pratiques(request: Request, login: str = Depends(get_current_organizer_login)):
     db = SqlRepository(config.engine)
+    
+    #Planning data
+    db.create(obj=PlanningEvent, table_name="detailed_planning", primary_key="moment")
     data = db.load(PlanningEvent, table_name="detailed_planning") 
     planning = [d.__dict__ for d in data]
+
+    # Contact data
+    db.create(obj=Prestataire, table_name="prestataires", primary_key="contact")
+    data = db.load(Prestataire, table_name="prestataires") 
+    prestataires = [d.__dict__ for d in data]
+
+    # Discours / photos data, in the order of the day (Mairie → Bénédiction → Soirée)
+    plannings_invites = {}
+    for section, cfg in PLANNINGS_INVITES.items():
+        db.create(obj=cfg["model"], table_name=cfg["table"], primary_key="id")
+        rows = [
+            {
+                "id": r.id,
+                "choix": getattr(r, cfg["choix"]),
+                "categorie": r.categorie,
+                "personnes": _split_noms(getattr(r, cfg["personnes"])),
+            }
+            for r in db.load(cfg["model"], table_name=cfg["table"])
+        ]
+        rows.sort(key=lambda x: (MOMENTS_MARIAGE.index(x["choix"]) if x["choix"] in MOMENTS_MARIAGE else len(MOMENTS_MARIAGE), x["categorie"]))
+        plannings_invites[section] = {
+            "rows": rows,
+            # Row being built (see planning_invites)
+            "draft": {
+                "choix": request.query_params.get(f"{section}_choix", ""),
+                "categorie": request.query_params.get(f"{section}_categorie", ""),
+                "personnes": request.query_params.getlist(f"{section}_personnes"),
+            },
+        }
+
     return templates.TemplateResponse(
-        "organizer_info_pratiques.html",
+        request, "organizer_info_pratiques.html",
         {
             "request": request,
             "planning": sorted(planning, key=lambda x: x['heure']),
+            "prestataires": sorted(prestataires, key=lambda x: x['nom']),
+            "plannings_invites": plannings_invites,
+            "moments_mariage": MOMENTS_MARIAGE,
+            "guests": store.list_guests(),
             "organizers": store.accepted_organizers(),
             "current_organizer": store.find_accepted_organizer_by_mail(login),
         },
@@ -582,7 +636,99 @@ def detailed_planning(
         to_check = next((e for e in data if e.moment == checkbox), None)
         to_check.done = 1 if to_check.done == 0 else 0
         db.update(to_check, table=table, primary_key="moment")
-    return RedirectResponse(url="/organisateur/info-pratiques", status_code=303)
+    return RedirectResponse(url="/organisateur/info-pratiques#planning", status_code=303)
+
+@router.post("/info-pratiques/contacts")
+def prestataires_contact(
+    nom: str = Form(""),
+    categorie: str = Form(""),
+    contact: str = Form(""),
+    add: str | None = Form(None),
+    delete: str | None = Form(None),
+):
+    db = SqlRepository(config.engine)
+    table = db.create(obj=Prestataire, table_name="prestataires", primary_key="contact")
+    data = db.load(Prestataire, table_name="prestataires")
+
+    if delete is not None:
+        to_delete = next((e for e in data if e.contact == delete), None)
+        db.delete(to_delete, table, primary_key="contact")
+    
+    if add: 
+        to_add = Prestataire(nom=nom, categorie=categorie, contact=contact)
+        db.insert(to_add, table=table)
+    return RedirectResponse(url="/organisateur/info-pratiques#contacts", status_code=303)
+
+@router.post("/info-pratiques/invites/{section}")
+async def planning_invites(
+    section: str,
+    request: Request,
+    choix: str = Form(""),
+    categorie: str = Form(""),
+    personnes: list[str] = Form([]),
+    nouvelle_personne: str = Form(""),
+    add_personne: str | None = Form(None),
+    remove_personne: str | None = Form(None),
+    add: str | None = Form(None),
+    delete: str | None = Form(None),
+    login: str = Depends(get_current_organizer_login),
+):
+    cfg = PLANNINGS_INVITES.get(section)
+    if cfg is None:
+        raise HTTPException(status_code=404)
+    champ_personnes = cfg["personnes"]
+
+    db = SqlRepository(config.engine)
+    table = db.create(obj=cfg["model"], table_name=cfg["table"], primary_key="id")
+    data = db.load(cfg["model"], table_name=cfg["table"])
+
+    if delete is not None:
+        to_delete = next((e for e in data if e.id == delete), None)
+        if to_delete:
+            db.delete(to_delete, table, primary_key="id")
+
+    guest_names = {f"{g.prenom} {g.nom}" for g in store.list_guests()}
+
+    # Saved rows: each has its own "ajout_<id>" field to add a guest, and a ✕
+    # per guest ("retirer" = "<id>|<name>")
+    form = await request.form()
+    retirer = form.get("retirer", "")
+    for row in data:
+        avant = _split_noms(getattr(row, champ_personnes))
+        noms = list(avant)
+        ajout = (form.get(f"ajout_{row.id}") or "").strip()
+        if ajout in guest_names and ajout not in noms:
+            noms.append(ajout)
+        if retirer.startswith(f"{row.id}|"):
+            noms = [n for n in noms if n != retirer.split("|", 1)[1]]
+        if noms != avant:
+            setattr(row, champ_personnes, ", ".join(noms))
+            db.update(row, table, primary_key="id")
+
+    # New row: guests are added one by one, the row being built (draft) travels
+    # in the query string until ➕ saves it. Only existing guests are accepted.
+    personnes = [p for p in dict.fromkeys(personnes) if p in guest_names]
+    nouvelle_personne = nouvelle_personne.strip()
+    if (add_personne or add) and nouvelle_personne in guest_names and nouvelle_personne not in personnes:
+        personnes.append(nouvelle_personne)
+    if remove_personne in personnes:
+        personnes.remove(remove_personne)
+
+    if add and choix in MOMENTS_MARIAGE and categorie.strip() and personnes:
+        to_add = cfg["model"](
+            id=uuid4().hex,
+            categorie=categorie.strip(),
+            **{cfg["choix"]: choix, champ_personnes: ", ".join(personnes)},
+        )
+        db.insert(to_add, table=table)
+        return RedirectResponse(url=f"/organisateur/info-pratiques#{section}", status_code=303)
+
+    draft = urlencode(
+        {f"{section}_choix": choix, f"{section}_categorie": categorie, f"{section}_personnes": personnes},
+        doseq=True,
+    )
+    return RedirectResponse(url=f"/organisateur/info-pratiques?{draft}#{section}", status_code=303)
+
 
 @router.get("/statistiques-detaillees")
 def statistiques_detaillees(request: Request, login: str = Depends(get_current_organizer_login)):
@@ -605,7 +751,7 @@ def statistiques_detaillees(request: Request, login: str = Depends(get_current_o
     }
 
     return templates.TemplateResponse(
-        "organizer_analytics.html",
+        request, "organizer_analytics.html",
         {
             "request": request,
             "presence": presence,
@@ -624,7 +770,7 @@ def envoyer_confirm(token: str, request: Request, login: str = Depends(get_curre
     invite = store.get_by_token(token)
     if not invite:
         raise HTTPException(status_code=404, detail="Invité introuvable")
-    return templates.TemplateResponse("organizer_send_invit.html", {"request": request, "invite": invite})
+    return templates.TemplateResponse(request, "organizer_send_invit.html", {"request": request, "invite": invite})
 
 
 @router.post("/envoyer/{token}")
@@ -664,7 +810,7 @@ def envoyer_submit(
 @router.get("/scan")
 def scan_page(request: Request, login: str = Depends(get_current_organizer_login)):
     return templates.TemplateResponse(
-        "organizer_scan.html", {"request": request, "phase_labels": CHART_PHASE_LABELS}
+        request, "organizer_scan.html", {"request": request, "phase_labels": CHART_PHASE_LABELS}
     )
 
 
@@ -716,7 +862,7 @@ def scan_checkin(
 
 @router.get("/animation")
 def animation_home(request: Request):
-    return templates.TemplateResponse("animation.html", {"request":request})
+    return templates.TemplateResponse(request, "animation.html", {"request":request})
 
 # ---------- Animation : Le Quiz ----------
 @router.get("/animation/quiz")
@@ -725,7 +871,7 @@ def animation_quiz(request: Request):
     table = db.create(obj=QuizCreator(), table_name="animation_quiz", primary_key="id")
     data = db.load(QuizCreator, table_name="animation_quiz")
     return templates.TemplateResponse(
-        "animation_quiz_admin.html",
+        request, "animation_quiz_admin.html",
         {
             "request": request,
             "quiz": data[0].data,

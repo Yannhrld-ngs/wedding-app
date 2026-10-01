@@ -171,6 +171,11 @@ class Organisateur:
         """Forme accordée selon le sexe de l'invité (masculin par défaut)."""
         return feminin if self.sexe == Sexe.femme else masculin
 
+@dataclass
+class Prestataire:
+    nom: str
+    categorie: str
+    contact: str
 
 @dataclass
 class PlanningEvent:
@@ -182,11 +187,20 @@ class PlanningEvent:
 
 @dataclass
 class PlanningPhoto:
-    lieu:str
-    catégorie: str
-    invités: str
-    notes: Optional[str] = None
+    id: str
+    lieu: str
+    categorie: str
+    invites: str  # noms des invités séparés par ", "
     
+MOMENTS_MARIAGE = ["Mairie", "Bénédiction", "Soirée"]
+
+@dataclass
+class PlanningDiscours:
+    id: str
+    moment: str
+    categorie: str
+    orateurs: str  # noms des invités séparés par ", "
+
 @dataclass
 class PlaylistMusicale:
     nom:str
