@@ -2553,3 +2553,22 @@ HTTP response body: {"message":"We have detected you are using an unrecognised I
 2026-10-08 10:11:53,237 [INFO] httpx: HTTP Request: POST http://testserver/organisateur/animation/defis/invites/reinitialiser "HTTP/1.1 303 See Other"
 2026-10-08 10:11:53,243 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/animation/defis/invites "HTTP/1.1 200 OK"
 2026-10-08 10:11:53,248 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/animation/defis/invites "HTTP/1.1 200 OK"
+2026-10-08 10:48:34,711 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/animation/mot-aux-maries "HTTP/1.1 200 OK"
+2026-10-08 10:48:34,728 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/animation/mot-aux-maries/introduction "HTTP/1.1 200 OK"
+2026-10-08 10:48:34,735 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/animation/mot-aux-maries/enregistrer "HTTP/1.1 200 OK"
+2026-10-08 10:48:34,742 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/animation/mot-aux-maries/enregistrer/kone-awa-3 "HTTP/1.1 200 OK"
+2026-10-08 10:48:34,751 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/animation/mot-aux-maries/messages "HTTP/1.1 200 OK"
+2026-10-08 10:48:35,450 [INFO] app.routers.organizers: Un mot aux mariés : vidéo reçue (0.2 Mo, video/webm)
+2026-10-08 10:48:36,089 [INFO] httpx: HTTP Request: POST http://testserver/organisateur/animation/mot-aux-maries/introduction "HTTP/1.1 200 OK"
+2026-10-08 10:48:36,657 [INFO] app.routers.organizers: Un mot aux mariés : vidéo reçue (0.1 Mo, video/webm)
+2026-10-08 10:48:37,181 [INFO] httpx: HTTP Request: POST http://testserver/organisateur/animation/mot-aux-maries/enregistrer/martin-zoe-1 "HTTP/1.1 200 OK"
+2026-10-08 10:48:37,700 [INFO] app.routers.organizers: Un mot aux mariés : vidéo reçue (0.1 Mo, video/webm)
+2026-10-08 10:48:38,101 [INFO] httpx: HTTP Request: POST http://testserver/organisateur/animation/mot-aux-maries/enregistrer/durand-emile-2 "HTTP/1.1 200 OK"
+2026-10-08 10:48:38,581 [INFO] app.routers.organizers: Un mot aux mariés : vidéo reçue (0.1 Mo, video/webm)
+2026-10-08 10:48:40,728 [INFO] httpx: HTTP Request: POST http://testserver/organisateur/animation/mot-aux-maries/enregistrer/kone-awa-3 "HTTP/1.1 200 OK"
+2026-10-08 10:48:40,735 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/animation/mot-aux-maries/messages "HTTP/1.1 200 OK"
+2026-10-08 10:48:53,136 [INFO] httpx: HTTP Request: POST http://testserver/organisateur/animation/mot-aux-maries/messages/assembler "HTTP/1.1 303 See Other"
+2026-10-08 10:48:53,147 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/animation/mot-aux-maries/messages "HTTP/1.1 200 OK"
+2026-10-08 10:48:53,909 [INFO] httpx: HTTP Request: POST http://testserver/organisateur/animation/mot-aux-maries/messages/supprimer-introduction "HTTP/1.1 303 See Other"
+2026-10-08 10:48:53,918 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/animation/mot-aux-maries/messages "HTTP/1.1 200 OK"
+2026-10-08 10:48:53,927 [INFO] httpx: HTTP Request: GET http://testserver/organisateur/animation/mot-aux-maries/messages "HTTP/1.1 200 OK"
