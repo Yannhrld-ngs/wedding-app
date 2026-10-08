@@ -464,6 +464,11 @@ def update_place(
 _PLACE_RE = re.compile(r"^(.*) #(\d+)$")
 
 
+def _tri_naturel(texte: str) -> list:
+    """Sort key where numbers count as numbers: "Table 2" comes before "Table 10"."""
+    return [int(morceau) if morceau.isdigit() else morceau.casefold() for morceau in re.split(r"(\d+)", texte)]
+
+
 def _group_places(invites: list, place_attr: str) -> list[dict]:
     """Reconstruit les repères (ex. "Table 1" -> [token1, token2, ...]) à
     partir des places déjà enregistrées, pour préremplir l'éditeur."""
@@ -477,7 +482,7 @@ def _group_places(invites: list, place_attr: str) -> list[dict]:
 
     return [
         {"repere": repere, "tokens": [token for _, token in sorted(entries)]}
-        for repere, entries in sorted(groups.items())
+        for repere, entries in sorted(groups.items(), key=lambda groupe: _tri_naturel(groupe[0]))
     ]
 
 

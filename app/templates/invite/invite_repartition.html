@@ -12,7 +12,7 @@
 {% if groups %}
   {% for g in groups %}
     <div class="card">
-      <h2>Nom du repère : {{ g.repere }} - {{ g.noms | length }} personne(s)</h2>
+      <h2>Nom de la table : {{ g.repere }} - {{ g.noms | length }} personne(s)</h2>
       {% if g.note %}
         <p style="font-style: italic; color: #7a5c45;">📝 {{ g.note }}</p>
       {% endif %}
