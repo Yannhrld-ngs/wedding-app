@@ -11,7 +11,7 @@ import qrcode
 
 from app import config
 from app.database import SqlRepository
-from app.models import Invite, Organisateur, RepereNotes
+from app.models import Invite, NotesMC, Organisateur, RepereNotes
 
 logger = logging.getLogger(__name__)
 SQL_REPO = SqlRepository(config.engine)
@@ -19,6 +19,7 @@ SQL_REPO = SqlRepository(config.engine)
 GUESTS_TABLE = "guests"
 ORGANIZERS_TABLE = "organizers"
 REPERE_NOTES_TABLE = "repere_notes"
+NOTES_MC_TABLE = "notes_mc"
 
 
 # ---------- Invités ----------
@@ -165,6 +166,24 @@ def save_repere_notes(data: dict) -> None:
         SQL_REPO.update(obj, table, primary_key="id")
     else:
         SQL_REPO.insert(obj, table)
+
+
+# ---------- Notes des MC ----------
+def get_notes_mc() -> NotesMC:
+    table = SQL_REPO.create(NotesMC(), table_name=NOTES_MC_TABLE, primary_key="id")
+    rows = SQL_REPO.load(NotesMC, table_name=NOTES_MC_TABLE)
+    if not rows:
+        SQL_REPO.insert(NotesMC(), table)
+        return NotesMC()
+    return rows[0]
+
+
+def save_notes_mc(notes: NotesMC) -> None:
+    table = SQL_REPO.create(NotesMC(), table_name=NOTES_MC_TABLE, primary_key="id")
+    if SQL_REPO.load(NotesMC, table_name=NOTES_MC_TABLE):
+        SQL_REPO.update(notes, table, primary_key="id")
+    else:
+        SQL_REPO.insert(notes, table)
 
 
 #if __name__ == "__main__":

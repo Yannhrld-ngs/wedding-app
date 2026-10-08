@@ -125,7 +125,7 @@
     <p class="mot-message">{{ bonjour }}</p>
     <p class="mot-sous-message">
       {{ consigne }}<br>
-      Un décompte apparaîtra 10 secondes avant la fin.
+      Un compte à rebours de 3 secondes précède l'enregistrement, et un décompte apparaît 10 secondes avant la fin.
     </p>
     <p class="mot-centre"><button type="button" class="mot-btn" id="ouvrir">🎥 Ouvrir la caméra</button></p>
   </div>
@@ -169,6 +169,7 @@
   (function () {
     const DUREE = {{ duree|tojson }};
     const ALERTE = 10; // seconds left when the countdown shows up
+    const PREPARATION = 3; // "3, 2, 1" before the recording starts
     const URL_ENVOI = {{ url_envoi|tojson }};
     const apercu = document.getElementById("apercu");
     const decompte = document.getElementById("decompte");
@@ -219,7 +220,12 @@
     }
 
     async function ouvrir() {
-      if (!(await ouvrirCamera())) return;
+      const bouton = document.getElementById("ouvrir");
+      if (bouton.disabled) return; // double tap
+      bouton.disabled = true;
+      const ok = await ouvrirCamera();
+      bouton.disabled = false;
+      if (!ok) return;
       decompte.hidden = true;
       montrer("camera");
       // device labels and the real camera count are only known once access is granted
@@ -237,6 +243,25 @@
     }
 
     function demarrer() {
+      if (enregistreur) return; // double tap
+      document.getElementById("commandes-apercu").hidden = true;
+      decompte.classList.remove("urgent");
+      let restant = PREPARATION;
+      decompte.textContent = restant;
+      decompte.hidden = false;
+      const preparation = setInterval(function () {
+        restant -= 1;
+        if (restant > 0) {
+          decompte.textContent = restant;
+        } else {
+          clearInterval(preparation);
+          decompte.hidden = true;
+          enregistrer();
+        }
+      }, 1000);
+    }
+
+    function enregistrer() {
       const format = formatSupporte();
       enregistreur = new MediaRecorder(flux, format ? { mimeType: format } : undefined);
       morceaux = [];
@@ -245,10 +270,9 @@
         video = new Blob(morceaux, { type: enregistreur.mimeType || "video/webm" });
         envoyer();
       };
-      enregistreur.start(1000);
+      enregistreur.start(); // no timeslice: Safari's MP4 fragments are unreadable once concatenated
 
       debut = performance.now();
-      document.getElementById("commandes-apercu").hidden = true;
       document.getElementById("commandes-enregistrement").hidden = false;
       document.getElementById("rec").hidden = false;
       minuterie = setInterval(tic, 200);

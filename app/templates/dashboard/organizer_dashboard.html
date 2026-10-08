@@ -87,13 +87,17 @@
   {% if organizer_role =="admin" %}
     <a class="button" href="/organisateur/ajouter-invité">➕ Ajouter invités</a></p>
   {% endif %}
-  {% if organizer_role in ["admin", "acceuil"] %}
+  {% if organizer_role in ["admin", "accueil"] %}
     <a class="button" href="/organisateur/scan">📷 Scanner QR codes</a></p>
   {% endif %}
-  <a class="button" href="/organisateur/statistiques-detaillees">📊 Statistiques détaillées</a></p>
-  <a class="button" href="/organisateur/choix-des-places">🪑 Places</a></p>
+  {% if voir_statistiques %}
+    <a class="button" href="/organisateur/statistiques-detaillees">📊 Statistiques détaillées</a></p>
+  {% endif %}
+  {% if voir_places %}
+    <a class="button" href="/organisateur/choix-des-places">🪑 Places</a></p>
+  {% endif %}
   <a class="button" href="/organisateur/info-pratiques">ℹ️ Informations pratiques</a></p>
-  {% if organizer_role in ["admin", "mc", "acceuil", "media"] %}
+  {% if organizer_role in ["admin", "mc", "accueil", "media"] %}
     <a class="button" href="/organisateur/animation">🎮 Animations </a></p>
   {% endif %}
 </div>

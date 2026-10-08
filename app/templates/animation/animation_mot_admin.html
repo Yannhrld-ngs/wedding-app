@@ -87,7 +87,7 @@
       <a href="{{ introduction.lien }}" target="_blank" rel="noopener">▶ Voir</a>
       <a href="/organisateur/animation/mot-aux-maries/introduction">↺ Refaire</a>
       <form method="post" action="/organisateur/animation/mot-aux-maries/messages/supprimer-introduction">
-        <button type="submit" class="remove-btn" onclick="return confirm('Supprimer le message d'introduction ?')">✕ Supprimer</button>
+        <button type="submit" class="remove-btn" onclick="return confirm('Supprimer le message d’introduction ?')">✕ Supprimer</button>
       </form>
     </div>
   </div>
@@ -102,10 +102,16 @@
   {% else %}
   {% if assemblage_erreur %}<p class="info-erreur">Le dernier assemblage a échoué : {{ assemblage_erreur }}</p>{% endif %}
   {% if assemblage %}
-  <p>
-    <a href="{{ assemblage.lien }}" target="_blank" rel="noopener">▶ Voir / télécharger l'assemblage</a>
-    <span class="message-date">— créé le {{ assemblage.date.astimezone().strftime("%d/%m à %H:%M") }}</span>
-  </p>
+  <div class="message-block">
+    <p><strong>Assemblage</strong><br>
+      <span class="message-date">Créé le {{ assemblage.date.astimezone().strftime("%d/%m à %H:%M") }}</span></p>
+    <div class="message-actions">
+      <a href="{{ assemblage.lien }}" target="_blank" rel="noopener">▶ Voir / télécharger</a>
+      <form method="post" action="/organisateur/animation/mot-aux-maries/messages/supprimer-assemblage">
+        <button type="submit" class="remove-btn" onclick="return confirm('Supprimer l’assemblage ? Les messages des invités sont conservés.')">✕ Supprimer</button>
+      </form>
+    </div>
+  </div>
   {% endif %}
   {% if messages or introduction %}
   <form method="post" action="/organisateur/animation/mot-aux-maries/messages/assembler">

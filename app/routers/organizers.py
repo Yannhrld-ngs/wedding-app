@@ -37,6 +37,7 @@ from app.models import (
     Invite,
     Prestataire,
     QuizCreator,
+    NotesMC,
     QuizSession,
     QuizReponse,
     DefiCreator,
@@ -69,8 +70,8 @@ logger = logging.getLogger(__name__)
 
 
 # ---------- Accès par rôle ----------
-ROLES_ANIMATION = ("admin", "mc", "acceuil", "media")
-ROLES_SCAN = ("admin", "acceuil")
+ROLES_ANIMATION = ("admin", "mc", "accueil", "media")
+ROLES_SCAN = ("admin", "accueil")
 
 def _role_organisateur(login: str):
     organizer = store.find_accepted_organizer_by_mail(login)
@@ -88,6 +89,27 @@ def _role_requis(*roles: str):
 acces_animation = _role_requis(*ROLES_ANIMATION)
 acces_admin = _role_requis("admin")  # adding guests, editing quiz questions and challenges
 acces_scan = _role_requis(*ROLES_SCAN)
+
+# pages shown to roles *containing* one of these words (case and accents ignored: "Chef cuisine" matches "cuisine")
+MOTS_STATISTIQUES = ("cuisine", "décoration", "admin")
+MOTS_PLACES = ("décoration", "accueil", "admin")
+MOTS_NOTES_MC = ("mc", "admin")
+
+def role_contient(role: str | None, mots: tuple[str, ...]) -> bool:
+    return bool(role) and any(slugify(mot) in slugify(role) for mot in mots)
+
+def _role_contenant(*mots: str):
+    """Dependency: logged-in organizer whose role contains one of mots, else back to the dashboard."""
+    def verifier(login: str = Depends(get_current_organizer_login)) -> str:
+        role = _role_organisateur(login)
+        if not role_contient(role, mots):
+            raise HTTPException(status_code=303, headers={"Location": "/organisateur/dashboard"})
+        return role
+    return verifier
+
+acces_statistiques = _role_contenant(*MOTS_STATISTIQUES)
+acces_places = _role_contenant(*MOTS_PLACES)
+acces_notes_mc = _role_contenant(*MOTS_NOTES_MC)
 
 
 @router.get("/login")
@@ -248,6 +270,8 @@ def dashboard(
             "organizer_login": login,
             "organizer_name": f"{organizer.prenom} {organizer.nom}" if organizer else login,
             "organizer_role": organizer.role if organizer else None,
+            "voir_statistiques": role_contient(organizer.role if organizer else None, MOTS_STATISTIQUES),
+            "voir_places": role_contient(organizer.role if organizer else None, MOTS_PLACES),
             "phase_labels": CHART_PHASE_LABELS,
             "restriction_labels": RESTRICTION_LABELS,
             "transport_labels": TRANSPORT_LABELS,
@@ -423,7 +447,7 @@ def update_place(
     place_mairie: str = Form(""),
     place_reception: str = Form(""),
     place_after: str = Form(""),
-    login: str = Depends(get_current_organizer_login),
+    role: str = Depends(acces_places),
 ):
     invite = store.get_by_token(token)
     if not invite:
@@ -458,7 +482,7 @@ def _group_places(invites: list, place_attr: str) -> list[dict]:
 
 
 @router.get("/choix-des-places")
-def choix_des_places_form(request: Request, login: str = Depends(get_current_organizer_login)):
+def choix_des_places_form(request: Request, role: str = Depends(acces_places)):
     invites = store.list_guests()
     notes = store.get_repere_notes()
 
@@ -488,7 +512,7 @@ def choix_des_places_form(request: Request, login: str = Depends(get_current_org
 
 
 @router.get("/choix-des-places/repartition/{phase}")
-def repartition(phase: str, request: Request, login: str = Depends(get_current_organizer_login)):
+def repartition(phase: str, request: Request, role: str = Depends(acces_places)):
     if phase not in config.PHASES:
         raise HTTPException(status_code=404, detail="Phase inconnue")
 
@@ -532,7 +556,7 @@ def choix_des_places_submit(
     data_mairie: str = Form("[]"),
     data_reception: str = Form("[]"),
     data_after: str = Form("[]"),
-    login: str = Depends(get_current_organizer_login),
+    role: str = Depends(acces_places),
 ):
     raw_by_phase = {"mairie": data_mairie, "reception": data_reception, "after": data_after}
     invites = store.list_guests()
@@ -631,6 +655,8 @@ def info_pratiques(request: Request, login: str = Depends(get_current_organizer_
             },
         }
 
+    organisateur = store.find_accepted_organizer_by_mail(login)
+    voir_notes_mc = role_contient(organisateur.role if organisateur else None, MOTS_NOTES_MC)
     return templates.TemplateResponse(
         request, "dashboard/organizer_info_pratiques.html",
         {
@@ -641,9 +667,21 @@ def info_pratiques(request: Request, login: str = Depends(get_current_organizer_
             "moments_mariage": MOMENTS_MARIAGE,
             "guests": store.list_guests(),
             "organizers": store.accepted_organizers(),
-            "current_organizer": store.find_accepted_organizer_by_mail(login),
+            "current_organizer": organisateur,
+            # the MC notes are only sent to the MC: other roles never receive their content
+            "notes_mc": store.get_notes_mc() if voir_notes_mc else None,
         },
     )
+
+@router.post("/info-pratiques/notes-mc")
+def notes_mc_submit(texte: str = Form(""), login: str = Depends(get_current_organizer_login), role: str = Depends(acces_notes_mc)):
+    organisateur = store.find_accepted_organizer_by_mail(login)
+    store.save_notes_mc(NotesMC(
+        texte=texte,
+        modifie_le=datetime.now(),
+        modifie_par=f"{organisateur.prenom} {organisateur.nom}" if organisateur else login,
+    ))
+    return RedirectResponse(url="/organisateur/info-pratiques?notes_mc=enregistre#notes-mc", status_code=303)
 
 
 @router.post("/info-pratiques/planning-detaillé")
@@ -767,7 +805,7 @@ async def planning_invites(
 
 
 @router.get("/statistiques-detaillees")
-def statistiques_detaillees(request: Request, login: str = Depends(get_current_organizer_login)):
+def statistiques_detaillees(request: Request, role: str = Depends(acces_statistiques)):
     invites = store.list_guests()
 
     presence = compute_presence_analytics(invites)
@@ -1420,8 +1458,19 @@ def _traiter_video_mot(brute: str, cle: str, duree: int) -> None:
                 logger.error(f"Un mot aux mariés : envoi vers B2 impossible, vidéo gardée dans {secours} : {e}")
     except Exception as e:
         logger.error(f"Un mot aux mariés : échec du traitement de {cle} : {e}")
+        _garder_video_illisible(brute, cle)
     finally:
         os.remove(brute)
+
+def _garder_video_illisible(brute: str, cle: str) -> None:
+    """Keeps the raw upload ffmpeg couldn't read (B2 "echecs/" folder), so the message can still be recovered."""
+    origine = cle.removeprefix(MOT_DOSSIER + "/").rsplit(".", 1)[0].replace("/", "_")  # awa-kone/original.mp4 -> awa-kone_original
+    nom = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{origine}{Path(brute).suffix}"
+    try:
+        storage.envoyer_chemin(brute, f"{MOT_DOSSIER}/echecs/{nom}")
+        logger.error(f"Un mot aux mariés : vidéo d'origine gardée dans {MOT_DOSSIER}/echecs/{nom}")
+    except Exception as e:
+        logger.error(f"Un mot aux mariés : impossible de garder la vidéo d'origine : {e}")
 
 def _cle_alphabetique(texte: str) -> str:
     """Sort key ignoring case and accents (É sorts with E)."""
@@ -1553,6 +1602,12 @@ def animation_mot_assembler(background_tasks: BackgroundTasks, role: str = Depen
 @router.post("/animation/mot-aux-maries/messages/supprimer/{dossier}")
 def animation_mot_supprimer(dossier: str, role: str = Depends(acces_animation)):
     storage.supprimer(f"{storage.PREFIXE}{MOT_DOSSIER}/{dossier}/original.mp4")
+    return RedirectResponse(url="/organisateur/animation/mot-aux-maries/messages", status_code=303)
+
+@router.post("/animation/mot-aux-maries/messages/supprimer-assemblage")
+def animation_mot_supprimer_assemblage(role: str = Depends(acces_animation)):
+    if not _assemblage["en_cours"]: # a running montage would upload it again right after
+        storage.supprimer(storage.PREFIXE + MOT_ASSEMBLAGE)
     return RedirectResponse(url="/organisateur/animation/mot-aux-maries/messages", status_code=303)
 
 @router.post("/animation/mot-aux-maries/messages/supprimer-introduction")

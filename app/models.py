@@ -242,6 +242,14 @@ class DefiTirage:
     tire_le: datetime
 
 @dataclass
+class NotesMC:
+    """Bloc-notes partagé des MC (page Informations pratiques), visible uniquement par eux."""
+    id: str = "notes_mc"
+    texte: str = ""
+    modifie_le: Optional[datetime] = None
+    modifie_par: Optional[str] = None  # nom de l'organisateur
+
+@dataclass
 class RepereNotes:
     """Notes libres par repère (ex. "Table sans alcool"), stockées par phase
     puis par nom de repère : {"mairie": {"Table 1": "..."}, "reception": {...}}."""
