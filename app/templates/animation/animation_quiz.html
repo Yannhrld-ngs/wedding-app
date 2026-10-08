@@ -65,29 +65,10 @@
       return node;
     }
 
-    function media(m) {
-      const bloc = el("div", "contenu");
-      let node;
-      if (m.type === "youtube") {
-        node = el("iframe");
-        node.allow = "autoplay; encrypted-media; picture-in-picture";
-        node.allowFullscreen = true;
-      } else if (m.type === "video") {
-        node = el("video");
-        node.controls = true;
-      } else {
-        node = el("img");
-        node.alt = "";
-      }
-      node.src = m.url;
-      bloc.appendChild(node);
-      return bloc;
-    }
-
     function afficher(etat) {
       scoreBadge.textContent = etat.score + (etat.score > 1 ? " pts" : " pt");
 
-      // only redraw when something changed, so a playing video isn't restarted
+      // only redraw when something changed
       const cle = [etat.phase, etat.numero, etat.choix || "", etat.correct ? "revele" : ""].join("|");
       if (cle === derniereCle) return;
       derniereCle = cle;
@@ -156,7 +137,6 @@
       } else {
         jeu.appendChild(el("p", "resultat rate", "Raté !"));
       }
-      if (etat.media) jeu.appendChild(media(etat.media));
     }
 
     function charger() {

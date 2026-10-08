@@ -1047,8 +1047,7 @@ def animation_quiz_etat(token: str):
         }
         etat["choix"] = next((r.choix for r in mes_reponses if r.numero == session["numero"]), None)
         if session["phase"] == "reponse": # the right answer is only sent once revealed
-            etat["correct"] = question["correct"]
-            etat["media"] = _quiz_media(question.get("contenu"))
+            etat["correct"] = question["correct"]  # the media is only shown on the supervisor's screen
     if session["phase"] == "fin":
         classement = _classement(db.load(QuizReponse, table_name="animation_quiz_reponses"), session)
         moi = next((j for j in classement if j["token"] == token), None)

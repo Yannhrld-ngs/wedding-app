@@ -24,12 +24,13 @@
   /* ---------- Caméra ---------- */
   .camera {
     position: relative;
-    max-width: 720px;
+    width: 100%;
+    height: 72vh; /* as large as the screen allows, phones included */
+    min-height: 320px;
     margin: 16px auto 0;
     border-radius: 12px;
     overflow: hidden;
     background: #000;
-    aspect-ratio: 16 / 9;
   }
   .camera video {
     width: 100%;
@@ -37,14 +38,14 @@
     object-fit: cover;
   }
   .camera video.miroir { transform: scaleX(-1); } /* front camera: mirror, like a selfie */
-  .choix-camera {
+  .commandes-camera {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 18px;
-    margin: 0 0 14px;
+    gap: 12px;
+    margin-top: 16px;
   }
-  .choix-camera label { display: flex; align-items: center; gap: 6px; margin: 0; font-weight: 600; cursor: pointer; }
+  .mot-btn:disabled { opacity: 0.6; cursor: wait; }
   .rec {
     position: absolute;
     top: 12px;
@@ -126,22 +127,22 @@
       {{ consigne }}<br>
       Un décompte apparaîtra 10 secondes avant la fin.
     </p>
-    <div class="choix-camera" id="choix-camera" hidden>
-      <label><input type="radio" name="camera" value="user" checked> 🤳 Caméra avant</label>
-      <label><input type="radio" name="camera" value="environment"> 📷 Caméra arrière</label>
-    </div>
-    <p class="mot-centre"><button type="button" class="mot-btn" id="commencer">🎥 Commencer</button></p>
+    <p class="mot-centre"><button type="button" class="mot-btn" id="ouvrir">🎥 Ouvrir la caméra</button></p>
   </div>
 
-  <div id="etape-enregistrement" hidden>
+  <div id="etape-camera" hidden>
     <div class="camera">
       <video id="apercu" autoplay muted playsinline></video>
-      <span class="rec">REC</span>
+      <span class="rec" id="rec" hidden>REC</span>
       <div class="decompte" id="decompte" hidden></div>
     </div>
-    <p class="mot-centre" style="margin-top:16px;">
+    <div class="commandes-camera" id="commandes-apercu">
+      <button type="button" class="mot-btn secondaire" id="basculer" hidden>🔄 Caméra arrière</button>
+      <button type="button" class="mot-btn" id="demarrer">⏺ Démarrer</button>
+    </div>
+    <div class="commandes-camera" id="commandes-enregistrement" hidden>
       <button type="button" class="mot-btn secondaire" id="terminer">■ Terminer maintenant</button>
-    </p>
+    </div>
   </div>
 
   <div id="etape-envoi" hidden>
@@ -174,7 +175,7 @@
     let flux = null, enregistreur = null, morceaux = [], debut = 0, minuterie = null, video = null;
 
     function montrer(etape) {
-      ["pret", "enregistrement", "envoi", "merci", "erreur"].forEach(function (nom) {
+      ["pret", "camera", "envoi", "merci", "erreur"].forEach(function (nom) {
         document.getElementById("etape-" + nom).hidden = nom !== etape;
       });
     }
@@ -185,18 +186,8 @@
       montrer("erreur");
     }
 
-    // camera choice, only useful when the device has several cameras (phones, tablets)
-    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-      navigator.mediaDevices.enumerateDevices().then(function (appareils) {
-        const cameras = appareils.filter(function (a) { return a.kind === "videoinput"; }).length;
-        document.getElementById("choix-camera").hidden = !(cameras > 1 || navigator.maxTouchPoints > 0);
-      }).catch(function () {});
-    }
-
-    function cameraChoisie() {
-      const coche = document.querySelector('input[name="camera"]:checked');
-      return coche ? coche.value : "user";
-    }
+    const boutonBasculer = document.getElementById("basculer");
+    let camera = "user"; // "user" = front, "environment" = back
 
     function taille() {
       return video ? (video.size / 1024 / 1024).toFixed(1) + " Mo" : "?";
@@ -207,23 +198,45 @@
       return formats.find(function (f) { return MediaRecorder.isTypeSupported(f); }) || "";
     }
 
-    async function commencer() {
+    async function ouvrirCamera() {
       if (!navigator.mediaDevices || !window.MediaRecorder) {
         erreur("Cet appareil ne permet pas d'enregistrer (le site doit être ouvert en HTTPS).", false);
-        return;
+        return false;
       }
+      if (flux) flux.getTracks().forEach(function (piste) { piste.stop(); }); // release the previous camera
       try {
         flux = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: cameraChoisie() }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { facingMode: { ideal: camera }, width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: true,
         });
       } catch (e) {
         erreur("Impossible d'accéder à la caméra ou au micro. Autorisez-les puis recommencez.", false);
-        return;
+        return false;
       }
       apercu.srcObject = flux;
-      apercu.classList.toggle("miroir", cameraChoisie() === "user");
+      apercu.classList.toggle("miroir", camera === "user");
+      return true;
+    }
 
+    async function ouvrir() {
+      if (!(await ouvrirCamera())) return;
+      decompte.hidden = true;
+      montrer("camera");
+      // device labels and the real camera count are only known once access is granted
+      const appareils = await navigator.mediaDevices.enumerateDevices().catch(function () { return []; });
+      boutonBasculer.hidden = appareils.filter(function (a) { return a.kind === "videoinput"; }).length < 2;
+    }
+
+    async function basculer() {
+      camera = camera === "user" ? "environment" : "user";
+      boutonBasculer.disabled = true;
+      if (await ouvrirCamera()) {
+        boutonBasculer.textContent = camera === "user" ? "🔄 Caméra arrière" : "🔄 Caméra avant";
+      }
+      boutonBasculer.disabled = false;
+    }
+
+    function demarrer() {
       const format = formatSupporte();
       enregistreur = new MediaRecorder(flux, format ? { mimeType: format } : undefined);
       morceaux = [];
@@ -235,8 +248,9 @@
       enregistreur.start(1000);
 
       debut = performance.now();
-      decompte.hidden = true;
-      montrer("enregistrement");
+      document.getElementById("commandes-apercu").hidden = true;
+      document.getElementById("commandes-enregistrement").hidden = false;
+      document.getElementById("rec").hidden = false;
       minuterie = setInterval(tic, 200);
     }
 
@@ -289,7 +303,9 @@
         });
     }
 
-    document.getElementById("commencer").addEventListener("click", commencer);
+    document.getElementById("ouvrir").addEventListener("click", ouvrir);
+    boutonBasculer.addEventListener("click", basculer);
+    document.getElementById("demarrer").addEventListener("click", demarrer);
     document.getElementById("terminer").addEventListener("click", arreter);
     document.getElementById("reessayer").addEventListener("click", envoyer);
   })();

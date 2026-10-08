@@ -6,14 +6,6 @@
 
 <link rel="stylesheet" href="/static/quiz.css">
 <style>
-  .lien-invites {
-    background: #faf8f5;
-    border: 1px dashed #c9a96e;
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 14px;
-    word-break: break-all;
-  }
   .compteur { text-align: center; font-size: 18px; margin: 20px 0 0; }
   .compteur strong { font-size: 28px; }
   .barre-actions {
@@ -31,9 +23,6 @@
     <h1>Superviser le quiz</h1>
     <a class="back-link" href="/organisateur/animation/quiz">← Retour</a>
   </div>
-  <p class="lien-invites">
-    Les invités rejoignent le quiz sur <strong>{{ request.base_url }}organisateur/animation/quiz/lancer</strong> avec leur code invité.
-  </p>
 
   {% if total == 0 %}
   <!-- ==================== Aucune question ==================== -->
