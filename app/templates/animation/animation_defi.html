@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Roulette russe{% endblock %}
+{% block content %}
+
+<style>
+  .roulette {
+    text-align: center;
+    padding: 12px 0 4px;
+  }
+
+  /* ---------- Barillet ---------- */
+  .barillet {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    margin: 20px auto;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #8a8f96, #3f4348 70%, #2a2d31);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25), inset 0 0 0 6px #2a2d31;
+  }
+  .barillet .axe {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 34px;
+    height: 34px;
+    margin: -17px 0 0 -17px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #1c1e21 30%, #5a5f66 32%);
+  }
+  .barillet .chambre {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 46px;
+    height: 46px;
+    margin: -23px 0 0 -23px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #111 55%, #6b7077 58%);
+  }
+  .barillet .chambre:nth-child(2) { transform: rotate(0deg)   translateY(-66px); }
+  .barillet .chambre:nth-child(3) { transform: rotate(60deg)  translateY(-66px); }
+  .barillet .chambre:nth-child(4) { transform: rotate(120deg) translateY(-66px); }
+  .barillet .chambre:nth-child(5) { transform: rotate(180deg) translateY(-66px); }
+  .barillet .chambre:nth-child(6) { transform: rotate(240deg) translateY(-66px); }
+  .barillet .chambre:nth-child(7) { transform: rotate(300deg) translateY(-66px); }
+  /* the loaded chamber */
+  .barillet .chambre.balle {
+    background: radial-gradient(circle, #d4a24c 30%, #8a6420 45%, #111 56%, #6b7077 58%);
+  }
+
+  .barillet.tourne {
+    animation: tourner 2.6s cubic-bezier(0.15, 0.6, 0.25, 1) both;
+  }
+  @keyframes tourner {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(2160deg); }
+  }
+
+  /* ---------- BANG ---------- */
+  .bang {
+    font-size: 54px;
+    font-weight: 800;
+    color: #c0392b;
+    letter-spacing: 2px;
+    height: 0;
+    opacity: 0;
+    animation: bang 0.7s ease-out 2.6s both;
+  }
+  @keyframes bang {
+    0%   { opacity: 0; transform: scale(0.3); }
+    40%  { opacity: 1; transform: scale(1.3); }
+    100% { opacity: 0; transform: scale(1.6); }
+  }
+
+  /* ---------- Défi tiré ---------- */
+  .defi-tire {
+    margin: 10px auto 0;
+    max-width: 520px;
+    background: #faf8f5;
+    border: 2px solid #c9a96e;
+    border-radius: 12px;
+    padding: 20px;
+    opacity: 0;
+    animation: apparaitre 0.6s ease-out 3.1s both;
+  }
+  .defi-tire .surtitre {
+    margin: 0 0 6px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #7a5c45;
+  }
+  .defi-tire .nom {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+  }
+  @keyframes apparaitre {
+    from { opacity: 0; transform: translateY(16px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .tirer-btn {
+    margin-top: 18px;
+    background: #a13b3b;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 22px;
+    font-size: 17px;
+    cursor: pointer;
+  }
+  .tirer-btn:hover { background: #872f2f; }
+
+  /* challenge already drawn earlier: shown at once, without the wheel */
+  .defi-tire.fixe { opacity: 1; animation: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .barillet.tourne, .bang, .defi-tire {
+      animation-duration: 0.01s;
+      animation-delay: 0s;
+    }
+  }
+</style>
+
+{% if not invite %}
+<!-- ==================== Code invité ==================== -->
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Roulette russe</h1>
+    <a class="back-link" href="/organisateur/animation/defis">← Retour</a>
+  </div>
+  <p>Entrez votre code invité pour tirer votre défi.</p>
+  <form method="post" action="/organisateur/animation/defis/lancer">
+    <input type="text" name="guest_code" placeholder="Code invité" autocomplete="off" required autofocus>
+    {% if erreur %}<p style="color:#a13b3b;">{{ erreur }}</p>{% endif %}
+    <div class="roulette">
+      <button type="submit" class="tirer-btn">Continuer</button>
+    </div>
+  </form>
+</div>
+
+{% else %}
+<!-- ==================== Roulette ==================== -->
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Roulette russe</h1>
+    <a class="back-link" href="/organisateur/animation/defis/lancer">← Changer d'invité</a>
+  </div>
+  <p>À vous de jouer, {{ invite.prenom }} !</p>
+
+  {% if not tirage and not defis %}
+  <p>Aucun défi pour le moment.</p>
+  {% else %}
+  <div class="roulette">
+    <div class="barillet {% if anime %}tourne{% endif %}">
+      <div class="axe"></div>
+      <div class="chambre balle"></div>
+      <div class="chambre"></div>
+      <div class="chambre"></div>
+      <div class="chambre"></div>
+      <div class="chambre"></div>
+      <div class="chambre"></div>
+    </div>
+
+    {% if tirage %}
+    {% if anime %}<div class="bang">BANG !</div>{% endif %}
+    <div class="defi-tire {% if not anime %}fixe{% endif %}">
+      <p class="surtitre">Votre défi</p>
+      <p class="nom">{{ tirage.defi_nom }}</p>
+    </div>
+    {% else %}
+    <form method="post" action="/organisateur/animation/defis/jouer/{{ invite.token }}">
+      <button type="submit" class="tirer-btn">🔫 Tirer un défi</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

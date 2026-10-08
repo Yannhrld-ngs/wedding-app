@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Superviser le quiz{% endblock %}
+{% block content %}
+
+{% set formes = {"a": "▲", "b": "◆", "c": "●", "d": "■"} %}
+
+<link rel="stylesheet" href="/static/quiz.css">
+<style>
+  .lien-invites {
+    background: #faf8f5;
+    border: 1px dashed #c9a96e;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    word-break: break-all;
+  }
+  .compteur { text-align: center; font-size: 18px; margin: 20px 0 0; }
+  .compteur strong { font-size: 28px; }
+  .barre-actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 24px;
+  }
+  .barre-actions form { margin: 0; }
+</style>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Superviser le quiz</h1>
+    <a class="back-link" href="/organisateur/animation/quiz">← Retour</a>
+  </div>
+  <p class="lien-invites">
+    Les invités rejoignent le quiz sur <strong>{{ request.base_url }}organisateur/animation/quiz/lancer</strong> avec leur code invité.
+  </p>
+
+  {% if total == 0 %}
+  <!-- ==================== Aucune question ==================== -->
+  <p>Aucune question pour le moment.{% if organizer_role == "admin" %} <a href="/organisateur/animation/quiz/questions">Ajouter des questions</a>{% endif %}</p>
+
+  {% elif phase == "attente" %}
+  <!-- ==================== Avant le début ==================== -->
+  <p class="quiz-message">{{ total }} question{% if total > 1 %}s{% endif %} prêtes.</p>
+  <p class="quiz-sous-message">Lancez le quiz quand les invités ont rejoint.</p>
+  <div class="barre-actions">
+    <form method="post" action="/organisateur/animation/quiz/superviser/demarrer">
+      <button type="submit" class="quiz-btn">▶ Démarrer le quiz</button>
+    </form>
+  </div>
+
+  {% elif phase == "fin" or not question %}
+  <!-- ==================== Fin ==================== -->
+  <p class="quiz-message">🎉 Fin du quiz !</p>
+  <div class="barre-actions">
+    <form method="post" action="/organisateur/animation/quiz/superviser/reinitialiser">
+      <button type="submit" class="quiz-btn" onclick="return confirm('Effacer les scores et revenir au début ?')">↺ Nouvelle partie</button>
+    </form>
+  </div>
+
+  {% else %}
+  <!-- ==================== Question en cours ==================== -->
+  <div class="quiz-entete">
+    <span>{{ question.categorie }}</span>
+    <span>Question {{ numero + 1 }} / {{ total }}</span>
+  </div>
+  <p class="quiz-enonce">{{ question.enonce }}</p>
+
+  <div class="reponses">
+    {% for r in question.reponses %}
+    {% set est_juste = r.id in question.correct %}
+    <div class="reponse {{ r.id }} {% if phase == 'reponse' %}{% if est_juste %}juste{% else %}fausse{% endif %}{% endif %}">
+      <span class="forme">{{ formes[r.id] }}</span>
+      <span>{{ r.texte }}</span>
+      {% if phase == "reponse" %}
+      <span class="verdict"><span data-repartition="{{ r.id }}">0</span> {% if est_juste %}✓{% endif %}</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <p class="compteur"><strong id="nb-reponses">0</strong> réponse(s) reçue(s)</p>
+
+  {% if media %}
+  <div class="contenu">
+    {% if media.type == "youtube" %}
+    <iframe src="{{ media.url }}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+    {% elif media.type == "video" %}
+    <video src="{{ media.url }}" controls></video>
+    {% else %}
+    <img src="{{ media.url }}" alt="">
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="barre-actions">
+    {% if phase == "question" %}
+    <form method="post" action="/organisateur/animation/quiz/superviser/reveler">
+      <button type="submit" class="quiz-btn">Afficher la réponse</button>
+    </form>
+    {% else %}
+    <form method="post" action="/organisateur/animation/quiz/superviser/suivante">
+      <button type="submit" class="quiz-btn">{% if numero + 1 < total %}Question suivante →{% else %}Terminer le quiz{% endif %}</button>
+    </form>
+    {% endif %}
+    <form method="post" action="/organisateur/animation/quiz/superviser/reinitialiser">
+      <button type="submit" class="quiz-btn secondaire" onclick="return confirm('Arrêter la partie et effacer les scores ?')">↺ Réinitialiser</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+{% if total and phase != "attente" %}
+<!-- ==================== Classement ==================== -->
+<div class="card">
+  <h2>Classement</h2>
+  <ol class="classement" id="classement">
+    <li>Aucun joueur pour le moment.</li>
+  </ol>
+</div>
+{% endif %}
+
+<script>
+  (function () {
+    const PHASE = {{ phase|tojson }};
+    const NUMERO = {{ numero|tojson }};
+    const nbReponses = document.getElementById("nb-reponses");
+    const classement = document.getElementById("classement");
+
+    function afficherClassement(joueurs) {
+      if (!classement) return;
+      classement.replaceChildren();
+      if (!joueurs.length) {
+        const li = document.createElement("li");
+        li.textContent = "Aucun joueur pour le moment.";
+        classement.appendChild(li);
+        return;
+      }
+      joueurs.forEach(function (j) {
+        const li = document.createElement("li");
+        const nom = document.createElement("span");
+        const rang = document.createElement("span");
+        rang.className = "rang";
+        rang.textContent = j.rang === 1 ? "🏆" : j.rang + ".";
+        nom.appendChild(rang);
+        nom.appendChild(document.createTextNode(j.nom));
+        const score = document.createElement("span");
+        score.textContent = j.score + (j.score > 1 ? " pts" : " pt");
+        li.appendChild(nom);
+        li.appendChild(score);
+        classement.appendChild(li);
+      });
+    }
+
+    function charger() {
+      return fetch("/organisateur/animation/quiz/superviser/etat", { cache: "no-store" })
+        .then(function (res) { return res.json(); })
+        .then(function (etat) {
+          // another supervisor moved the quiz forward: reload to follow
+          if (etat.phase !== PHASE || etat.numero !== NUMERO) {
+            location.reload();
+            return;
+          }
+          if (nbReponses) nbReponses.textContent = etat.nb_reponses;
+          document.querySelectorAll("[data-repartition]").forEach(function (node) {
+            node.textContent = (etat.repartition || {})[node.dataset.repartition] || 0;
+          });
+          afficherClassement(etat.classement);
+        })
+        .catch(function () { /* network hiccup: next poll will retry */ });
+    }
+
+    function boucle() {
+      charger().finally(function () { setTimeout(boucle, 2000); });
+    }
+    boucle();
+  })();
+</script>
+
+{% endblock %}

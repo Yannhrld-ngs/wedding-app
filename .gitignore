@@ -19,3 +19,5 @@ __pycache__/
 # Folders with sensitive files
 data/
 app/static/
+# Messages vidéo des invités (Un mot aux mariés)
+videos/

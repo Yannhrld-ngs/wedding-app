@@ -673,7 +673,11 @@
         {% endif %}
       {% endif %}
       
-      {% if current_date > last_valid_date %}
+      {% if invite.checked_in_after %} <!-- scanned at the party entrance: the quiz replaces the questionnaire -->
+        <a class="rsvp-button" href="/organisateur/animation/quiz/jouer/{{ invite.token }}">
+          🎮 Jouer au Quiz
+        </a>
+      {% elif current_date > last_valid_date %}
         <span class="rsvp-button"> QUESTIONNAIRE FERME ❌ </span>
       {% else %}
         <a class="rsvp-button" href="/invite/{{ invite.token }}/questionnaire">

@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Quiz{% endblock %}
+{% block content %}
+
+<link rel="stylesheet" href="/static/quiz.css">
+
+{% if not invite %}
+<!-- ==================== Code invité ==================== -->
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Quiz</h1>
+    <a class="back-link" href="/organisateur/animation/quiz">← Retour</a>
+  </div>
+  <p>Entrez votre code invité pour rejoindre le quiz.</p>
+  <form method="post" action="/organisateur/animation/quiz/lancer">
+    <input type="text" name="guest_code" placeholder="Code invité" autocomplete="off" required autofocus>
+    {% if erreur %}<p style="color:#a13b3b;">{{ erreur }}</p>{% endif %}
+    <div class="quiz-actions">
+      <button type="submit" class="quiz-btn">Rejoindre le quiz</button>
+    </div>
+  </form>
+</div>
+
+{% else %}
+<!-- ==================== Jeu en direct ==================== -->
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Quiz</h1>
+    <span class="quiz-score" id="score">0 pt</span>
+  </div>
+  <div id="jeu">
+    <p class="quiz-message">Bonjour {{ invite.prenom }} !</p>
+    <div class="quiz-attente"></div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const TOKEN = {{ invite.token|tojson }};
+    const PRENOM = {{ invite.prenom|tojson }};
+    const FORMES = { a: "▲", b: "◆", c: "●", d: "■" };
+    const jeu = document.getElementById("jeu");
+    const scoreBadge = document.getElementById("score");
+    let derniereCle = null;
+    let envoiEnCours = false;
+
+    function el(tag, className, texte) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (texte !== undefined) node.textContent = texte;
+      return node;
+    }
+
+    function tuile(tag, r) {
+      const node = el(tag, "reponse " + r.id);
+      node.appendChild(el("span", "forme", FORMES[r.id] || ""));
+      node.appendChild(el("span", "", r.texte));
+      return node;
+    }
+
+    function entete(etat) {
+      const node = el("div", "quiz-entete");
+      node.appendChild(el("span", "", etat.question.categorie));
+      node.appendChild(el("span", "", "Question " + (etat.numero + 1) + " / " + etat.total));
+      return node;
+    }
+
+    function media(m) {
+      const bloc = el("div", "contenu");
+      let node;
+      if (m.type === "youtube") {
+        node = el("iframe");
+        node.allow = "autoplay; encrypted-media; picture-in-picture";
+        node.allowFullscreen = true;
+      } else if (m.type === "video") {
+        node = el("video");
+        node.controls = true;
+      } else {
+        node = el("img");
+        node.alt = "";
+      }
+      node.src = m.url;
+      bloc.appendChild(node);
+      return bloc;
+    }
+
+    function afficher(etat) {
+      scoreBadge.textContent = etat.score + (etat.score > 1 ? " pts" : " pt");
+
+      // only redraw when something changed, so a playing video isn't restarted
+      const cle = [etat.phase, etat.numero, etat.choix || "", etat.correct ? "revele" : ""].join("|");
+      if (cle === derniereCle) return;
+      derniereCle = cle;
+      jeu.replaceChildren();
+
+      if (etat.phase === "attente" || (etat.phase !== "fin" && !etat.question)) {
+        jeu.appendChild(el("p", "quiz-message", "Bonjour " + PRENOM + " !"));
+        jeu.appendChild(el("p", "quiz-sous-message", "Le quiz va bientôt commencer…"));
+        jeu.appendChild(el("div", "quiz-attente"));
+        return;
+      }
+
+      if (etat.phase === "fin") {
+        jeu.appendChild(el("p", "quiz-message", "🎉 Quiz terminé !"));
+        jeu.appendChild(el("p", "quiz-sous-message",
+          "Votre score : " + etat.score + " / " + etat.total));
+        if (etat.rang) {
+          jeu.appendChild(el("p", "quiz-message",
+            etat.rang === 1 ? "🏆 Vous êtes 1er !" : "Vous êtes " + etat.rang + "e sur " + etat.joueurs));
+        }
+        return;
+      }
+
+      jeu.appendChild(entete(etat));
+      jeu.appendChild(el("p", "quiz-enonce", etat.question.enonce));
+
+      if (etat.phase === "question" && !etat.choix) {
+        const grille = el("div", "reponses");
+        etat.question.reponses.forEach(function (r) {
+          const bouton = tuile("button", r);
+          bouton.type = "button";
+          bouton.addEventListener("click", function () { repondre(etat.numero, r.id); });
+          grille.appendChild(bouton);
+        });
+        jeu.appendChild(grille);
+        return;
+      }
+
+      if (etat.phase === "question") {
+        const choisie = etat.question.reponses.find(function (r) { return r.id === etat.choix; });
+        const grille = el("div", "reponses");
+        if (choisie) grille.appendChild(tuile("div", choisie));
+        jeu.appendChild(grille);
+        jeu.appendChild(el("p", "quiz-message", "Réponse envoyée !"));
+        jeu.appendChild(el("p", "quiz-sous-message", "En attente de la bonne réponse…"));
+        jeu.appendChild(el("div", "quiz-attente"));
+        return;
+      }
+
+      // phase "reponse": reveal
+      const grille = el("div", "reponses");
+      etat.question.reponses.forEach(function (r) {
+        const juste = etat.correct.indexOf(r.id) !== -1;
+        const node = tuile("div", r);
+        node.classList.add(juste ? "juste" : "fausse");
+        if (r.id === etat.choix) node.classList.add("choisie");
+        node.appendChild(el("span", "verdict", juste ? "✓" : (r.id === etat.choix ? "✗" : "")));
+        grille.appendChild(node);
+      });
+      jeu.appendChild(grille);
+
+      if (!etat.choix) {
+        jeu.appendChild(el("p", "resultat rate", "Pas de réponse…"));
+      } else if (etat.correct.indexOf(etat.choix) !== -1) {
+        jeu.appendChild(el("p", "resultat bravo", "Bonne réponse ! +1 point"));
+      } else {
+        jeu.appendChild(el("p", "resultat rate", "Raté !"));
+      }
+      if (etat.media) jeu.appendChild(media(etat.media));
+    }
+
+    function charger() {
+      return fetch("/organisateur/animation/quiz/etat/" + encodeURIComponent(TOKEN), { cache: "no-store" })
+        .then(function (res) { return res.json(); })
+        .then(afficher)
+        .catch(function () { /* network hiccup: next poll will retry */ });
+    }
+
+    function repondre(numero, choix) {
+      if (envoiEnCours) return;
+      envoiEnCours = true;
+      jeu.querySelectorAll("button.reponse").forEach(function (b) { b.disabled = true; });
+
+      const donnees = new FormData();
+      donnees.append("numero", numero);
+      donnees.append("choix", choix);
+      fetch("/organisateur/animation/quiz/repondre/" + encodeURIComponent(TOKEN), { method: "POST", body: donnees })
+        .then(function (res) { return res.json(); })
+        .then(function (resultat) {
+          if (!resultat.ok) alert(resultat.message);
+        })
+        .catch(function () { alert("Connexion perdue, réessayez."); })
+        .finally(function () {
+          envoiEnCours = false;
+          derniereCle = null; // force a redraw with the server's view
+          charger();
+        });
+    }
+
+    function boucle() {
+      charger().finally(function () { setTimeout(boucle, 2000); });
+    }
+    boucle();
+  })();
+</script>
+{% endif %}
+
+{% endblock %}

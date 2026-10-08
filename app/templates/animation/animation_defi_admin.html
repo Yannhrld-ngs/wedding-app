@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Le défi{% endblock %}
+{% block content %}
+
+<style>
+  .defi-block {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: #faf8f5;
+    border: 1px solid #e7e1d6;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 12px;
+  }
+  .defi-block p { margin: 0; }
+  .tire-le { font-size: 12.5px; color: #7a5c45; }
+  .remove-btn {
+    flex-shrink: 0;
+    background: #f0d7d7;
+    color: #a13b3b;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .add-btn {
+    margin-top: 12px;
+    background: #e8e0d2;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+</style>
+
+{% if mode == "accueil" %}
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Le défi</h1>
+    <a class="back-link" href="/organisateur/animation">← Retour</a>
+  </div>
+  <div class="button-row">
+    <a class="button button-icon" href="/organisateur/animation/defis/lancer">
+      <span class="icon">▶️</span>
+      <span class="label">Lancer le défi</span>
+    </a>
+    {% if organizer_role == "admin" %}
+    <a class="button button-icon" href="/organisateur/animation/defis/ajouter">
+      <span class="icon">✏️</span>
+      <span class="label">Ajouter un défi</span>
+    </a>
+    {% endif %}
+    <a class="button button-icon" href="/organisateur/animation/defis/invites">
+      <span class="icon">📜</span>
+      <span class="label">Défis des invités</span>
+    </a>
+  </div>
+</div>
+
+{% elif mode == "invites" %}
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Défis des invités</h1>
+    <a class="back-link" href="/organisateur/animation/defis">← Retour</a>
+  </div>
+  <p>{{ tirages|length }} invité{% if tirages|length > 1 %}s ont{% else %} a{% endif %} tiré un défi.</p>
+  {% if tirages %}
+  <form method="post" action="/organisateur/animation/defis/invites/reinitialiser" style="margin:0;">
+    <button type="submit" class="remove-btn" onclick="return confirm('Effacer les défis de tous les invités ?')">↺ Tout réinitialiser</button>
+  </form>
+  {% endif %}
+</div>
+
+{% for t in tirages %}
+<div class="defi-block">
+  <p><strong>{{ t.nom }}</strong> — {{ t.defi }}<br>
+    <span class="tire-le">Tiré le {{ t.tire_le.strftime("%d/%m à %H:%M") }}</span></p>
+  <form method="post" action="/organisateur/animation/defis/invites/reinitialiser/{{ t.token }}" style="margin:0;">
+    <button type="submit" class="remove-btn" onclick="return confirm('Réinitialiser le défi de cet invité ?')">↺ Réinitialiser</button>
+  </form>
+</div>
+{% endfor %}
+
+{% else %}
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Le défi</h1>
+    <a class="back-link" href="/organisateur/animation/defis">← Retour</a>
+  </div>
+  <p>Ajoutez les défis en écrivant simplement leur nom.</p>
+</div>
+
+<!-- ==================== Existing challenges ==================== -->
+{% for d in defis %}
+<div class="defi-block">
+  <p><strong>{{ d.get("nom") }}</strong></p>
+  <form method="post" action="/organisateur/animation/defis/supprimer/{{ d.get('id') }}" style="margin:0;">
+    <button type="submit" class="remove-btn" onclick="return confirm('Supprimer ce défi ?')">✕ Supprimer</button>
+  </form>
+</div>
+{% endfor %}
+
+<!-- ==================== Nouveau défi ==================== -->
+<div class="card">
+  <h2>Nouveau défi</h2>
+  <form method="post" action="/organisateur/animation/defis/ajouter">
+    <input type="text" name="nom" placeholder="Nom du défi (ex : Danser avec la mariée)" required>
+    <button type="submit" class="add-btn">+ Ajouter le défi</button>
+  </form>
+</div>
+{% endif %}
+
+{% endblock %}

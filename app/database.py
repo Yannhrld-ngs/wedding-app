@@ -137,6 +137,14 @@ class SqlRepository(Generic[T]):
             field_names = tuple(typing.get_type_hints(obj))
             return [ obj(**{k: v for k, v in row.items() if k in field_names}) for row in rows ]
 
+    def load_where(self, obj:T, table_name:str, **filters) -> list[T]:
+        """Load the rows whose columns equal the given values, as instances of the dataclass."""
+        where = " AND ".join(f"{col} = :{col}" for col in filters)
+        with self.engine.connect() as conn:
+            rows = conn.execute( text(f"SELECT * FROM {table_name} WHERE {where};"), filters ).mappings()
+            field_names = tuple(typing.get_type_hints(obj))
+            return [ obj(**{k: v for k, v in row.items() if k in field_names}) for row in rows ]
+
 
 if __name__ == "__main__":
     from models import Invite, Organisateur

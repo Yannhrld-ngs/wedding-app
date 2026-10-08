@@ -214,6 +214,34 @@ class QuizCreator:
     data:dict = field(default_factory=lambda: {"categories": []})
 
 @dataclass
+class QuizSession:
+    """État du quiz en direct, piloté par le superviseur.
+    phase : "attente" | "question" | "reponse" | "fin" ; numero : question en cours."""
+    id: str = "quiz_session"
+    data: dict = field(default_factory=lambda: {"phase": "attente", "numero": None})
+
+@dataclass
+class QuizReponse:
+    """Réponse d'un invité à une question du quiz en direct (une seule par question)."""
+    id: str  # "<token>:<numero>"
+    token: str
+    numero: int
+    choix: str
+    correct: bool
+
+@dataclass
+class DefiCreator:
+    id: str = "defi_creator"
+    data:dict = field(default_factory=lambda: {"defis": []})
+
+@dataclass
+class DefiTirage:
+    """Défi tiré à la roulette par un invité (un seul par invité)."""
+    token: str
+    defi_nom: str  # copied, so the history survives if the challenge is deleted
+    tire_le: datetime
+
+@dataclass
 class RepereNotes:
     """Notes libres par repère (ex. "Table sans alcool"), stockées par phase
     puis par nom de repère : {"mairie": {"Table 1": "..."}, "reception": {...}}."""

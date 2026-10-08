@@ -73,10 +73,37 @@
   }
 </style>
 
+
+
+{% if mode == "accueil" %}
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <h1>Quiz</h1>
-    <a class="back-link"href="/organisateur/animation">← Retour</a>
+    <a class="back-link" href="/organisateur/animation">← Retour</a>
+  </div>
+  <div class="button-row">
+    <a class="button button-icon" href="/organisateur/animation/quiz/superviser">
+      <span class="icon">🎛️</span>
+      <span class="label">Superviser le Quiz</span>
+    </a>
+    <a class="button button-icon" href="/organisateur/animation/quiz/lancer">
+      <span class="icon">▶️</span>
+      <span class="label">Lancer le Quiz</span>
+    </a>
+    {% if organizer_role == "admin" %}
+    <a class="button button-icon" href="/organisateur/animation/quiz/questions">
+      <span class="icon">✏️</span>
+      <span class="label">Ajouter des Questions</span>
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% else %}
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Quiz</h1>
+    <a class="back-link" href="/organisateur/animation/quiz">← Retour</a>
   </div>
   <p>Creer une catégorie de questions, ajouter s y les questions sans oublier de cocher la bonne réponse.</p>
 </div>
@@ -100,7 +127,7 @@
       {% endfor %}
     </ul>
     {% if q.get("contenu") %}
-    <p class="question-meta">Média : {{ q.get("contenu") }}</p>
+    <p class="question-meta">Média : {% if q.get("contenu").startswith("b2://") %}fichier enregistré sur Backblaze ({{ q.get("contenu")[5:] }}){% else %}{{ q.get("contenu") }}{% endif %}</p>
     {% endif %}
     <form method="post" action="/organisateur/animation/quiz/{{ cat.get('id') }}/supprimer-question/{{ q.get('id') }}" style="margin-top:6px;">
       <button type="submit" class="remove-btn" onclick="return confirm('Supprimer cette question ?')">✕ Supprimer la question</button>
@@ -108,7 +135,7 @@
   </div>
   {% endfor %}
 
-  <form method="post" action="/organisateur/animation/quiz/ajouter-question/{{ cat.get('id') }}" class="add-form">
+  <form method="post" action="/organisateur/animation/quiz/ajouter-question/{{ cat.get('id') }}" class="add-form" enctype="multipart/form-data">
     <label for="enonce-{{ cat.get('id') }}">Énoncé de la question</label>
     <input type="text" id="enonce-{{ cat.get('id')  }}" name="enonce" required>
 
@@ -120,7 +147,12 @@
     </div>
     {% endfor %}
 
-    <label for="contenu-{{ cat.get('id') }}">Contenu — URL image ou vidéo (optionnel)</label>
+    {% if stockage_actif %}
+    <label for="fichier-{{ cat.get('id') }}">Contenu — image ou vidéo depuis l'appareil (optionnel)</label>
+    <input type="file" id="fichier-{{ cat.get('id') }}" name="fichier" accept="image/*,video/*">
+    {% endif %}
+
+    <label for="contenu-{{ cat.get('id') }}">{% if stockage_actif %}… ou URL{% else %}Contenu — URL{% endif %} d'une image, vidéo ou YouTube (optionnel)</label>
     <input type="url" id="contenu-{{ cat.get('id') }}" name="contenu" placeholder="https://...">
 
     <button type="submit" class="add-btn">+ Ajouter la question</button>
@@ -137,5 +169,6 @@
     <button type="submit" class="add-btn">+ Ajouter la catégorie</button>
   </form>
 </div>
+{% endif %}
 
 {% endblock %}

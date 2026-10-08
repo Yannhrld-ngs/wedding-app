@@ -43,7 +43,7 @@ def carte_invitation(token: str, request: Request):
         ]
     today = datetime.now()
     return templates.TemplateResponse(
-        request, "invite_card_1.html",
+        request, "invite/invite_card_1.html",
         {
             "request": request,
             "invite": invite,
@@ -69,7 +69,7 @@ def questionnaire_form(token: str, request: Request):
     invite = get_invite_or_404(token)
     today = datetime.now()
     return templates.TemplateResponse(
-        request, "invite_questionnaire.html",
+        request, "invite/invite_questionnaire.html",
         {
             "request": request,
             "invite": invite,
@@ -169,7 +169,7 @@ def questionnaire_submit(
 def confidentialite(token:str, request: Request) :
     contact = "yann656@hotmail.com"
     return templates.TemplateResponse( 
-        request, "invite_confidentialité.html",
+        request, "invite/invite_confidentialité.html",
         { "request": request,"contact_email":contact}
         )
 

@@ -27,6 +27,17 @@ SECRET_KEY = os.getenv("SECRET_KEY", default="secret")
 SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", default="wedding_organizer_session")
 SLUG_SUFFIX_LENGTH = 6
 
+# --- Un mot aux mariés (vidéos des invités) ---
+VIDEOS_DIR = os.getenv("VIDEOS_DIR", default="videos")  # secours local si l'envoi vers B2 échoue
+MOT_DUREE = 30     # durée max d'un message, en secondes
+
+# --- Stockage des fichiers (Backblaze B2, API compatible S3) ---
+# Clé d'application limitée au bucket (la Master Application Key ne marche pas avec l'API S3).
+B2_KEY_ID = os.getenv("B2_KEY_ID", default=None)
+B2_APPLICATION_KEY = os.getenv("B2_APPLICATION_KEY", default=None)
+B2_BUCKET = os.getenv("B2_BUCKET", default=None)
+B2_ENDPOINT = os.getenv("B2_ENDPOINT", default=None)  # ex : https://s3.eu-central-003.backblazeb2.com
+
 # --- Connection à la base de donnée (PostgreSQL — ex. Neon) ---
 SQL_DATABASE = os.getenv("SQL_DATABASE", default=None)
 SQL_USERNAME = os.getenv("SQL_USERNAME", default=None)
