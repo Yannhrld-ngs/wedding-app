@@ -1588,6 +1588,7 @@ def animation_mot_introduction_video(background_tasks: BackgroundTasks, video: U
     extension = ".mp4" if "mp4" in (video.content_type or "") else ".webm"
     with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as brute:
         shutil.copyfileobj(video.file, brute)
+    logger.info(f"Un mot aux mariés : vidéo reçue ({os.path.getsize(brute.name) / 1024 / 1024:.1f} Mo, {video.content_type})")
     # a new introduction replaces the previous one
     background_tasks.add_task(_traiter_video_mot, brute.name, MOT_INTRODUCTION, config.MOT_DUREE_INTRO)
     return JSONResponse({"ok": True})
@@ -1639,6 +1640,7 @@ def animation_mot_video(token: str, background_tasks: BackgroundTasks, video: Up
     extension = ".mp4" if "mp4" in (video.content_type or "") else ".webm"
     with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as brute:
         shutil.copyfileobj(video.file, brute)
+    logger.info(f"Un mot aux mariés : vidéo reçue ({os.path.getsize(brute.name) / 1024 / 1024:.1f} Mo, {video.content_type})")
     # ffmpeg and the upload take a few seconds: the guest gets their answer right away
     cle = f"{MOT_DOSSIER}/{_dossier_invite(invite)}/original.mp4"
     background_tasks.add_task(_traiter_video_mot, brute.name, cle, config.MOT_DUREE)

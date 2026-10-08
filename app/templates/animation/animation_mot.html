@@ -35,8 +35,16 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transform: scaleX(-1); /* mirror, like a selfie */
   }
+  .camera video.miroir { transform: scaleX(-1); } /* front camera: mirror, like a selfie */
+  .choix-camera {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin: 0 0 14px;
+  }
+  .choix-camera label { display: flex; align-items: center; gap: 6px; margin: 0; font-weight: 600; cursor: pointer; }
   .rec {
     position: absolute;
     top: 12px;
@@ -118,6 +126,10 @@
       {{ consigne }}<br>
       Un décompte apparaîtra 10 secondes avant la fin.
     </p>
+    <div class="choix-camera" id="choix-camera" hidden>
+      <label><input type="radio" name="camera" value="user" checked> 🤳 Caméra avant</label>
+      <label><input type="radio" name="camera" value="environment"> 📷 Caméra arrière</label>
+    </div>
     <p class="mot-centre"><button type="button" class="mot-btn" id="commencer">🎥 Commencer</button></p>
   </div>
 
@@ -173,6 +185,23 @@
       montrer("erreur");
     }
 
+    // camera choice, only useful when the device has several cameras (phones, tablets)
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      navigator.mediaDevices.enumerateDevices().then(function (appareils) {
+        const cameras = appareils.filter(function (a) { return a.kind === "videoinput"; }).length;
+        document.getElementById("choix-camera").hidden = !(cameras > 1 || navigator.maxTouchPoints > 0);
+      }).catch(function () {});
+    }
+
+    function cameraChoisie() {
+      const coche = document.querySelector('input[name="camera"]:checked');
+      return coche ? coche.value : "user";
+    }
+
+    function taille() {
+      return video ? (video.size / 1024 / 1024).toFixed(1) + " Mo" : "?";
+    }
+
     function formatSupporte() {
       const formats = ["video/mp4", "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
       return formats.find(function (f) { return MediaRecorder.isTypeSupported(f); }) || "";
@@ -185,7 +214,7 @@
       }
       try {
         flux = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { facingMode: { ideal: cameraChoisie() }, width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: true,
         });
       } catch (e) {
@@ -193,6 +222,7 @@
         return;
       }
       apercu.srcObject = flux;
+      apercu.classList.toggle("miroir", cameraChoisie() === "user");
 
       const format = formatSupporte();
       enregistreur = new MediaRecorder(flux, format ? { mimeType: format } : undefined);
@@ -232,13 +262,31 @@
       montrer("envoi");
       const donnees = new FormData();
       donnees.append("video", video, video.type.indexOf("mp4") !== -1 ? "message.mp4" : "message.webm");
+      if (!video.size) {
+        erreur("La vidéo est vide : l'appareil n'a rien enregistré. Recommencez.", false);
+        return;
+      }
       fetch(URL_ENVOI, { method: "POST", body: donnees })
-        .then(function (res) { return res.json(); })
-        .then(function (resultat) {
-          if (resultat.ok) montrer("merci");
-          else erreur(resultat.message || "L'envoi a échoué.", true);
+        .then(function (res) {
+          return res.text().then(function (texte) {
+            let resultat = null;
+            try { resultat = JSON.parse(texte); } catch (e) { /* not JSON: an error page */ }
+            if (resultat && resultat.ok) {
+              montrer("merci");
+            } else if (res.redirected && res.url.indexOf("/login") !== -1) {
+              erreur("Votre session a expiré : reconnectez-vous dans un autre onglet, puis réessayez l'envoi.", true);
+            } else if (resultat && resultat.message) {
+              erreur(resultat.message + " (erreur " + res.status + ")", true);
+            } else {
+              erreur("L'envoi a échoué : erreur " + res.status + (res.statusText ? " " + res.statusText : "") +
+                     " (vidéo de " + taille() + ").", true);
+            }
+          });
         })
-        .catch(function () { erreur("Connexion perdue pendant l'envoi.", true); });
+        .catch(function (e) {
+          erreur("Connexion perdue pendant l'envoi (" + (e && e.message ? e.message : "réseau") +
+                 ", vidéo de " + taille() + ").", true);
+        });
     }
 
     document.getElementById("commencer").addEventListener("click", commencer);
