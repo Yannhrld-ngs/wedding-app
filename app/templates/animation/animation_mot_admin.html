@@ -52,6 +52,10 @@
       <span class="icon">🎥</span>
       <span class="label">Enregistrer un message</span>
     </a>
+    <a class="button button-icon" href="/organisateur/animation/mot-aux-maries/introduction">
+      <span class="icon">🎙️</span>
+      <span class="label">Message d'introduction</span>
+    </a>
     <a class="button button-icon" href="/organisateur/animation/mot-aux-maries/messages">
       <span class="icon">🎬</span>
       <span class="label">Messages des invités</span>
@@ -73,6 +77,24 @@
   {% else %}
   <p>{{ messages|length }} message{% if messages|length > 1 %}s{% endif %} enregistré{% if messages|length > 1 %}s{% endif %}.</p>
 
+  <!-- ==================== Introduction ==================== -->
+  <h2>Message d'introduction</h2>
+  {% if introduction %}
+  <div class="message-block">
+    <p><strong>Introduction</strong><br>
+      <span class="message-date">Enregistrée le {{ introduction.date.astimezone().strftime("%d/%m à %H:%M") }}</span></p>
+    <div class="message-actions">
+      <a href="{{ introduction.lien }}" target="_blank" rel="noopener">▶ Voir</a>
+      <a href="/organisateur/animation/mot-aux-maries/introduction">↺ Refaire</a>
+      <form method="post" action="/organisateur/animation/mot-aux-maries/messages/supprimer-introduction">
+        <button type="submit" class="remove-btn" onclick="return confirm('Supprimer le message d'introduction ?')">✕ Supprimer</button>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <p>Pas encore enregistrée. <a href="/organisateur/animation/mot-aux-maries/introduction">🎙️ Enregistrer l'introduction</a></p>
+  {% endif %}
+
   <!-- ==================== Assemblage ==================== -->
   <h2>Assemblage</h2>
   {% if assemblage_en_cours %}
@@ -85,17 +107,22 @@
     <span class="message-date">— créé le {{ assemblage.date.astimezone().strftime("%d/%m à %H:%M") }}</span>
   </p>
   {% endif %}
-  {% if messages %}
+  {% if messages or introduction %}
   <form method="post" action="/organisateur/animation/mot-aux-maries/messages/assembler">
     <button type="submit" class="assembler-btn">🎬 Tout assembler</button>
   </form>
-  <p class="message-date">Les messages sont mis bout à bout, du plus ancien au plus récent. Cela peut prendre quelques minutes.</p>
+  <p class="message-date">
+    Ordre du montage : le message d'introduction, puis les messages des invités par ordre alphabétique de prénom.
+    Lecture en vitesse ×{{ vitesse }}{% if musiques %}, avec en fond sonore : {{ musiques|join(", ") }}{% else %}, sans musique (aucun fichier dans le dossier « background »){% endif %}.
+    Cela peut prendre quelques minutes.
+  </p>
   {% endif %}
   {% endif %}
   {% endif %}
 </div>
 
 <!-- ==================== Messages ==================== -->
+{% if messages %}<div class="card" style="margin-bottom:0;"><h2 style="margin:0;">Messages des invités</h2></div>{% endif %}
 {% for m in messages %}
 <div class="message-block">
   <p><strong>{{ m.nom }}</strong><br>

@@ -30,6 +30,9 @@ SLUG_SUFFIX_LENGTH = 6
 # --- Un mot aux mariés (vidéos des invités) ---
 VIDEOS_DIR = os.getenv("VIDEOS_DIR", default="videos")  # secours local si l'envoi vers B2 échoue
 MOT_DUREE = 30     # durée max d'un message, en secondes
+MOT_DUREE_INTRO = 60        # durée max du message d'introduction (filmé par un organisateur)
+MOT_VITESSE = 1.4           # vitesse de lecture du montage
+MOT_VOLUME_MUSIQUE = 0.25   # volume de la musique de fond sous les voix (1 = volume d'origine)
 
 # --- Stockage des fichiers (Backblaze B2, API compatible S3) ---
 # Clé d'application limitée au bucket (la Master Application Key ne marche pas avec l'API S3).

@@ -1378,6 +1378,8 @@ def animation_defi_delete(request: Request, defi_id: str, role: str = Depends(ac
 
 # ---------- Animation : Un mot aux mariés ----------
 MOT_DOSSIER = "unmotauxmaries"
+MOT_INTRODUCTION = f"{MOT_DOSSIER}/introduction.mp4"  # outside the guests' folders
+MOT_MUSIQUES = f"{MOT_DOSSIER}/background/"
 MOT_ASSEMBLAGE = f"{MOT_DOSSIER}/assemblage.mp4"
 # every clip is converted to the same format so they can be joined without re-encoding
 MOT_FORMAT_ASSEMBLAGE = [
@@ -1385,6 +1387,7 @@ MOT_FORMAT_ASSEMBLAGE = [
     "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p",
     "-c:a", "aac", "-ar", "48000", "-ac", "2",
 ]
+MOT_EXTENSIONS_MUSIQUE = (".mp3", ".m4a", ".aac", ".wav", ".ogg", ".flac")
 _assemblage = {"en_cours": False, "erreur": None}
 
 def _ffmpeg(*args: str) -> None:
@@ -1398,58 +1401,99 @@ def _ffmpeg(*args: str) -> None:
 def _dossier_invite(invite: Invite) -> str:
     return slugify(f"{invite.prenom} {invite.nom}")
 
-def _traiter_video_mot(brute: str, dossier_invite: str) -> None:
-    """Converts the raw upload to mp4 (max MOT_DUREE s) and sends it to B2 as <invite>/original.mp4.
+def _traiter_video_mot(brute: str, cle: str, duree: int) -> None:
+    """Converts the raw upload to mp4 (max duree s) and sends it to B2 under cle.
     If B2 is unavailable, the video is kept in VIDEOS_DIR so the message isn't lost."""
     try:
         with tempfile.TemporaryDirectory() as dossier_temp:
-            original = Path(dossier_temp) / "original.mp4"
-            _ffmpeg("-i", brute, "-t", str(config.MOT_DUREE),
+            video = Path(dossier_temp) / "video.mp4"
+            _ffmpeg("-i", brute, "-t", str(duree),
                     "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
-                    "-c:a", "aac", "-movflags", "+faststart", str(original))
+                    "-c:a", "aac", "-movflags", "+faststart", str(video))
             try:
                 if not storage.actif():
                     raise RuntimeError("B2 n'est pas configuré")
-                storage.envoyer_chemin(str(original), f"{MOT_DOSSIER}/{dossier_invite}/original.mp4", "video/mp4")
+                storage.envoyer_chemin(str(video), cle, "video/mp4")
             except Exception as e:
-                secours = Path(config.VIDEOS_DIR) / dossier_invite / "original.mp4"
+                secours = Path(config.VIDEOS_DIR) / cle.removeprefix(f"{MOT_DOSSIER}/")
                 secours.parent.mkdir(parents=True, exist_ok=True)
-                shutil.move(str(original), secours)
+                shutil.move(str(video), secours)
                 logger.error(f"Un mot aux mariés : envoi vers B2 impossible, vidéo gardée dans {secours} : {e}")
     except Exception as e:
-        logger.error(f"Un mot aux mariés : échec du traitement de {dossier_invite} : {e}")
+        logger.error(f"Un mot aux mariés : échec du traitement de {cle} : {e}")
     finally:
         os.remove(brute)
 
+def _cle_alphabetique(texte: str) -> str:
+    """Sort key ignoring case and accents (É sorts with E)."""
+    return slugify(texte)
+
 def _messages_mot() -> list[dict]:
-    """Guests' messages stored on B2, oldest first: [{"cle", "dossier", "nom", "date"}]."""
-    noms = {_dossier_invite(g): f"{g.prenom} {g.nom}" for g in store.load_guests()}
+    """Guests' messages stored on B2, by first name: [{"cle", "dossier", "nom", "prenom", "date"}]."""
+    invites = {_dossier_invite(g): g for g in store.load_guests()}
     messages = []
     for fichier in storage.lister(f"{MOT_DOSSIER}/"):
         morceaux = fichier["cle"].split("/")
         if len(morceaux) == 3 and morceaux[2] == "original.mp4":
-            messages.append({**fichier, "dossier": morceaux[1], "nom": noms.get(morceaux[1], morceaux[1])})
-    messages.sort(key=lambda m: m["date"])
+            invite = invites.get(morceaux[1])
+            messages.append({
+                **fichier,
+                "dossier": morceaux[1],
+                "nom": f"{invite.prenom} {invite.nom}" if invite else morceaux[1],
+                "prenom": invite.prenom if invite else morceaux[1],
+            })
+    messages.sort(key=lambda m: (_cle_alphabetique(m["prenom"]), _cle_alphabetique(m["nom"])))
     return messages
 
+def _fichier_b2(cle: str):
+    """The B2 file stored exactly under cle, or None."""
+    return next((f for f in storage.lister(cle) if f["cle"] == cle), None)
+
 def _assembler_videos() -> None:
-    """Joins every guest's message, oldest first, into a single video sent to B2."""
+    """Montage: introduction, then the guests' messages by first name, sped up, over the background music."""
     try:
         with tempfile.TemporaryDirectory() as dossier_temp:
             dossier_temp = Path(dossier_temp)
+            sources = ([MOT_INTRODUCTION] if _fichier_b2(MOT_INTRODUCTION) else []) + [m["cle"] for m in _messages_mot()]
+            if not sources:
+                raise RuntimeError("aucune vidéo à assembler")
             morceaux = []
-            for i, message in enumerate(_messages_mot()):
+            for i, cle in enumerate(sources):
                 brut = dossier_temp / f"{i}_brut.mp4"
-                storage.telecharger(message["cle"], str(brut))
+                storage.telecharger(cle, str(brut))
                 morceau = dossier_temp / f"{i}.mp4"
                 _ffmpeg("-i", str(brut), *MOT_FORMAT_ASSEMBLAGE, str(morceau))
                 morceaux.append(morceau)
-            if not morceaux:
-                raise RuntimeError("aucun message à assembler")
             liste = dossier_temp / "liste.txt"
             liste.write_text("".join(f"file '{m.as_posix()}'\n" for m in morceaux), encoding="utf-8")
+            collage = dossier_temp / "collage.mp4"
+            _ffmpeg("-f", "concat", "-safe", "0", "-i", str(liste), "-c", "copy", str(collage))
+
+            # background music: every track of the folder, in alphabetical order, looped if the montage is longer
+            pistes = sorted((f["cle"] for f in storage.lister(MOT_MUSIQUES) if f["cle"].lower().endswith(MOT_EXTENSIONS_MUSIQUE)),
+                            key=_cle_alphabetique)
+            vitesse = config.MOT_VITESSE
+            video = f"[0:v]setpts=PTS/{vitesse}[v]"
+            if pistes:
+                fichiers_musique = []
+                for i, cle in enumerate(pistes):
+                    fichier = dossier_temp / f"musique_{i}{Path(cle).suffix}"
+                    storage.telecharger(cle, str(fichier))
+                    fichiers_musique += ["-i", str(fichier)]
+                musique = dossier_temp / "musique.m4a"
+                _ffmpeg(*fichiers_musique, "-filter_complex",
+                        "".join(f"[{i}:a]" for i in range(len(pistes))) + f"concat=n={len(pistes)}:v=0:a=1[a]",
+                        "-map", "[a]", "-c:a", "aac", "-ar", "48000", "-ac", "2", str(musique))
+                entrees = ["-i", str(collage), "-stream_loop", "-1", "-i", str(musique)]
+                filtres = (f"{video};[0:a]atempo={vitesse}[voix];[1:a]volume={config.MOT_VOLUME_MUSIQUE}[fond];"
+                           "[voix][fond]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[a]")
+            else:
+                entrees = ["-i", str(collage)]
+                filtres = f"{video};[0:a]atempo={vitesse}[a]"
             sortie = dossier_temp / "assemblage.mp4"
-            _ffmpeg("-f", "concat", "-safe", "0", "-i", str(liste), "-c", "copy", "-movflags", "+faststart", str(sortie))
+            _ffmpeg(*entrees, "-filter_complex", filtres, "-map", "[v]", "-map", "[a]",
+                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-movflags", "+faststart", str(sortie))
             storage.envoyer_chemin(str(sortie), MOT_ASSEMBLAGE, "video/mp4")
         _assemblage["erreur"] = None
     except Exception as e:
@@ -1458,6 +1502,10 @@ def _assembler_videos() -> None:
     finally:
         _assemblage["en_cours"] = False
 
+def _contexte_enregistreur(request: Request, **valeurs) -> dict:
+    """Context of the recorder page, shared by the guests' messages and the introduction."""
+    return {"request": request, "enregistrement": True, **valeurs}
+
 # --- Accueil et page des messages (organisateurs) ---
 @router.get("/animation/mot-aux-maries")
 def animation_mot(request: Request, role: str = Depends(acces_animation)):
@@ -1465,13 +1513,16 @@ def animation_mot(request: Request, role: str = Depends(acces_animation)):
 
 @router.get("/animation/mot-aux-maries/messages")
 def animation_mot_messages(request: Request, role: str = Depends(acces_animation)):
-    messages, assemblage, erreur = [], None, None
+    messages, introduction, assemblage, musiques, erreur = [], None, None, [], None
     if storage.actif():
         try:
             messages = [{**m, "lien": storage.url(storage.PREFIXE + m["cle"])} for m in _messages_mot()]
-            existant = [f for f in storage.lister(MOT_ASSEMBLAGE) if f["cle"] == MOT_ASSEMBLAGE]
-            if existant:
-                assemblage = {"date": existant[0]["date"], "lien": storage.url(storage.PREFIXE + MOT_ASSEMBLAGE)}
+            if intro := _fichier_b2(MOT_INTRODUCTION):
+                introduction = {"date": intro["date"], "lien": storage.url(storage.PREFIXE + MOT_INTRODUCTION)}
+            if existant := _fichier_b2(MOT_ASSEMBLAGE):
+                assemblage = {"date": existant["date"], "lien": storage.url(storage.PREFIXE + MOT_ASSEMBLAGE)}
+            musiques = sorted((Path(f["cle"]).name for f in storage.lister(MOT_MUSIQUES)
+                               if f["cle"].lower().endswith(MOT_EXTENSIONS_MUSIQUE)), key=_cle_alphabetique)
         except Exception as e:
             logger.error(f"Un mot aux mariés : lecture de B2 impossible : {e}")
             erreur = "Impossible de lire Backblaze B2 : vérifiez la clé dans le .env."
@@ -1483,7 +1534,10 @@ def animation_mot_messages(request: Request, role: str = Depends(acces_animation
             "request": request,
             "mode": "messages",
             "messages": messages,
+            "introduction": introduction,
             "assemblage": assemblage,
+            "musiques": musiques,
+            "vitesse": config.MOT_VITESSE,
             "assemblage_en_cours": _assemblage["en_cours"],
             "assemblage_erreur": _assemblage["erreur"],
             "erreur": erreur,
@@ -1502,10 +1556,46 @@ def animation_mot_supprimer(dossier: str, role: str = Depends(acces_animation)):
     storage.supprimer(f"{storage.PREFIXE}{MOT_DOSSIER}/{dossier}/original.mp4")
     return RedirectResponse(url="/organisateur/animation/mot-aux-maries/messages", status_code=303)
 
+@router.post("/animation/mot-aux-maries/messages/supprimer-introduction")
+def animation_mot_supprimer_introduction(role: str = Depends(acces_animation)):
+    storage.supprimer(storage.PREFIXE + MOT_INTRODUCTION)
+    return RedirectResponse(url="/organisateur/animation/mot-aux-maries/messages", status_code=303)
+
+# --- Message d'introduction (organisateurs) ---
+@router.get("/animation/mot-aux-maries/introduction")
+def animation_mot_introduction(request: Request, role: str = Depends(acces_animation)):
+    return templates.TemplateResponse(
+        request, "animation/animation_mot.html",
+        _contexte_enregistreur(
+            request,
+            titre="Message d'introduction",
+            bonjour="Message d'introduction",
+            consigne=f"Vous avez {config.MOT_DUREE_INTRO} secondes pour présenter le film des invités aux mariés.",
+            duree=config.MOT_DUREE_INTRO,
+            url_envoi="/organisateur/animation/mot-aux-maries/introduction",
+            url_retour="/organisateur/animation/mot-aux-maries",
+            libelle_retour="← Retour",
+            url_recommencer="/organisateur/animation/mot-aux-maries/introduction",
+            merci="🎬 Message d'introduction enregistré !",
+            url_suivant="/organisateur/animation/mot-aux-maries",
+            libelle_suivant="Terminer",
+        ),
+    )
+
+@router.post("/animation/mot-aux-maries/introduction")
+def animation_mot_introduction_video(background_tasks: BackgroundTasks, video: UploadFile = File(...),
+                                     role: str = Depends(acces_animation)):
+    extension = ".mp4" if "mp4" in (video.content_type or "") else ".webm"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as brute:
+        shutil.copyfileobj(video.file, brute)
+    # a new introduction replaces the previous one
+    background_tasks.add_task(_traiter_video_mot, brute.name, MOT_INTRODUCTION, config.MOT_DUREE_INTRO)
+    return JSONResponse({"ok": True})
+
 # --- Enregistrement (invités) ---
 @router.get("/animation/mot-aux-maries/enregistrer")
 def animation_mot_code(request: Request):
-    return templates.TemplateResponse(request, "animation/animation_mot.html", {"request": request, "invite": None})
+    return templates.TemplateResponse(request, "animation/animation_mot.html", {"request": request})
 
 @router.post("/animation/mot-aux-maries/enregistrer")
 def animation_mot_code_submit(request: Request, guest_code: str = Form(...)):
@@ -1513,7 +1603,7 @@ def animation_mot_code_submit(request: Request, guest_code: str = Form(...)):
     if not invite:
         return templates.TemplateResponse(
             request, "animation/animation_mot.html",
-            {"request": request, "invite": None, "erreur": "Code non reconnu."},
+            {"request": request, "erreur": "Code non reconnu."},
             status_code=404,
         )
     return RedirectResponse(url=f"/organisateur/animation/mot-aux-maries/enregistrer/{invite.token}", status_code=303)
@@ -1525,7 +1615,20 @@ def animation_mot_enregistrer(request: Request, token: str):
         return RedirectResponse(url="/organisateur/animation/mot-aux-maries/enregistrer", status_code=303)
     return templates.TemplateResponse(
         request, "animation/animation_mot.html",
-        {"request": request, "invite": invite, "duree": config.MOT_DUREE},
+        _contexte_enregistreur(
+            request,
+            titre="Un mot aux mariés",
+            bonjour=f"Bonjour {invite.prenom} !",
+            consigne=f"Vous avez {config.MOT_DUREE} secondes pour laisser un message aux mariés.",
+            duree=config.MOT_DUREE,
+            url_envoi=f"/organisateur/animation/mot-aux-maries/enregistrer/{invite.token}",
+            url_retour="/organisateur/animation/mot-aux-maries/enregistrer",
+            libelle_retour="← Changer d'invité",
+            url_recommencer=f"/organisateur/animation/mot-aux-maries/enregistrer/{invite.token}",
+            merci=f"💌 Merci {invite.prenom} !",
+            url_suivant="/organisateur/animation/mot-aux-maries/enregistrer",
+            libelle_suivant="Invité suivant",
+        ),
     )
 
 @router.post("/animation/mot-aux-maries/enregistrer/{token}")
@@ -1537,5 +1640,6 @@ def animation_mot_video(token: str, background_tasks: BackgroundTasks, video: Up
     with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as brute:
         shutil.copyfileobj(video.file, brute)
     # ffmpeg and the upload take a few seconds: the guest gets their answer right away
-    background_tasks.add_task(_traiter_video_mot, brute.name, _dossier_invite(invite))
+    cle = f"{MOT_DOSSIER}/{_dossier_invite(invite)}/original.mp4"
+    background_tasks.add_task(_traiter_video_mot, brute.name, cle, config.MOT_DUREE)
     return JSONResponse({"ok": True})

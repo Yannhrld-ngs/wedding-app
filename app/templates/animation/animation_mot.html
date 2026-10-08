@@ -89,7 +89,7 @@
   }
 </style>
 
-{% if not invite %}
+{% if not enregistrement %}
 <!-- ==================== Code invité ==================== -->
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -108,14 +108,14 @@
 <!-- ==================== Enregistrement ==================== -->
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center;">
-    <h1>Un mot aux mariés</h1>
-    <a class="back-link" href="/organisateur/animation/mot-aux-maries/enregistrer">← Changer d'invité</a>
+    <h1>{{ titre }}</h1>
+    <a class="back-link" href="{{ url_retour }}">{{ libelle_retour }}</a>
   </div>
 
   <div id="etape-pret">
-    <p class="mot-message">Bonjour {{ invite.prenom }} !</p>
+    <p class="mot-message">{{ bonjour }}</p>
     <p class="mot-sous-message">
-      Vous avez {{ duree }} secondes pour laisser un message aux mariés.<br>
+      {{ consigne }}<br>
       Un décompte apparaîtra 10 secondes avant la fin.
     </p>
     <p class="mot-centre"><button type="button" class="mot-btn" id="commencer">🎥 Commencer</button></p>
@@ -138,16 +138,16 @@
   </div>
 
   <div id="etape-merci" hidden>
-    <p class="mot-message">💌 Merci {{ invite.prenom }} !</p>
+    <p class="mot-message">{{ merci }}</p>
     <p class="mot-sous-message">Votre message a bien été enregistré.</p>
-    <p class="mot-centre"><a class="mot-btn" href="/organisateur/animation/mot-aux-maries/enregistrer">Invité suivant</a></p>
+    <p class="mot-centre"><a class="mot-btn" href="{{ url_suivant }}">{{ libelle_suivant }}</a></p>
   </div>
 
   <div id="etape-erreur" hidden>
     <p class="mot-message" id="erreur-texte"></p>
     <p class="mot-centre">
       <button type="button" class="mot-btn" id="reessayer" hidden>Réessayer l'envoi</button>
-      <a class="mot-btn secondaire" href="/organisateur/animation/mot-aux-maries/enregistrer/{{ invite.token }}">Recommencer</a>
+      <a class="mot-btn secondaire" href="{{ url_recommencer }}">Recommencer</a>
     </p>
   </div>
 </div>
@@ -156,7 +156,7 @@
   (function () {
     const DUREE = {{ duree|tojson }};
     const ALERTE = 10; // seconds left when the countdown shows up
-    const URL_ENVOI = "/organisateur/animation/mot-aux-maries/enregistrer/" + encodeURIComponent({{ invite.token|tojson }});
+    const URL_ENVOI = {{ url_envoi|tojson }};
     const apercu = document.getElementById("apercu");
     const decompte = document.getElementById("decompte");
     let flux = null, enregistreur = null, morceaux = [], debut = 0, minuterie = null, video = null;
